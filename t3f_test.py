@@ -9,8 +9,26 @@ class TTArrayTest(tf.test.TestCase):
         vec_shape = (2, 3, 4, 3)
         np.random.seed(1)
         vec = np.random.rand(*vec_shape).astype(np.float32)
-        tt_vec = t3f.to_tt_array(vec)
+        tt_vec = t3f.to_tt_array(vec, vec_shape)
+        # TODO: test full and to_tt_array separately?
         self.assertAllClose(t3f.full(tt_vec), vec)
+
+        vec = np.random.rand(np.prod(vec_shape)).astype(np.float32)
+        tt_vec = t3f.to_tt_array(vec, vec_shape)
+        # TODO: test full and to_tt_array separately?
+        self.assertAllClose(t3f.full(tt_vec), vec)
+
+
+    def testTTVector(self):
+        # Convert a np.prod(out_shape) x np.prod(in_shape) matrix into TT-matrix
+        # and back.
+        inp_shape = (2, 3, 4, 3)
+        out_shape = (3, 3, 3, 3)
+        np.random.seed(1)
+        mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
+        tt_mat = t3f.to_tt_array(mat, ((out_shape, inp_shape)))
+        # TODO: test full and to_tt_array separately?
+        self.assertAllClose(t3f.full(tt_mat), mat)
 
 
 if __name__ == "__main__":
