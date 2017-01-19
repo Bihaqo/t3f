@@ -8,15 +8,12 @@ class TTMatrixTest(tf.test.TestCase):
     def testTTVector(self):
         vec_shape = (2, 3, 4, 3)
         np.random.seed(1)
-        vec = np.random.rand(*vec_shape).astype(np.float32)
-        tt_vec = t3f.to_tt_matrix(vec, vec_shape)
-        # TODO: test full and to_tt_array separately?
-        self.assertAllClose(t3f.full_matrix(tt_vec), vec)
-
         vec = np.random.rand(np.prod(vec_shape)).astype(np.float32)
-        tt_vec = t3f.to_tt_matrix(vec, vec_shape)
-        # TODO: test full and to_tt_array separately?
-        self.assertAllClose(t3f.full_matrix(tt_vec), vec)
+        with self.test_session():
+            tf_vec = tf.constant(vec)
+            tt_vec = t3f.to_tt_matrix(tf_vec, vec_shape)
+            # TODO: test full and to_tt_matrix separately?
+            self.assertAllClose(vec, t3f.full_matrix(tt_vec).eval())
 
 
     def testTTMatrix(self):
@@ -26,9 +23,12 @@ class TTMatrixTest(tf.test.TestCase):
         out_shape = (3, 3, 3, 3)
         np.random.seed(1)
         mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
+        with self.test_session():
+            tf_mat = tf.constant(mat)
+            tt_mat = t3f.to_tt_matrix(tf_mat, ((out_shape, inp_shape)))
+            # TODO: test full and to_tt_matrix separately?
+            self.assertAllClose(mat, t3f.full_matrix(tt_mat).eval())
         tt_mat = t3f.to_tt_matrix(mat, ((out_shape, inp_shape)))
-        # TODO: test full and to_tt_array separately?
-        self.assertAllClose(t3f.full_matrix(tt_mat), mat)
 
 
 if __name__ == "__main__":
