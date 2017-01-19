@@ -30,6 +30,19 @@ class TTMatrixTest(tf.test.TestCase):
             self.assertAllClose(mat, t3f.full_matrix(tt_mat).eval())
         tt_mat = t3f.to_tt_matrix(mat, ((out_shape, inp_shape)))
 
+    def testTTmatTimesDenseVec(self):
+        # Multiply a TT-matrix by a dense vector.
+        inp_shape = (2, 3, 4, 3)
+        out_shape = (3, 3, 3, 3)
+        np.random.seed(1)
+        vec = np.random.rand(np.prod(inp_shape), 1).astype(np.float32)
+        with self.test_session():
+            tf_vec = tf.constant(vec)
+            tf.set_random_seed(1)
+            tt_mat = t3f.tt_rand_matrix(((out_shape, inp_shape)))
+            res_actual = t3f.matmul(tt_mat, tf_vec)
+            res_desired = tf.matmul(t3f.full_matrix(tt_mat), tf_vec)
+            self.assertAllClose(res_actual.eval(), res_desired.eval())
 
 if __name__ == "__main__":
     tf.test.main()
