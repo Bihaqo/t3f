@@ -7,29 +7,46 @@ class TTMatrixTest(tf.test.TestCase):
 
     def testFullTensor2d(self):
         np.random.seed(1)
-        a = np.random.rand(10, 2).astype(np.float32)
-        b = np.random.rand(2, 9).astype(np.float32)
-        tt_cores = (a.reshape(1, 10, 2), b.reshape(2, 9, 1))
-        desired = np.dot(a, b)
-        with self.test_session():
-            tf_test = t3f.to_tensor_from_np(tt_cores)
-            actual = t3f.full_tensor(tf_test)
-            self.assertAllClose(desired, actual.eval())
+        for rank in [1, 2]:
+            a = np.random.rand(10, rank).astype(np.float32)
+            b = np.random.rand(rank, 9).astype(np.float32)
+            tt_cores = (a.reshape(1, 10, rank), b.reshape(rank, 9, 1))
+            desired = np.dot(a, b)
+            with self.test_session():
+                tf_tens = t3f.to_tensor_from_np(tt_cores)
+                actual = t3f.full_tensor(tf_tens)
+                self.assertAllClose(desired, actual.eval())
 
     def testFullTensor3d(self):
         np.random.seed(1)
-        a = np.random.rand(10, 2).astype(np.float32)
-        b = np.random.rand(2, 9, 3).astype(np.float32)
-        c = np.random.rand(3, 8).astype(np.float32)
-        tt_cores = (a.reshape(1, 10, 2), b, c.reshape((3, 8, 1)))
-        # Basically do full_tensor by hand.
-        desired = a.dot(b.reshape((2, -1)))
-        desired = desired.reshape((-1, 3)).dot(c)
-        desired = desired.reshape(10, 9, 8)
-        with self.test_session():
-            tf_test = t3f.to_tensor_from_np(tt_cores)
-            actual = t3f.full_tensor(tf_test)
-            self.assertAllClose(desired, actual.eval())
+        for rank_1 in [1, 2]:
+            a = np.random.rand(10, rank_1).astype(np.float32)
+            b = np.random.rand(rank_1, 9, 3).astype(np.float32)
+            c = np.random.rand(3, 8).astype(np.float32)
+            tt_cores = (a.reshape(1, 10, rank_1), b, c.reshape((3, 8, 1)))
+            # Basically do full_tensor by hand.
+            desired = a.dot(b.reshape((rank_1, -1)))
+            desired = desired.reshape((-1, 3)).dot(c)
+            desired = desired.reshape(10, 9, 8)
+            with self.test_session():
+                tf_tens = t3f.to_tensor_from_np(tt_cores)
+                actual = t3f.full_tensor(tf_tens)
+                self.assertAllClose(desired, actual.eval())
+
+    def testFullMatrix2d(self):
+        np.random.seed(1)
+        for rank in [1, 2]:
+            a = np.random.rand(2, 3, rank).astype(np.float32)
+            b = np.random.rand(rank, 4, 5).astype(np.float32)
+            tt_cores = (a.reshape(1, 2, 3, rank), b.reshape((rank, 4, 5, 1)))
+            # Basically do full_matrix by hand.
+            desired = a.reshape((-1, rank)).dot(b.reshape((rank, -1)))
+            desired = desired.reshape((2, 3, 4, 5))
+            desired = desired.transpose((0, 2, 1, 3))
+            with self.test_session():
+                tf_mat = t3f.to_tensor_from_np(tt_cores)
+                actual = t3f.full_matrix(tf_mat)
+                self.assertAllClose(desired, actual.eval())
 
     def testTTVector(self):
         vec_shape = (2, 1, 4, 3)
