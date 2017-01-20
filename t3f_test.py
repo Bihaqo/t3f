@@ -5,6 +5,32 @@ import t3f
 
 class TTMatrixTest(tf.test.TestCase):
 
+    def testFullTensor2d(self):
+        np.random.seed(1)
+        a = np.random.rand(10, 2).astype(np.float32)
+        b = np.random.rand(2, 9).astype(np.float32)
+        tt_cores = (a.reshape(1, 10, 2), b.reshape(2, 9, 1))
+        desired = np.dot(a, b)
+        with self.test_session():
+            tf_test = t3f.to_tensor_from_np(tt_cores)
+            actual = t3f.full_tensor(tf_test)
+            self.assertAllClose(desired, actual.eval())
+
+    def testFullTensor3d(self):
+        np.random.seed(1)
+        a = np.random.rand(10, 2).astype(np.float32)
+        b = np.random.rand(2, 9, 3).astype(np.float32)
+        c = np.random.rand(3, 8).astype(np.float32)
+        tt_cores = (a.reshape(1, 10, 2), b, c.reshape((3, 8, 1)))
+        # Basically do full_tensor by hand.
+        desired = a.dot(b.reshape((2, -1)))
+        desired = desired.reshape((-1, 3)).dot(c)
+        desired = desired.reshape(10, 9, 8)
+        with self.test_session():
+            tf_test = t3f.to_tensor_from_np(tt_cores)
+            actual = t3f.full_tensor(tf_test)
+            self.assertAllClose(desired, actual.eval())
+
     def testTTVector(self):
         vec_shape = (2, 1, 4, 3)
         np.random.seed(1)
@@ -12,9 +38,7 @@ class TTMatrixTest(tf.test.TestCase):
         with self.test_session():
             tf_vec = tf.constant(vec)
             tt_vec = t3f.to_tt_matrix(tf_vec, vec_shape)
-            # TODO: test full and to_tt_matrix separately?
             self.assertAllClose(vec, t3f.full_matrix(tt_vec).eval())
-
 
     def testTTMatrix(self):
         # Convert a np.prod(out_shape) x np.prod(in_shape) matrix into TT-matrix
@@ -26,14 +50,13 @@ class TTMatrixTest(tf.test.TestCase):
         with self.test_session():
             tf_mat = tf.constant(mat)
             tt_mat = t3f.to_tt_matrix(tf_mat, ((out_shape, inp_shape)))
-            # TODO: test full and to_tt_matrix separately?
             self.assertAllClose(mat, t3f.full_matrix(tt_mat).eval())
         tt_mat = t3f.to_tt_matrix(mat, ((out_shape, inp_shape)))
 
     def testTTMatTimesDenseVec(self):
         # Multiply a TT-matrix by a dense vector.
-        inp_shape = (2, 3, 4, 3)
-        out_shape = (3, 4, 3, 3)
+        inp_shape = (2, 3, 4)
+        out_shape = (3, 4, 3)
         np.random.seed(1)
         vec = np.random.rand(np.prod(inp_shape), 1).astype(np.float32)
         with self.test_session():
@@ -68,7 +91,6 @@ class TTTensorTest(tf.test.TestCase):
         with self.test_session():
             tf_tens = tf.constant(tens)
             tt_tens = t3f.to_tt_matrix(tf_tens, shape)
-            # TODO: test full and to_tt_matrix separately?
             self.assertAllClose(tens, t3f.full_matrix(tt_tens).eval())
 
 if __name__ == "__main__":
