@@ -93,7 +93,7 @@ class TTMatrixTest(tf.test.TestCase):
         with self.test_session():
             tf_mat = tf.constant(mat)
             tf.set_random_seed(1)
-            tt_vec = t3f.tt_rand_matrix(inp_shape)
+            tt_vec = t3f.tt_rand_matrix((inp_shape, None))
             res_actual = t3f.matmul(tf_mat, tt_vec)
             res_desired = tf.matmul(t3f.full_matrix(tf_mat), tt_vec)
             self.assertAllClose(res_actual.eval(), res_desired.eval())
