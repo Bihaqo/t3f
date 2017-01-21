@@ -10,9 +10,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
     (ideally) 3-8 numbers.
 
     Args:
-
-        mat: two dimensional tf.tensor (a matrix).
-
+        mat: two dimensional tf.Tensor (a matrix).
         shape: two dimensional array (np.array or list of lists)
             Represents the tensor shape of the matrix.
             E.g. for a (a1 * a2 * a3) x (b1 * b2 * b3) matrix `shape` should be
@@ -41,7 +39,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
             will probably return you a TT-matrix with TT-ranks close to 1, not 100.
 
     Returns:
-        TT-matrix (a list of tf.tensors that you can pass to other functions
+        TT-matrix (a list of tf.Tensors that you can pass to other functions
         that expect a TT-matrix as unput).
 
     """
@@ -49,12 +47,10 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
     return
 
 def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
-    """Converts a given tf.tensor to a TT-tensor of the same shape.
+    """Converts a given tf.Tensor to a TT-tensor of the same shape.
 
     Args:
-
-        tens: tf.tensor
-
+        tens: tf.Tensor
         max_tt_rank: a number or a list of numbers
             If a number, than defines the maximal TT-rank of the result.
             If a list of numbers, than `max_tt_rank` length should be d-1
@@ -77,34 +73,105 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
             not 100.
 
     Returns:
-        TT-tensor (a list of tf.tensors that you can pass to other functions
+        TT-tensor (a list of tf.Tensors that you can pass to other functions
         that expect a TT-tensor as unput).
 
     """
     return
 
 def full_matrix(tt_matrix):
-    """Converts a TT-matrix into a regular matrix (tf.tensor).
+    """Converts a TT-matrix into a regular matrix (tf.Tensor).
 
     Args:
-
         tt_matrix: TT-matrix to be converted.
 
     Returns:
-        tf.tensor of rank 2.
+        tf.Tensor of rank 2.
 
     """
     return
 
 def full_tensor(tt_tensor):
-    """Converts a TT-tensor into a regular tf.tensor.
+    """Converts a TT-tensor into a regular tf.Tensor.
 
     Args:
-
         tt_tensor: TT-tensor to be converted.
 
     Returns:
-        tf.tensor
+        tf.Tensor
 
+    """
+    return
+
+def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
+    """Multiplies two TT-matrices and returns the TT-matrix of the result.
+
+    Args:
+        tt_matrix_a: TT-matrix of size M x N
+        tt_matrix_b: TT-matrix of size N x P
+
+    Returns
+        TT-matrix of size M x P
+    """
+    return
+
+def tt_dense_matmul(tt_matrix_a, matrix_b):
+    """Multiplies a TT-matrix by a regular matrix, returns a regular matrix.
+
+    Args:
+        tt_matrix_a: TT-matrix of size M x N
+        matrix_b: tf.Tensor of size N x P
+
+    Returns
+        tf.Tensor of size M x P
+    """
+    return
+
+def dense_tt_matmul(matrix_a, tt_matrix_b):
+    """Multiplies a regular matrix by a TT-matrix, returns a regular matrix.
+
+    Args:
+        matrix_a: tf.Tensor of size M x N
+        tt_matrix_b: TT-matrix of size N x P
+
+    Returns
+        tf.Tensor of size M x P
+    """
+    return
+
+def sparse_tt_matmul(sparse_matrix_a, tt_matrix_b):
+    """Multiplies a sparse matrix by a TT-matrix, returns a regular matrix.
+
+    Args:
+        sparse_matrix_a: tf.SparseTensor of size M x N
+        tt_matrix_b: TT-matrix of size N x P
+
+    Returns
+        tf.Tensor of size M x P
+    """
+    return
+
+def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
+    """Multiplies a TT-matrix by a sparse matrix, returns a regular matrix.
+
+    Args:
+        tt_matrix_a: TT-matrix of size M x N
+        sparse_matrix_b: tf.SparseTensor of size N x P
+
+    Returns
+        tf.Tensor of size M x P
+    """
+    return
+
+def matmul(matrix_a, matrix_b):
+    """Multiplies two matrices that can be TT-, dense, or sparse.
+       Always returns tf.Tensor.
+
+    Args:
+        matrix_a: TT-matrix, tf.Tensor, or tf.SparseTensor of size M x N
+        matrix_b: TT-matrix, tf.Tensor, or tf.SparseTensor of size N x P
+
+    Returns
+        tf.Tensor of size M x P
     """
     return
