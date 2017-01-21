@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
+# TODO: add complexities to the comments.
+
 def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
     """Converts a given matrix or vector to a TT-matrix.
 
@@ -176,5 +178,95 @@ def matmul(matrix_a, matrix_b):
     Returns
         If both arguments are TT-matrix, returns a TT-matrix of size M x P
         If not, returns tf.Tensor of size M x P
+    """
+    return
+
+def tt_tt_flat_inner(tt_a, tt_b):
+    """Inner product between two TT-tensors or TT-matrices along all axis.
+
+    The shapes of tt_a and tt_b should coincide.
+
+    Args:
+        tt_a: TT-matrix or TT-tensor
+        tt_b: TT-matrix or TT-tensor
+
+    Returns
+        a number
+        sum of products of all the elements of tt_a and tt_b
+    """
+    return
+
+def tt_dense_flat_inner(tt_a, dense_b):
+    """Inner product between a TT-tensor (or TT-matrix) and tf.Tensor along all axis.
+
+    The shapes of tt_a and dense_b should coincide.
+
+    Args:
+        tt_a: TT-matrix or TT-tensor
+        dense_b: tf.Tensor
+
+    Returns
+        a number
+        sum of products of all the elements of tt_a and dense_b
+    """
+    return
+
+def tt_sparse_flat_inner(tt_a, sparse_b):
+    """Inner product between a TT-tensor (or TT-matrix) and tf.SparseTensor along all axis.
+
+    The shapes of tt_a and sparse_b should coincide.
+
+    Args:
+        tt_a: TT-matrix or TT-tensor
+        sparse_b: tf.SparseTensor
+
+    Returns
+        a number
+        sum of products of all the elements of tt_a and sparse_b
+    """
+    return
+
+def dense_tt_flat_inner(dense_a, tt_b):
+    """Inner product between a tf.Tensor and TT-tensor (or TT-matrix) along all axis.
+
+    The shapes of dense_a and tt_b should coincide.
+
+    Args:
+        dense_a: TT-matrix or TT-tensor
+        tt_b: tf.SparseTensor
+
+    Returns
+        a number
+        sum of products of all the elements of dense_a and tt_b
+    """
+    return
+
+def sparse_tt_flat_inner(sparse_a, tt_b):
+    """Inner product between a tf.SparseTensor and TT-tensor (or TT-matrix) along all axis.
+
+    The shapes of sparse_a and tt_b should coincide.
+
+    Args:
+        sparse_a: TT-matrix or TT-tensor
+        tt_b: tf.SparseTensor
+
+    Returns
+        a number
+        sum of products of all the elements of sparse_a and tt_b
+    """
+    return
+
+def flat_inner(a, b):
+    """Inner product along all axis.
+
+    The shapes of a and b should coincide.
+
+    Args:
+        a: TT-matrix, TT-tensor, tf.Tensor, or tf.SparseTensor
+        b: TT-matrix, TT-tensor, tf.Tensor, or tf.SparseTensor
+
+    Returns
+        a number
+        sum of products of all the elements of a and b
     """
     return
