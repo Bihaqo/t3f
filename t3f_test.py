@@ -5,6 +5,22 @@ import t3f
 
 class TTMatrixTest(tf.test.TestCase):
 
+    def testValidateRanksTensor2d(self):
+        np.random.seed(1)
+        schedule = (((1, 1, 1, 1), True),
+                    ((1, 2, 2, 1), True),
+                    ((2, 1, 1, 1), False),
+                    ((1, 1, 1, 2), False),
+                    ((1, 1, 2, 1), False),
+                    ((1, 2, 1, 1), False))
+
+        for ranks, desired in schedule:
+            a = np.random.rand(ranks[0], 10, ranks[1]).astype(np.float32)
+            b = np.random.rand(ranks[2], 9, ranks[3]).astype(np.float32)
+            with self.test_session():
+                tf_tens = t3f.to_tensor_from_np((a, b))
+                self.assertEqual(desired, t3f.are_ranks_valid(tf_tens))
+
     def testFullTensor2d(self):
         np.random.seed(1)
         for rank in [1, 2]:
