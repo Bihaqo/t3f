@@ -165,13 +165,16 @@ def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
 
 def matmul(matrix_a, matrix_b):
     """Multiplies two matrices that can be TT-, dense, or sparse.
-       Always returns tf.Tensor.
+
+    Note that multiplication of two TT-matrices returns a TT-matrix with much
+    larger ranks.
 
     Args:
         matrix_a: TT-matrix, tf.Tensor, or tf.SparseTensor of size M x N
         matrix_b: TT-matrix, tf.Tensor, or tf.SparseTensor of size N x P
 
     Returns
-        tf.Tensor of size M x P
+        If both arguments are TT-matrix, returns a TT-matrix of size M x P
+        If not, returns tf.Tensor of size M x P
     """
     return
