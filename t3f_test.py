@@ -43,6 +43,7 @@ class TTMatrixTest(tf.test.TestCase):
             desired = a.reshape((-1, rank)).dot(b.reshape((rank, -1)))
             desired = desired.reshape((2, 3, 4, 5))
             desired = desired.transpose((0, 2, 1, 3))
+            desired = desired.reshape((2 * 4, 3 * 5))
             with self.test_session():
                 tf_mat = t3f.to_tensor_from_np(tt_cores)
                 actual = t3f.full_matrix(tf_mat)
