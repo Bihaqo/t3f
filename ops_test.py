@@ -4,7 +4,8 @@ import tensorflow as tf
 import tensor_train
 import ops
 
-class TTMatrixTest(tf.test.TestCase):
+
+class TTTensorTest(tf.test.TestCase):
 
     def testValidateRanksTensor2d(self):
         np.random.seed(1)
@@ -49,6 +50,18 @@ class TTMatrixTest(tf.test.TestCase):
                 tf_tens = ops.to_tensor_from_np(tt_cores)
                 actual = ops.full(tf_tens)
                 self.assertAllClose(desired, actual.eval())
+
+    def testTTTensor(self):
+        shape = (2, 1, 4, 3)
+        np.random.seed(1)
+        tens = np.random.rand(*shape).astype(np.float32)
+        with self.test_session():
+            tf_tens = tf.constant(tens)
+            tt_tens = ops.to_tt_matrix(tf_tens, shape)
+            self.assertAllClose(tens, ops.full(tt_tens).eval())
+
+
+class TTMatrixTest(tf.test.TestCase):
 
     def testFullMatrix2d(self):
         np.random.seed(1)
@@ -115,17 +128,6 @@ class TTMatrixTest(tf.test.TestCase):
             res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
             self.assertAllClose(res_actual.eval(), res_desired.eval())
 
-
-class TTTensorTest(tf.test.TestCase):
-
-    def testTTTensor(self):
-        shape = (2, 1, 4, 3)
-        np.random.seed(1)
-        tens = np.random.rand(*shape).astype(np.float32)
-        with self.test_session():
-            tf_tens = tf.constant(tens)
-            tt_tens = ops.to_tt_matrix(tf_tens, shape)
-            self.assertAllClose(tens, ops.full(tt_tens).eval())
 
 if __name__ == "__main__":
     tf.test.main()
