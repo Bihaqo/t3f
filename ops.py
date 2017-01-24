@@ -41,8 +41,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
             will probably return you a TT-matrix with TT-ranks close to 1, not 100.
 
     Returns:
-        TT-matrix (a list of tf.Tensors that you can pass to other functions
-        that expect a TT-matrix as unput).
+        `TensorTrain` object containing a TT-matrix.
 
     """
 
@@ -75,32 +74,19 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
             not 100.
 
     Returns:
-        TT-tensor (a list of tf.Tensors that you can pass to other functions
-        that expect a TT-tensor as unput).
+        `TensorTrain` object containing a TT-tensor.
 
     """
     return
 
-def full_matrix(tt_matrix):
-    """Converts a TT-matrix into a regular matrix (tf.Tensor).
+def full(tt):
+    """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
     Args:
-        tt_matrix: TT-matrix to be converted.
+        tt: `TensorTrain` object.
 
     Returns:
-        tf.Tensor of rank 2.
-
-    """
-    return
-
-def full_tensor(tt_tensor):
-    """Converts a TT-tensor into a regular tf.Tensor.
-
-    Args:
-        tt_tensor: TT-tensor to be converted.
-
-    Returns:
-        tf.Tensor
+        tf.Tensor.
 
     """
     return
@@ -109,11 +95,11 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     """Multiplies two TT-matrices and returns the TT-matrix of the result.
 
     Args:
-        tt_matrix_a: TT-matrix of size M x N
-        tt_matrix_b: TT-matrix of size N x P
+        tt_matrix_a: `TensorTrain` object containing a TT-matrix of size M x N
+        tt_matrix_b: `TensorTrain` object containing a TT-matrix of size N x P
 
     Returns
-        TT-matrix of size M x P
+        `TensorTrain` object containing a TT-matrix of size M x P
     """
     return
 
@@ -121,7 +107,7 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
     """Multiplies a TT-matrix by a regular matrix, returns a regular matrix.
 
     Args:
-        tt_matrix_a: TT-matrix of size M x N
+        tt_matrix_a: `TensorTrain` object containing a TT-matrix of size M x N
         matrix_b: tf.Tensor of size N x P
 
     Returns
@@ -134,7 +120,7 @@ def dense_tt_matmul(matrix_a, tt_matrix_b):
 
     Args:
         matrix_a: tf.Tensor of size M x N
-        tt_matrix_b: TT-matrix of size N x P
+        tt_matrix_b: `TensorTrain` object containing a TT-matrix of size N x P
 
     Returns
         tf.Tensor of size M x P
@@ -146,7 +132,7 @@ def sparse_tt_matmul(sparse_matrix_a, tt_matrix_b):
 
     Args:
         sparse_matrix_a: tf.SparseTensor of size M x N
-        tt_matrix_b: TT-matrix of size N x P
+        tt_matrix_b: `TensorTrain` object containing a TT-matrix of size N x P
 
     Returns
         tf.Tensor of size M x P
@@ -158,7 +144,7 @@ def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
     """Multiplies a TT-matrix by a sparse matrix, returns a regular matrix.
 
     Args:
-        tt_matrix_a: TT-matrix of size M x N
+        tt_matrix_a: `TensorTrain` object containing a TT-matrix of size M x N
         sparse_matrix_b: tf.SparseTensor of size N x P
 
     Returns
@@ -173,11 +159,12 @@ def matmul(matrix_a, matrix_b):
     larger ranks.
 
     Args:
-        matrix_a: TT-matrix, tf.Tensor, or tf.SparseTensor of size M x N
-        matrix_b: TT-matrix, tf.Tensor, or tf.SparseTensor of size N x P
+        matrix_a: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size M x N
+        matrix_b: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size N x P
 
     Returns
-        If both arguments are TT-matrix, returns a TT-matrix of size M x P
+        If both arguments are `TensorTrain` objects, returns a `TensorTrain`
+            object containing a TT-matrix of size M x P
         If not, returns tf.Tensor of size M x P
     """
     return
@@ -188,8 +175,8 @@ def tt_tt_flat_inner(tt_a, tt_b):
     The shapes of tt_a and tt_b should coincide.
 
     Args:
-        tt_a: TT-matrix or TT-tensor
-        tt_b: TT-matrix or TT-tensor
+        tt_a: `TensorTrain` object
+        tt_b: `TensorTrain` object
 
     Returns
         a number
@@ -203,7 +190,7 @@ def tt_dense_flat_inner(tt_a, dense_b):
     The shapes of tt_a and dense_b should coincide.
 
     Args:
-        tt_a: TT-matrix or TT-tensor
+        tt_a: `TensorTrain` object
         dense_b: tf.Tensor
 
     Returns
@@ -218,7 +205,7 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
     The shapes of tt_a and sparse_b should coincide.
 
     Args:
-        tt_a: TT-matrix or TT-tensor
+        tt_a: `TensorTrain` object
         sparse_b: tf.SparseTensor
 
     Returns
@@ -233,7 +220,7 @@ def dense_tt_flat_inner(dense_a, tt_b):
     The shapes of dense_a and tt_b should coincide.
 
     Args:
-        dense_a: TT-matrix or TT-tensor
+        dense_a: `TensorTrain` object
         tt_b: tf.SparseTensor
 
     Returns
@@ -248,7 +235,7 @@ def sparse_tt_flat_inner(sparse_a, tt_b):
     The shapes of sparse_a and tt_b should coincide.
 
     Args:
-        sparse_a: TT-matrix or TT-tensor
+        sparse_a: `TensorTrain` object
         tt_b: tf.SparseTensor
 
     Returns
@@ -263,8 +250,8 @@ def flat_inner(a, b):
     The shapes of a and b should coincide.
 
     Args:
-        a: TT-matrix, TT-tensor, tf.Tensor, or tf.SparseTensor
-        b: TT-matrix, TT-tensor, tf.Tensor, or tf.SparseTensor
+        a: `TensorTrain` tf.Tensor, or tf.SparseTensor
+        b: `TensorTrain`, tf.Tensor, or tf.SparseTensor
 
     Returns
         a number
