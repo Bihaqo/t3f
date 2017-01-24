@@ -21,15 +21,23 @@ W_2 = tf.get_variable('W_2', shape=[625, 10])
 tt_init_op = t3f.initialize_from_tensor(tt_W, W)
 loss = tf.nn.softmax_cross_entropy_with_logits(y, labels)
 train_step = tf.train.Adam(0.01).minimize(loss)
-restorer = tf.train.Saver(var_list=original_variables)
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    restorer.restore(sess, 'checkpoint/path')
+    restore_all_saved('checkpoint/path')
     sess.run(tt_init_op)
     # Finally do the finetuning.
     ...
 ```
-
+where
+```
+def restore_all_saved(sess, path):
+  reader = tf.train.NewCheckpointReader(path)
+  var_names_in_checkpoint = reader.get_variable_to_shape_map().keys()
+  with tf.variable_scope('', reuse=True):
+    vars_in_checkpoint = [tf.get_variable(name) for name in var_names_in_checkpoint]
+  restorer = tf.train.Saver(var_list=vars_in_checkpoint)
+  restorer.restore(sess, path)
+```
 
 # Tests
 ```
