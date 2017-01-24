@@ -153,6 +153,7 @@ def sparse_tt_matmul(sparse_matrix_a, tt_matrix_b):
     """
     return
 
+# TODO: add flag `return_type = (TT | dense)`?
 def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
     """Multiplies a TT-matrix by a sparse matrix, returns a regular matrix.
 
