@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 
@@ -13,9 +14,13 @@ class TensorTrain():
   @@dtype
   @@op
   @@graph
+  @@get_raw_shape
+  @@ndims
+  @@extended_ranks
+  @@is_tt_matrix
   """
 
-  def __init__(self, tt_cores):
+  def __init__(self, tt_cores, is_variable=False):
     """Creates a `TensorTrain`.
     Args:
       tt_cores: A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
@@ -27,22 +32,51 @@ class TensorTrain():
         raise ValueError('the tt_cores provided to TensorTrain constructor are '
                          'not valid or have different dtypes.')
 
-    tt_cores = tuple(tt_cores)
-    with tf.name_scope("TensorTrain", tt_cores):
-      # TODO: should we pass as_ref=True because we want to be able to update
-      # values later if it is a VariableOp??
-      for i in range(len(tt_cores)):
-        tt_cores[i] = tf.convert_to_tensor(
-            tt_cores[i], name="indices", as_ref=False)
-    self._tt_cores = tt_cores
+    tt_cores = list(tt_cores)
+    if not is_variable:
+        with tf.name_scope("TensorTrain", tt_cores):
+          # TODO: should we pass as_ref=True because we want to be able to update
+          # values later if it is a VariableOp??
+          for i in range(len(tt_cores)):
+            name = "core%d" % i
+            tt_cores[i] = tf.convert_to_tensor(
+                tt_cores[i], name=name, as_ref=False)
+    self._tt_cores = tuple(tt_cores)
+    self._is_variable = is_variable
+
+  def get_raw_shape(self):
+    """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
+
+    Tuple contains one `TensorShape` for TT-tensor and 2 `TensorShapes` for
+    TT-matrix
+
+    Returns:
+      A tuple of `TensorShape` objects.
+    """
+    num_dims = self.ndims()
+    num_tensor_shapes = len(self._tt_cores[0].get_shape().as_list()) - 2
+    shapes = [[] for _ in range(num_tensor_shapes)]
+    for dim in range(num_dims):
+      curr_core_shape = self._tt_cores[dim].get_shape()
+      for i in range(num_tensor_shapes):
+        shapes[i].append(curr_core_shape[i+1])
+    for i in range(num_tensor_shapes):
+      shapes[i] = tf.TensorShape(shapes[i])
+    return shapes
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
     Returns:
       A `TensorShape` object.
     """
-    raise NotImplementedError
-    # return tensor_util.constant_value_as_shape(self._dense_shape)
+    raw_shape = self.get_raw_shape()
+    if self.is_tt_matrix():
+      # TODO: return TensorShape.
+      M = np.prod(raw_shape[0].as_list())
+      N = np.prod(raw_shape[1].as_list())
+      return (M, N)
+    else:
+      return self.get_raw_shape()[0]
 
   @property
   def tt_cores(self):
@@ -72,6 +106,35 @@ class TensorTrain():
     raise NotImplementedError
     # return "TensorTrain(indices=%s, values=%s, dense_shape=%s)" % (
     #     self._indices, self._values, self._dense_shape)
+
+  def ndims(self):
+    """Get the number of dimensions of the underlying TT-tensor.
+    Returns:
+      A number.
+    """
+    return len(self._tt_cores)
+
+  def extended_ranks(self):
+    """Get the ranks in an array of size `num_dims`+1.
+
+    The first and the last ranks are guarantied to be 1.
+
+    Returns:
+      np.array of size `num_dims`+1.
+    """
+    # TODO: is TensorShape better than np array?
+    num_dims = self.ndims()
+    extended_ranks = np.ones(num_dims + 1).astype(int)
+    for i in range(num_dims):
+      extended_ranks[i] = self._tt_cores[i].get_shape().as_list()[0]
+    return extended_ranks
+
+  def is_tt_matrix(self):
+      """Returns True if the TensorTrain object represents a TT-matrix.
+      Returns:
+        bool
+      """
+      return len(self._tt_cores[0].get_shape().as_list()) == 4
 
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
@@ -108,6 +171,28 @@ def _are_tt_cores_valid(tt_cores):
         tt_cores: tuple of np.ndarray, tf.Tensor, or tf.Variable
 
     Returns:
-        boolean, True if the dimensions are consistent.
+        boolean, True if the dimensions and dtypes are consistent.
     """
-    raise NotImplementedError
+    num_dims = len(tt_cores)
+    def get_shape(core):
+        try:
+            # If core is np arrays.
+            return core.shape
+        except AttributeError:
+            # If core is tf.Tensor or tf.Variable.
+            return core.get_shape().as_list()
+    for i in range(1, num_dims):
+        if tt_cores[i].dtype != tt_cores[0].dtype:
+            return False
+        curr_core_shape = get_shape(tt_cores[i])
+        prev_core_shape = get_shape(tt_cores[i-1])
+        if len(curr_core_shape) != len(prev_core_shape):
+            # Shapes are inconsistent.
+            return False
+        if curr_core_shape[0] != prev_core_shape[-1]:
+            # Ranks are inconsistent.
+            return False
+    if get_shape(tt_cores[0])[0] != 1 or get_shape(tt_cores[-1])[-1] != 1:
+        # The first or the last rank is not 1.
+        return False
+    return True
