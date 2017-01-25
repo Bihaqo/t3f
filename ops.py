@@ -97,7 +97,18 @@ def full(tt):
         curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
         res = tf.matmul(res, curr_core)
     if tt.is_tt_matrix():
-        raise NotImplementedError
+        raw_shape = tt.get_raw_shape()
+        intermidiate_shape = []
+        for i in range(num_dims):
+            intermidiate_shape.append(raw_shape[0][i])
+            intermidiate_shape.append(raw_shape[1][i])
+        res = tf.reshape(res, tf.TensorShape(intermidiate_shape))
+        transpose = []
+        for i in range(num_dims):
+            transpose.append(i)
+            transpose.append(i + num_dims)
+        res = tf.transpose(res, transpose)
+        return tf.reshape(res, tt.get_shape())
     else:
         return tf.reshape(res, tt.get_shape())
 

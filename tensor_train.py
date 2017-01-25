@@ -14,6 +14,7 @@ class TensorTrain():
   @@dtype
   @@op
   @@graph
+  @@get_raw_shape
   @@ndims
   @@extended_ranks
   @@is_tt_matrix
@@ -43,25 +44,39 @@ class TensorTrain():
     self._tt_cores = tuple(tt_cores)
     self._is_variable = is_variable
 
+  def get_raw_shape(self):
+    """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
+
+    Tuple contains one `TensorShape` for TT-tensor and 2 `TensorShapes` for
+    TT-matrix
+
+    Returns:
+      A tuple of `TensorShape` objects.
+    """
+    num_dims = self.ndims()
+    num_tensor_shapes = len(self._tt_cores[0].get_shape().as_list()) - 2
+    shapes = [[] for _ in range(num_tensor_shapes)]
+    for dim in range(num_dims):
+      curr_core_shape = self._tt_cores[dim].get_shape()
+      for i in range(num_tensor_shapes):
+        shapes[i].append(curr_core_shape[i+1])
+    for i in range(num_tensor_shapes):
+      shapes[i] = tf.TensorShape(shapes[i])
+    return shapes
+
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
     Returns:
       A `TensorShape` object.
     """
-    num_dims = self.ndims()
+    raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
-      M, N = 1, 1
-      for i in range(num_dims):
-        curr_core_shape = self._tt_cores[i].get_shape()
-        M *= curr_core_shape[1]
-        N *= curr_core_shape[2]
-      # TODO: Use TensorShape.
+      # TODO: return TensorShape.
+      M = np.prod(raw_shape[0].as_list())
+      N = np.prod(raw_shape[1].as_list())
       return (M, N)
     else:
-      shape = []
-      for i in range(num_dims):
-        shape.append(self._tt_cores[i].get_shape()[1])
-      return tf.TensorShape(shape)
+      return self.get_raw_shape()[0]
 
   @property
   def tt_cores(self):
