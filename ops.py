@@ -89,7 +89,18 @@ def full(tt):
         tf.Tensor.
 
     """
-    raise NotImplementedError
+    num_dims = tt.ndims()
+    ranks = tt.extended_ranks()
+    res = tt.tt_cores[0]
+    for i in range(1, num_dims):
+        res = tf.reshape(res, (-1, ranks[i]))
+        curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
+        res = tf.matmul(res, curr_core)
+    if tt.is_tt_matrix():
+        raise NotImplementedError
+    else:
+        return tf.reshape(res, tt.get_shape())
+
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     """Multiplies two TT-matrices and returns the TT-matrix of the result.
