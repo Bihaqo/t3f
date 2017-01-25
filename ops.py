@@ -45,7 +45,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
 
     """
 
-    return
+    raise NotImplementedError
 
 def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
     """Converts a given tf.Tensor to a TT-tensor of the same shape.
@@ -77,7 +77,7 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
         `TensorTrain` object containing a TT-tensor.
 
     """
-    return
+    raise NotImplementedError
 
 def full(tt):
     """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
@@ -89,7 +89,7 @@ def full(tt):
         tf.Tensor.
 
     """
-    return
+    raise NotImplementedError
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     """Multiplies two TT-matrices and returns the TT-matrix of the result.
@@ -101,7 +101,7 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     Returns
         `TensorTrain` object containing a TT-matrix of size M x P
     """
-    return
+    raise NotImplementedError
 
 def tt_dense_matmul(tt_matrix_a, matrix_b):
     """Multiplies a TT-matrix by a regular matrix, returns a regular matrix.
@@ -113,7 +113,7 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
     Returns
         tf.Tensor of size M x P
     """
-    return
+    raise NotImplementedError
 
 def dense_tt_matmul(matrix_a, tt_matrix_b):
     """Multiplies a regular matrix by a TT-matrix, returns a regular matrix.
@@ -125,7 +125,7 @@ def dense_tt_matmul(matrix_a, tt_matrix_b):
     Returns
         tf.Tensor of size M x P
     """
-    return
+    raise NotImplementedError
 
 def sparse_tt_matmul(sparse_matrix_a, tt_matrix_b):
     """Multiplies a sparse matrix by a TT-matrix, returns a regular matrix.
@@ -137,7 +137,7 @@ def sparse_tt_matmul(sparse_matrix_a, tt_matrix_b):
     Returns
         tf.Tensor of size M x P
     """
-    return
+    raise NotImplementedError
 
 # TODO: add flag `return_type = (TT | dense)`?
 def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
@@ -150,7 +150,7 @@ def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
     Returns
         tf.Tensor of size M x P
     """
-    return
+    raise NotImplementedError
 
 def matmul(matrix_a, matrix_b):
     """Multiplies two matrices that can be TT-, dense, or sparse.
@@ -167,7 +167,7 @@ def matmul(matrix_a, matrix_b):
             object containing a TT-matrix of size M x P
         If not, returns tf.Tensor of size M x P
     """
-    return
+    raise NotImplementedError
 
 def tt_tt_flat_inner(tt_a, tt_b):
     """Inner product between two TT-tensors or TT-matrices along all axis.
@@ -182,7 +182,7 @@ def tt_tt_flat_inner(tt_a, tt_b):
         a number
         sum of products of all the elements of tt_a and tt_b
     """
-    return
+    raise NotImplementedError
 
 def tt_dense_flat_inner(tt_a, dense_b):
     """Inner product between a TT-tensor (or TT-matrix) and tf.Tensor along all axis.
@@ -197,7 +197,7 @@ def tt_dense_flat_inner(tt_a, dense_b):
         a number
         sum of products of all the elements of tt_a and dense_b
     """
-    return
+    raise NotImplementedError
 
 def tt_sparse_flat_inner(tt_a, sparse_b):
     """Inner product between a TT-tensor (or TT-matrix) and tf.SparseTensor along all axis.
@@ -212,7 +212,7 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
         a number
         sum of products of all the elements of tt_a and sparse_b
     """
-    return
+    raise NotImplementedError
 
 def dense_tt_flat_inner(dense_a, tt_b):
     """Inner product between a tf.Tensor and TT-tensor (or TT-matrix) along all axis.
@@ -227,7 +227,7 @@ def dense_tt_flat_inner(dense_a, tt_b):
         a number
         sum of products of all the elements of dense_a and tt_b
     """
-    return
+    raise NotImplementedError
 
 def sparse_tt_flat_inner(sparse_a, tt_b):
     """Inner product between a tf.SparseTensor and TT-tensor (or TT-matrix) along all axis.
@@ -242,7 +242,7 @@ def sparse_tt_flat_inner(sparse_a, tt_b):
         a number
         sum of products of all the elements of sparse_a and tt_b
     """
-    return
+    raise NotImplementedError
 
 def flat_inner(a, b):
     """Inner product along all axis.
@@ -257,4 +257,4 @@ def flat_inner(a, b):
         a number
         sum of products of all the elements of a and b
     """
-    return
+    raise NotImplementedError
