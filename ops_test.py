@@ -20,8 +20,10 @@ class TTTensorTest(tf.test.TestCase):
             a = np.random.rand(ranks[0], 10, ranks[1]).astype(np.float32)
             b = np.random.rand(ranks[2], 9, ranks[3]).astype(np.float32)
             with self.test_session():
+                self.assertEqual(desired, tensor_train._are_tt_cores_valid((a, b)))
                 tf_tens = ops.to_tensor_from_np((a, b))
-                self.assertEqual(desired, ops.are_ranks_valid(tf_tens))
+                tf_cores = tf_tens.tt_cores()
+                self.assertEqual(desired, tensor_train._are_tt_cores_valid(tf_cores))
 
     def testFullTensor2d(self):
         np.random.seed(1)

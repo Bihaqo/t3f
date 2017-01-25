@@ -22,6 +22,11 @@ class TensorTrain():
     Returns:
       A `TensorTrain`.
     """
+
+    if not _are_tt_cores_valid(tt_cores):
+        raise ValueError('the tt_cores provided to TensorTrain constructor are '
+                         'not valid or have different dtypes.')
+
     tt_cores = tuple(tt_cores)
     with tf.name_scope("TensorTrain", tt_cores):
       # TODO: should we pass as_ref=True because we want to be able to update
@@ -30,8 +35,6 @@ class TensorTrain():
         tt_cores[i] = tf.convert_to_tensor(
             tt_cores[i], name="indices", as_ref=False)
     self._tt_cores = tt_cores
-
-    # TODO: check the cores are valid and all have the same dtype.
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
@@ -96,3 +99,15 @@ class TensorTrain():
   # @staticmethod
   # def _override_operator(operator, func):
   #   _override_helper(SparseTensor, operator, func)
+
+
+def _are_tt_cores_valid(tt_cores):
+    """Check if dimensions of the TT-cores are consistent and the dtypes coincide.
+
+    Args:
+        tt_cores: tuple of np.ndarray, tf.Tensor, or tf.Variable
+
+    Returns:
+        boolean, True if the dimensions are consistent.
+    """
+    raise NotImplementedError
