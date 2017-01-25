@@ -14,6 +14,9 @@ class TensorTrain():
   @@dtype
   @@op
   @@graph
+  @@ndims
+  @@extended_ranks
+  @@is_tt_matrix
   """
 
   def __init__(self, tt_cores, is_variable=False):
@@ -45,8 +48,20 @@ class TensorTrain():
     Returns:
       A `TensorShape` object.
     """
-    raise NotImplementedError
-    # return tensor_util.constant_value_as_shape(self._dense_shape)
+    num_dims = self.ndims()
+    if self.is_tt_matrix():
+      M, N = 1, 1
+      for i in range(num_dims):
+        curr_core_shape = self._tt_cores[i].get_shape()
+        M *= curr_core_shape[1]
+        N *= curr_core_shape[2]
+      # TODO: Use TensorShape.
+      return (M, N)
+    else:
+      shape = []
+      for i in range(num_dims):
+        shape.append(self._tt_cores[i].get_shape()[1])
+      return tf.TensorShape(shape)
 
   @property
   def tt_cores(self):
@@ -76,6 +91,35 @@ class TensorTrain():
     raise NotImplementedError
     # return "TensorTrain(indices=%s, values=%s, dense_shape=%s)" % (
     #     self._indices, self._values, self._dense_shape)
+
+  def ndims(self):
+    """Get the number of dimensions of the underlying TT-tensor.
+    Returns:
+      A number.
+    """
+    return len(self._tt_cores)
+
+  def extended_ranks(self):
+    """Get the ranks in an array of size `num_dims`+1.
+
+    The first and the last ranks are guarantied to be 1.
+
+    Returns:
+      np.array of size `num_dims`+1.
+    """
+    # TODO: is TensorShape better than np array?
+    num_dims = self.ndims()
+    extended_ranks = np.ones(num_dims + 1).astype(int)
+    for i in range(num_dims):
+      extended_ranks[i] = self._tt_cores[i].get_shape().as_list()[0]
+    return extended_ranks
+
+  def is_tt_matrix(self):
+      """Returns True if the TensorTrain object represents a TT-matrix.
+      Returns:
+        bool
+      """
+      return len(self._tt_cores[0].get_shape().as_list()) == 4
 
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
