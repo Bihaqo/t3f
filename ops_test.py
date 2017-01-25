@@ -21,13 +21,13 @@ class TTTensorTest(tf.test.TestCase):
             b = np.random.rand(ranks[2], 9, ranks[3]).astype(np.float32)
             with self.test_session():
                 self.assertEqual(desired, tensor_train._are_tt_cores_valid((a, b)))
-                tf_tens = ops.to_tensor_from_np((a, b))
+                tf_tens = tensor_train.TensorTrain((a, b))
                 tf_cores = tf_tens.tt_cores()
                 self.assertEqual(desired, tensor_train._are_tt_cores_valid(tf_cores))
 
                 b = b.astype(np.float64)
                 self.assertEqual(desired, tensor_train._are_tt_cores_valid((a, b)))
-                tf_tens = ops.to_tensor_from_np((a, b))
+                tf_tens = tensor_train.TensorTrain((a, b))
                 tf_cores = tf_tens.tt_cores()
                 self.assertEqual(desired, tensor_train._are_tt_cores_valid(tf_cores))
 
@@ -48,13 +48,13 @@ class TTTensorTest(tf.test.TestCase):
                 c = np.random.rand(ranks[4], 2, ranks[5]).astype(np.float32)
                 with self.test_session():
                     self.assertEqual(desired, tensor_train._are_tt_cores_valid((a, b, c)))
-                    tf_tens = ops.to_tensor_from_np((a, b, c))
+                    tf_tens = tensor_train.TensorTrain((a, b, c))
                     tf_cores = tf_tens.tt_cores()
                     self.assertEqual(desired, tensor_train._are_tt_cores_valid(tf_cores))
 
                     b = b.astype(np.float64)
                     self.assertEqual(False, tensor_train._are_tt_cores_valid((a, b, c)))
-                    tf_tens = ops.to_tensor_from_np((a, b, c))
+                    tf_tens = tensor_train.TensorTrain((a, b, c))
                     tf_cores = tf_tens.tt_cores()
                     self.assertEqual(False, tensor_train._are_tt_cores_valid(tf_cores))
 
@@ -66,7 +66,7 @@ class TTTensorTest(tf.test.TestCase):
             tt_cores = (a.reshape(1, 10, rank), b.reshape(rank, 9, 1))
             desired = np.dot(a, b)
             with self.test_session():
-                tf_tens = ops.to_tensor_from_np(tt_cores)
+                tf_tens = tensor_train.TensorTrain(tt_cores)
                 actual = ops.full(tf_tens)
                 self.assertAllClose(desired, actual.eval())
 
@@ -82,7 +82,7 @@ class TTTensorTest(tf.test.TestCase):
             desired = desired.reshape((-1, 3)).dot(c)
             desired = desired.reshape(10, 9, 8)
             with self.test_session():
-                tf_tens = ops.to_tensor_from_np(tt_cores)
+                tf_tens = tensor_train.TensorTrain(tt_cores)
                 actual = ops.full(tf_tens)
                 self.assertAllClose(desired, actual.eval())
 
@@ -92,7 +92,7 @@ class TTTensorTest(tf.test.TestCase):
         tens = np.random.rand(*shape).astype(np.float32)
         with self.test_session():
             tf_tens = tf.constant(tens)
-            tt_tens = ops.to_tt_matrix(tf_tens, shape)
+            tt_tens = ops.to_tt_tensor(tf_tens, shape)
             self.assertAllClose(tens, ops.full(tt_tens).eval())
 
 
@@ -110,7 +110,7 @@ class TTMatrixTest(tf.test.TestCase):
             desired = desired.transpose((0, 2, 1, 3))
             desired = desired.reshape((2 * 4, 3 * 5))
             with self.test_session():
-                tf_mat = ops.to_tensor_from_np(tt_cores)
+                tf_mat = tensor_train.TensorTrain(tt_cores)
                 actual = ops.full(tf_mat)
                 self.assertAllClose(desired, actual.eval())
 
