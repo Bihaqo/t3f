@@ -19,10 +19,14 @@ class TensorTrain:
   @@is_tt_matrix
   """
 
-  def __init__(self, tt_cores, is_variable=False):
+  def __init__(self, tt_cores, convert_to_tensors=True):
     """Creates a `TensorTrain`.
     Args:
-      tt_cores: A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
+      tt_cores: A tuple of 3d or 4d tensor-like objects of shape
+        `[r_k-1, n_k, r_k]`.
+        Tensor-like can be numpy array, tf.Tensor, of tf.Variable
+      convert_to_tensors: bool, if True than convert each element of the
+        tt_cores tuple into a tf.Tensor (e.g. to initialize from np.array)
     Returns:
       A `TensorTrain`.
     """
@@ -32,7 +36,7 @@ class TensorTrain:
                        'not valid or have different dtypes.')
 
     tt_cores = list(tt_cores)
-    if not is_variable:
+    if convert_to_tensors:
       with tf.name_scope("TensorTrain", tt_cores):
         # TODO: should we pass as_ref=True because we want to be able to update
         # values later if it is a VariableOp??
@@ -41,7 +45,6 @@ class TensorTrain:
           tt_cores[i] = tf.convert_to_tensor(
               tt_cores[i], name=name, as_ref=False)
     self._tt_cores = tuple(tt_cores)
-    self._is_variable = is_variable
 
   def get_raw_shape(self):
     """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
