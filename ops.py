@@ -33,7 +33,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
     eps: a floating point number
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
       the result would be guarantied to be `eps` close to `mat`
-      in terms of relative Frobenious error:
+      in terms of relative Frobenius error:
         ||res - mat||_F / ||mat||_F <= eps
       If the TT-ranks are restricted, providing a loose `eps` may reduce
       the TT-ranks of the result.
@@ -65,7 +65,7 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
     eps: a floating point number
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
       the result would be guarantied to be `eps` close to `tens`
-      in terms of relative Frobenious error:
+      in terms of relative Frobenius error:
         ||res - tens||_F / ||tens||_F <= eps
       If the TT-ranks are restricted, providing a loose `eps` may
       reduce the TT-ranks of the result.
@@ -98,11 +98,11 @@ def full(tt):
     res = tf.matmul(res, curr_core)
   if tt.is_tt_matrix():
     raw_shape = tt.get_raw_shape()
-    intermidiate_shape = []
+    intermediate_shape = []
     for i in range(num_dims):
-      intermidiate_shape.append(raw_shape[0][i])
-      intermidiate_shape.append(raw_shape[1][i])
-    res = tf.reshape(res, tf.TensorShape(intermidiate_shape))
+      intermediate_shape.append(raw_shape[0][i])
+      intermediate_shape.append(raw_shape[1][i])
+    res = tf.reshape(res, tf.TensorShape(intermediate_shape))
     transpose = []
     for i in range(num_dims):
       transpose.append(i)
