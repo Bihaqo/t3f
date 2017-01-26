@@ -3,6 +3,7 @@ import tensorflow as tf
 
 import tensor_train
 import ops
+import initializers
 
 
 class TTTensorTest(tf.test.TestCase):
@@ -81,7 +82,7 @@ class TTMatrixTest(tf.test.TestCase):
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
     with self.test_session():
       tf_mat = tf.constant(mat)
-      tt_mat = ops.to_tt_matrix(tf_mat, ((out_shape, inp_shape)))
+      tt_mat = ops.to_tt_matrix(tf_mat, (out_shape, inp_shape))
       self.assertAllClose(mat, ops.full(tt_mat).eval())
 
   def testTTMatTimesDenseVec(self):
@@ -93,7 +94,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session():
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
-      tt_mat = ops.tt_rand_matrix((out_shape, inp_shape))
+      tt_mat = initializers.tt_rand_matrix((out_shape, inp_shape))
       res_actual = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
@@ -107,7 +108,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session():
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
-      tt_vec = ops.tt_rand_matrix((inp_shape, None))
+      tt_vec = initializers.tt_rand_matrix((inp_shape, None))
       res_actual = ops.matmul(tf_mat, tt_vec)
       res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())

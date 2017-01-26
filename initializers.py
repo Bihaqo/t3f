@@ -29,7 +29,7 @@ def tt_rand_tensor(shape, rank=2):
   num_dims = shape.size
   if rank.size == 1:
     rank = rank * np.ones(num_dims - 1)
-  # Add 1 to the begining and end to simplify working with ranks.
+  # Add 1 to the beginning and end to simplify working with ranks.
   rank_ext = np.insert(rank, 0, 1)
   rank_ext = np.append(rank_ext, 1)
   # TODO: check that ints?
@@ -74,7 +74,7 @@ def tt_rand_matrix(shape, rank=2):
   num_dims = shape[0].size
   if rank.size == 1:
     rank = rank * np.ones(num_dims - 1)
-  # Add 1 to the begining and end to simplify working with ranks.
+  # Add 1 to the beginning and end to simplify working with ranks.
   rank_ext = np.insert(rank, 0, 1)
   rank_ext = np.append(rank_ext, 1)
   # TODO: check that ints?

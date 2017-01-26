@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 # TODO: check the methods of _TensorLike
-class TensorTrain():
+class TensorTrain:
   """Represents a Tensor Train object (a TT-tensor or TT-matrix).
   t3f represents a Tensor Train object as a tuple of TT-cores.
   ```
@@ -40,7 +40,7 @@ class TensorTrain():
         for i in range(len(tt_cores)):
           name = "core%d" % i
           tt_cores[i] = tf.convert_to_tensor(
-            tt_cores[i], name=name, as_ref=False)
+              tt_cores[i], name=name, as_ref=False)
     self._tt_cores = tuple(tt_cores)
     self._is_variable = is_variable
 
@@ -72,9 +72,9 @@ class TensorTrain():
     raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
       # TODO: return TensorShape.
-      M = np.prod(raw_shape[0].as_list())
-      N = np.prod(raw_shape[1].as_list())
-      return (M, N)
+      m = np.prod(raw_shape[0].as_list())
+      n = np.prod(raw_shape[1].as_list())
+      return m, n
     else:
       return self.get_raw_shape()[0]
 
