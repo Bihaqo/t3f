@@ -14,6 +14,11 @@ def get_tt_variable(name,
                     caching_device=None,
                     validate_shape=True):
   # Returns TensorTrain object with tf.Variables as the TT-cores.
+  # TODO: check that if there is an initializer, rank and shape are not provided
+  # by the user because they will be ignored anyway.
+  # TODO: How to use get_variable(shape, rank) for TT-matrices?
+  # TODO: support regularizer (a TensorTrain -> Tensor function).
+  # TODO: Provide basic regularizers (like apply_to_cores(func)).
   if initializer is None:
     initializer = tt_rand_tensor(shape, rank)
 
