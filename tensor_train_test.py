@@ -2,6 +2,8 @@ import numpy as np
 import tensorflow as tf
 
 import tensor_train
+import initializers
+import ops
 
 
 class TensorTrainTest(tf.test.TestCase):
@@ -64,6 +66,36 @@ class TensorTrainTest(tf.test.TestCase):
                 self.assertEqual(False, tensor_train._are_tt_cores_valid((a, b_new, c)))
                 with self.assertRaises(ValueError):
                     tensor_train.TensorTrain((a, b_new, c))
+
+    def testTensorIndexing(self):
+        # TODO: random seed.
+        tens = initializers.tt_rand_tensor((3, 3, 4))
+        with self.test_session() as sess:
+            desired = ops.full(tens)[:, :, :]
+            actual = ops.full(tens[:, :, :])
+            desired, actual = sess.run([desired, actual])
+            self.assertAllClose(desired, actual)
+            desired = ops.full(tens)[1, :, :]
+            actual = ops.full(tens[1, :, :])
+            desired, actual = sess.run([desired, actual])
+            self.assertAllClose(desired, actual)
+            desired = ops.full(tens)[1:2, 1, :]
+            actual = ops.full(tens[1:2, 1, :])
+            desired, actual = sess.run([desired, actual])
+            self.assertAllClose(desired, actual)
+            desired = ops.full(tens)[0:3, :, 3]
+            actual = ops.full(tens[0:3, :, 3])
+            desired, actual = sess.run([desired, actual])
+            self.assertAllClose(desired, actual)
+            desired = ops.full(tens)[1, 2, 3]
+            actual = ops.full(tens[1, 2, 3])
+            desired, actual = sess.run([desired, actual])
+            self.assertAllClose(desired, actual)
+            desired = ops.full(tens)[1, :, 3]
+            actual = ops.full(tens[1, :, 3])
+            desired, actual = sess.run([desired, actual])
+            self.assertAllClose(desired, actual)
+
 
 
 if __name__ == "__main__":

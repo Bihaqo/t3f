@@ -136,6 +136,46 @@ class TensorTrain():
       """
       return len(self._tt_cores[0].get_shape().as_list()) == 4
 
+  def __getitem__(self, slice_spec):
+      """Basic indexing, returns a `TensorTrain` containing the specified region.
+      """
+      new_tt_cores = []
+      reminder = None
+      print(slice_spec)
+      for i in range(self.ndims()):
+        curr_core = self._tt_cores[i]
+        if self.is_tt_matrix():
+          raise NotImplementedError
+        else:
+          sliced_core = curr_core[:, slice_spec[i], :]
+          if len(curr_core.get_shape()) != len(sliced_core.get_shape()):
+            # This index is specified exactly and we want to collapse this axis.
+            if reminder is None:
+              reminder = sliced_core
+            else:
+              reminder = tf.matmul(reminder, sliced_core)
+          else:
+            if reminder is not None:
+              # Add reminder from the previous collapsed cores to the current
+              # core.
+              # TODO: is it bad to use as_list? E.g. if we dont now the ranks
+              # on the graph construction stage.
+              old_shape = sliced_core.get_shape().as_list()
+              sliced_core = tf.reshape(sliced_core, (old_shape[0], -1))
+              sliced_core = tf.matmul(reminder, sliced_core)
+              sliced_core = tf.reshape(sliced_core, (-1, old_shape[1], old_shape[2]))
+              reminder = None
+            new_tt_cores.append(sliced_core)
+
+      if reminder is not None:
+        # The reminder obtained from collapsing the last cores.
+        old_shape = new_tt_cores[-1].get_shape().as_list()
+        new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (-1, old_shape[-1]))
+        new_tt_cores[-1] = tf.matmul(new_tt_cores[-1], reminder)
+        new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (old_shape[0], old_shape[1], 1))
+        reminder = None
+      return TensorTrain(new_tt_cores)
+
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
     Calling this method will execute all preceding operations that
