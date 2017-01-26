@@ -43,7 +43,6 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
 
   Returns:
     `TensorTrain` object containing a TT-matrix.
-
   """
 
   raise NotImplementedError
@@ -77,7 +76,6 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
-
   """
   raise NotImplementedError
 
