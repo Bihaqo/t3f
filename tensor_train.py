@@ -10,7 +10,6 @@ class TensorTrain:
   @@__init__
   @@get_shape
   @@tt_cores
-  @@dense_shape
   @@dtype
   @@op
   @@graph
@@ -92,10 +91,12 @@ class TensorTrain:
     # TODO: where is this created?
     return self._tt_cores[0].dtype
 
-  @property
-  def dense_shape(self):
-    """A 1-D Tensor of int64 representing the shape of the dense tensor."""
-    return self._dense_shape
+  # TODO: it seems like instead of dense_shape we should use get_shape().
+  # But maybe dense_shape() name is better?
+  # @property
+  # def dense_shape(self):
+  #   """A 1-D Tensor of int64 representing the shape of the dense tensor."""
+  #   return self._dense_shape
 
   @property
   def graph(self):
