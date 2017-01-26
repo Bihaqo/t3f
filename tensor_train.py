@@ -141,7 +141,6 @@ class TensorTrain():
       """
       new_tt_cores = []
       reminder = None
-      print(slice_spec)
       for i in range(self.ndims()):
         curr_core = self._tt_cores[i]
         if self.is_tt_matrix():
