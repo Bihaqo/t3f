@@ -29,18 +29,18 @@ class TensorTrain():
     """
 
     if not _are_tt_cores_valid(tt_cores):
-        raise ValueError('the tt_cores provided to TensorTrain constructor are '
-                         'not valid or have different dtypes.')
+      raise ValueError('the tt_cores provided to TensorTrain constructor are '
+                       'not valid or have different dtypes.')
 
     tt_cores = list(tt_cores)
     if not is_variable:
-        with tf.name_scope("TensorTrain", tt_cores):
-          # TODO: should we pass as_ref=True because we want to be able to update
-          # values later if it is a VariableOp??
-          for i in range(len(tt_cores)):
-            name = "core%d" % i
-            tt_cores[i] = tf.convert_to_tensor(
-                tt_cores[i], name=name, as_ref=False)
+      with tf.name_scope("TensorTrain", tt_cores):
+        # TODO: should we pass as_ref=True because we want to be able to update
+        # values later if it is a VariableOp??
+        for i in range(len(tt_cores)):
+          name = "core%d" % i
+          tt_cores[i] = tf.convert_to_tensor(
+            tt_cores[i], name=name, as_ref=False)
     self._tt_cores = tuple(tt_cores)
     self._is_variable = is_variable
 
@@ -59,7 +59,7 @@ class TensorTrain():
     for dim in range(num_dims):
       curr_core_shape = self._tt_cores[dim].get_shape()
       for i in range(num_tensor_shapes):
-        shapes[i].append(curr_core_shape[i+1])
+        shapes[i].append(curr_core_shape[i + 1])
     for i in range(num_tensor_shapes):
       shapes[i] = tf.TensorShape(shapes[i])
     return shapes
@@ -130,50 +130,50 @@ class TensorTrain():
     return extended_ranks
 
   def is_tt_matrix(self):
-      """Returns True if the TensorTrain object represents a TT-matrix.
-      Returns:
-        bool
-      """
-      return len(self._tt_cores[0].get_shape().as_list()) == 4
+    """Returns True if the TensorTrain object represents a TT-matrix.
+    Returns:
+      bool
+    """
+    return len(self._tt_cores[0].get_shape().as_list()) == 4
 
   def __getitem__(self, slice_spec):
-      """Basic indexing, returns a `TensorTrain` containing the specified region.
-      """
-      new_tt_cores = []
-      reminder = None
-      for i in range(self.ndims()):
-        curr_core = self._tt_cores[i]
-        if self.is_tt_matrix():
-          raise NotImplementedError
-        else:
-          sliced_core = curr_core[:, slice_spec[i], :]
-          if len(curr_core.get_shape()) != len(sliced_core.get_shape()):
-            # This index is specified exactly and we want to collapse this axis.
-            if reminder is None:
-              reminder = sliced_core
-            else:
-              reminder = tf.matmul(reminder, sliced_core)
+    """Basic indexing, returns a `TensorTrain` containing the specified region.
+    """
+    new_tt_cores = []
+    reminder = None
+    for i in range(self.ndims()):
+      curr_core = self._tt_cores[i]
+      if self.is_tt_matrix():
+        raise NotImplementedError
+      else:
+        sliced_core = curr_core[:, slice_spec[i], :]
+        if len(curr_core.get_shape()) != len(sliced_core.get_shape()):
+          # This index is specified exactly and we want to collapse this axis.
+          if reminder is None:
+            reminder = sliced_core
           else:
-            if reminder is not None:
-              # Add reminder from the previous collapsed cores to the current
-              # core.
-              # TODO: is it bad to use as_list? E.g. if we dont now the ranks
-              # on the graph construction stage.
-              old_shape = sliced_core.get_shape().as_list()
-              sliced_core = tf.reshape(sliced_core, (old_shape[0], -1))
-              sliced_core = tf.matmul(reminder, sliced_core)
-              sliced_core = tf.reshape(sliced_core, (-1, old_shape[1], old_shape[2]))
-              reminder = None
-            new_tt_cores.append(sliced_core)
+            reminder = tf.matmul(reminder, sliced_core)
+        else:
+          if reminder is not None:
+            # Add reminder from the previous collapsed cores to the current
+            # core.
+            # TODO: is it bad to use as_list? E.g. if we dont now the ranks
+            # on the graph construction stage.
+            old_shape = sliced_core.get_shape().as_list()
+            sliced_core = tf.reshape(sliced_core, (old_shape[0], -1))
+            sliced_core = tf.matmul(reminder, sliced_core)
+            sliced_core = tf.reshape(sliced_core, (-1, old_shape[1], old_shape[2]))
+            reminder = None
+          new_tt_cores.append(sliced_core)
 
-      if reminder is not None:
-        # The reminder obtained from collapsing the last cores.
-        old_shape = new_tt_cores[-1].get_shape().as_list()
-        new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (-1, old_shape[-1]))
-        new_tt_cores[-1] = tf.matmul(new_tt_cores[-1], reminder)
-        new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (old_shape[0], old_shape[1], 1))
-        reminder = None
-      return TensorTrain(new_tt_cores)
+    if reminder is not None:
+      # The reminder obtained from collapsing the last cores.
+      old_shape = new_tt_cores[-1].get_shape().as_list()
+      new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (-1, old_shape[-1]))
+      new_tt_cores[-1] = tf.matmul(new_tt_cores[-1], reminder)
+      new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (old_shape[0], old_shape[1], 1))
+      reminder = None
+    return TensorTrain(new_tt_cores)
 
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
@@ -204,34 +204,36 @@ class TensorTrain():
 
 
 def _are_tt_cores_valid(tt_cores):
-    """Check if dimensions of the TT-cores are consistent and the dtypes coincide.
+  """Check if dimensions of the TT-cores are consistent and the dtypes coincide.
 
-    Args:
-        tt_cores: tuple of np.ndarray, tf.Tensor, or tf.Variable
+  Args:
+    tt_cores: tuple of np.ndarray, tf.Tensor, or tf.Variable
 
-    Returns:
-        boolean, True if the dimensions and dtypes are consistent.
-    """
-    num_dims = len(tt_cores)
-    def get_shape(core):
-        try:
-            # If core is np arrays.
-            return core.shape
-        except AttributeError:
-            # If core is tf.Tensor or tf.Variable.
-            return core.get_shape().as_list()
-    for i in range(1, num_dims):
-        if tt_cores[i].dtype != tt_cores[0].dtype:
-            return False
-        curr_core_shape = get_shape(tt_cores[i])
-        prev_core_shape = get_shape(tt_cores[i-1])
-        if len(curr_core_shape) != len(prev_core_shape):
-            # Shapes are inconsistent.
-            return False
-        if curr_core_shape[0] != prev_core_shape[-1]:
-            # Ranks are inconsistent.
-            return False
-    if get_shape(tt_cores[0])[0] != 1 or get_shape(tt_cores[-1])[-1] != 1:
-        # The first or the last rank is not 1.
-        return False
-    return True
+  Returns:
+    boolean, True if the dimensions and dtypes are consistent.
+  """
+  num_dims = len(tt_cores)
+
+  def get_shape(core):
+    try:
+      # If core is np arrays.
+      return core.shape
+    except AttributeError:
+      # If core is tf.Tensor or tf.Variable.
+      return core.get_shape().as_list()
+
+  for i in range(1, num_dims):
+    if tt_cores[i].dtype != tt_cores[0].dtype:
+      return False
+    curr_core_shape = get_shape(tt_cores[i])
+    prev_core_shape = get_shape(tt_cores[i - 1])
+    if len(curr_core_shape) != len(prev_core_shape):
+      # Shapes are inconsistent.
+      return False
+    if curr_core_shape[0] != prev_core_shape[-1]:
+      # Ranks are inconsistent.
+      return False
+  if get_shape(tt_cores[0])[0] != 1 or get_shape(tt_cores[-1])[-1] != 1:
+    # The first or the last rank is not 1.
+    return False
+  return True
