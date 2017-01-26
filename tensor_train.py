@@ -37,6 +37,7 @@ class TensorTrain:
 
     tt_cores = list(tt_cores)
     if convert_to_tensors:
+      # TODO: what does this namescope do?
       with tf.name_scope("TensorTrain", tt_cores):
         # TODO: should we pass as_ref=True because we want to be able to update
         # values later if it is a VariableOp??
