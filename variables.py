@@ -58,8 +58,7 @@ def get_tt_variable(name,
 
   num_dims = initializer.ndims()
   variable_cores = []
-  # TODO: name_scope or variable_scope?
-  with tf.name_scope(name):
+  with tf.variable_scope(name):
     for i in range(num_dims):
       curr_core_var = tf.get_variable('core_%d' % i,
                                       initializer=initializer.tt_cores[i],
