@@ -70,3 +70,15 @@ def get_tt_variable(name,
 
   return tensor_train.TensorTrain(variable_cores, convert_to_tensors=False)
 
+
+def assign(ref, value, validate_shape=None, use_locking=None, name=None):
+  output = tensor_train.TensorTrain(ref.tt_cores, convert_to_tensors=False)
+  new_cores = []
+  if name is None:
+    name = ''
+  with tf.variable_scope(name):
+    for i in range(output.ndims()):
+      new_cores.append(tf.assign(output.tt_cores[i], value.tt_cores[i],
+                                 validate_shape, use_locking))
+  output.tt_cores = tuple(new_cores)
+  return output
