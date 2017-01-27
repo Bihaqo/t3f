@@ -1,8 +1,9 @@
+import numpy as np
 import tensorflow as tf
 
 import variables
 import ops
-
+import initializers
 
 class VariablesTest(tf.test.TestCase):
 
@@ -19,6 +20,21 @@ class VariablesTest(tf.test.TestCase):
       with tf.variable_scope('', reuse=True):
         tt_1_copy = variables.get_tt_variable('tt_1')
         self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
+
+  def testAssign(self):
+    tt = variables.get_tt_variable('tt', shape=[2, 3, 2], rank=2)
+    new_value = initializers.tt_rand_tensor([2, 3, 2], rank=2)
+    assigner = variables.assign(tt, new_value)
+    with self.test_session():
+      tf.global_variables_initializer().run()
+      init_value = ops.full(tt).eval()
+      assigner_value = ops.full(assigner).eval()
+      after_value = ops.full(tt).eval()
+      self.assertAllClose(assigner_value, after_value)
+      # Assert that the value actually changed:
+      abs_diff = np.linalg.norm((init_value - after_value).flatten())
+      rel_diff = abs_diff / np.linalg.norm((init_value).flatten())
+      self.assertGreater(rel_diff, 0.2)
 
 
 if __name__ == "__main__":
