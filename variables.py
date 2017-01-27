@@ -4,8 +4,6 @@ import tensor_train
 from initializers import tt_rand_tensor
 
 def get_tt_variable(name,
-                    shape=None,
-                    rank=None,
                     dtype=None,
                     initializer=None,
                     regularizer=None,
@@ -18,9 +16,6 @@ def get_tt_variable(name,
   Args:
     name: The name of the new or existing TensorTrain variable.
       Used to name the TT-cores.
-    shape: Shape of the new or existing TensorTrain variable.
-    rank: A positive number or a list of numbers -- TT-rank or TT-ranks for
-      each core for the new or existing TensorTrain variable.
     dtype: Type of the new or existing TensorTrain variable TT-cores (defaults
       to DT_FLOAT).
     initializer: Initializer for the variable if one is created.
@@ -47,14 +42,8 @@ def get_tt_variable(name,
       violating reuse during variable creation, or when initializer dtype and
       dtype don't match. Reuse is set inside variable_scope.
   """
-  # TODO: check that if there is an initializer, rank and shape are not provided
-  # by the user because they will be ignored anyway.
-  # TODO: How to use get_variable(shape, rank) for TT-matrices?
   # TODO: support regularizer (a TensorTrain -> Tensor function).
   # TODO: Provide basic regularizers (like apply_to_cores(func)).
-  if initializer is None:
-    # TODO: if variable already exist, do not create a new initializer.
-    initializer = tt_rand_tensor(shape, rank)
 
   num_dims = initializer.ndims()
   variable_cores = []

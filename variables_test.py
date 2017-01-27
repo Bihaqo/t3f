@@ -8,10 +8,11 @@ import initializers
 class VariablesTest(tf.test.TestCase):
 
   def testGetExistingVariable(self):
-    tt_1 = variables.get_tt_variable('tt_1', shape=[2, 3, 2], rank=2)
+    init = initializers.tt_rand_tensor([2, 3, 2], rank=2)
+    tt_1 = variables.get_tt_variable('tt_1', initializer=init)
     # Check that we can create another variable without name
     # conflict (ValueError).
-    variables.get_tt_variable('tt_2', shape=[2, 3, 2], rank=2)
+    variables.get_tt_variable('tt_2', initializer=init)
     with self.test_session():
       tf.global_variables_initializer().run()
       with self.assertRaises(ValueError):
@@ -22,9 +23,10 @@ class VariablesTest(tf.test.TestCase):
         self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
 
   def testAssign(self):
-    tt = variables.get_tt_variable('tt', shape=[2, 3, 2], rank=2)
-    new_value = initializers.tt_rand_tensor([2, 3, 2], rank=2)
-    assigner = variables.assign(tt, new_value)
+    old_init = initializers.tt_rand_tensor([2, 3, 2], rank=2)
+    tt = variables.get_tt_variable('tt', initializer=old_init)
+    new_init = initializers.tt_rand_tensor([2, 3, 2], rank=4)
+    assigner = variables.assign(tt, new_init)
     with self.test_session():
       tf.global_variables_initializer().run()
       init_value = ops.full(tt).eval()
