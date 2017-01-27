@@ -195,13 +195,13 @@ class TensorTrain:
       session: (Optional.) The `Session` to be used to evaluate this sparse
         tensor. If none, the default session will be used.
     Returns:
-      A `SparseTensorValue` object.
+      ????
     """
-    raise NotImplementedError
-    # indices, values, dense_shape = _eval_using_default_session(
-    #     [self.indices, self.values, self.dense_shape], feed_dict, self.graph,
-    #     session)
-    # return SparseTensorValue(indices, values, dense_shape)
+    # TODO: what to return, None?
+    if session is None:
+      session = tf.get_default_session()
+    session.run(self.tt_cores)
+
   # TODO: do we need this?
   # @staticmethod
   # def _override_operator(operator, func):
