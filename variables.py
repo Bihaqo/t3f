@@ -1,3 +1,4 @@
+import re
 import tensorflow as tf
 
 import tensor_train
@@ -45,18 +46,37 @@ def get_tt_variable(name,
   # TODO: support regularizer (a TensorTrain -> Tensor function).
   # TODO: Provide basic regularizers (like apply_to_cores(func)).
 
-  num_dims = initializer.ndims()
   variable_cores = []
-  with tf.variable_scope(name):
-    for i in range(num_dims):
-      curr_core_var = tf.get_variable('core_%d' % i,
-                                      initializer=initializer.tt_cores[i],
-                                      dtype=dtype, trainable=trainable,
-                                      collections=collections,
-                                      caching_device=caching_device,
-                                      validate_shape=validate_shape)
-      variable_cores.append(curr_core_var)
-
+  if initializer is not None:
+    with tf.variable_scope(name):
+      num_dims = initializer.ndims()
+      for i in range(num_dims):
+        curr_core_var = tf.get_variable('core_%d' % i,
+                                        initializer=initializer.tt_cores[i],
+                                        dtype=dtype, trainable=trainable,
+                                        collections=collections,
+                                        caching_device=caching_device,
+                                        validate_shape=validate_shape)
+        variable_cores.append(curr_core_var)
+  else:
+    with tf.variable_scope(name):
+      i = 0
+      while True:
+        try:
+          curr_core_var = tf.get_variable('core_%d' % i,
+                                          dtype=dtype, trainable=trainable,
+                                          collections=collections,
+                                          caching_device=caching_device)
+          variable_cores.append(curr_core_var)
+          i += 1
+        except ValueError as e:
+          if i == 0:
+            # The variable doesn't exist or it does but scope.reuse == False,
+            # raise ValueError.
+            raise e
+          else:
+            # We found all the cores, the i-th core doesn't exist.
+            break
   return tensor_train.TensorTrain(variable_cores, convert_to_tensors=False)
 
 
