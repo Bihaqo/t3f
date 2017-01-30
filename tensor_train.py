@@ -9,6 +9,7 @@ class TensorTrain:
   ```
   @@__init__
   @@get_shape
+  @@name
   @@tt_cores
   @@dtype
   @@op
@@ -94,6 +95,17 @@ class TensorTrain:
     """The `DType` of elements in this tensor."""
     # TODO: where is this created?
     return self._tt_cores[0].dtype
+
+  @property
+  def name(self):
+    """The name of the TensorTrain.
+
+    Returns:
+      String, the scope in which the TT-cores are defined.
+    """
+    core_name = self.tt_cores[0].name
+    idx = core_name.rfind('/')
+    return core_name[:idx]
 
   # TODO: it seems like instead of dense_shape we should use get_shape().
   # But maybe dense_shape() name is better?
