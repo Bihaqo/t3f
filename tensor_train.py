@@ -58,10 +58,10 @@ class TensorTrain:
       A tuple of `TensorShape` objects.
     """
     num_dims = self.ndims()
-    num_tensor_shapes = len(self._tt_cores[0].get_shape().as_list()) - 2
+    num_tensor_shapes = len(self.tt_cores[0].get_shape().as_list()) - 2
     shapes = [[] for _ in range(num_tensor_shapes)]
     for dim in range(num_dims):
-      curr_core_shape = self._tt_cores[dim].get_shape()
+      curr_core_shape = self.tt_cores[dim].get_shape()
       for i in range(num_tensor_shapes):
         shapes[i].append(curr_core_shape[i + 1])
     for i in range(num_tensor_shapes):
@@ -94,7 +94,7 @@ class TensorTrain:
   def dtype(self):
     """The `DType` of elements in this tensor."""
     # TODO: where is this created?
-    return self._tt_cores[0].dtype
+    return self.tt_cores[0].dtype
 
   @property
   def name(self):
@@ -117,7 +117,7 @@ class TensorTrain:
   @property
   def graph(self):
     """The `Graph` that contains the tt_cores tensors."""
-    return self._tt_cores[0].graph
+    return self.tt_cores[0].graph
 
   def __str__(self):
     raise NotImplementedError
@@ -129,7 +129,7 @@ class TensorTrain:
     Returns:
       A number.
     """
-    return len(self._tt_cores)
+    return len(self.tt_cores)
 
   def extended_ranks(self):
     """Get the ranks in an array of size `num_dims`+1.
@@ -143,7 +143,7 @@ class TensorTrain:
     num_dims = self.ndims()
     extended_ranks = np.ones(num_dims + 1).astype(int)
     for i in range(num_dims):
-      extended_ranks[i] = self._tt_cores[i].get_shape().as_list()[0]
+      extended_ranks[i] = self.tt_cores[i].get_shape().as_list()[0]
     return extended_ranks
 
   def is_tt_matrix(self):
@@ -151,7 +151,7 @@ class TensorTrain:
     Returns:
       bool
     """
-    return len(self._tt_cores[0].get_shape().as_list()) == 4
+    return len(self.tt_cores[0].get_shape().as_list()) == 4
 
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrain` containing the specified region.
@@ -159,7 +159,7 @@ class TensorTrain:
     new_tt_cores = []
     reminder = None
     for i in range(self.ndims()):
-      curr_core = self._tt_cores[i]
+      curr_core = self.tt_cores[i]
       if self.is_tt_matrix():
         raise NotImplementedError
       else:
