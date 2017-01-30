@@ -45,7 +45,6 @@ def get_tt_variable(name,
       violating reuse during variable creation, or when initializer dtype and
       dtype don't match. Reuse is set inside variable_scope.
   """
-  # TODO: Provide basic regularizers (like apply_to_cores(func)).
 
   variable_cores = []
   if initializer is None:
