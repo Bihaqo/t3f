@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 # TODO: check the methods of _TensorLike
-class TensorTrain:
+class TensorTrain(object):
   """Represents a Tensor Train object (a TT-tensor or TT-matrix).
   t3f represents a Tensor Train object as a tuple of TT-cores.
   ```
@@ -89,6 +89,17 @@ class TensorTrain:
       A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
     """
     return self._tt_cores
+
+  @tt_cores.setter
+  def tt_cores(self, new_cores):
+    """A setter for TT-cores.
+
+    Raises:
+      ValueError if the new cores are not valid (see _are_tt_cores_valid).
+    """
+    if not _are_tt_cores_valid(new_cores):
+      raise ValueError('Tried to set invalid TT-cores.')
+    self._tt_cores = new_cores
 
   @property
   def dtype(self):
