@@ -45,7 +45,9 @@ def get_tt_variable(name,
       violating reuse during variable creation, or when initializer dtype and
       dtype don't match. Reuse is set inside variable_scope.
   """
-
+  # TODO: support validate shape: check that the tensor dimensions are correct,
+  # but ignore the ranks.
+  # TODO: add validate ranks flag.
   variable_cores = []
   if initializer is None:
     # Find an existing variable.
@@ -77,8 +79,7 @@ def get_tt_variable(name,
                                         initializer=initializer.tt_cores[i],
                                         dtype=dtype, trainable=trainable,
                                         collections=collections,
-                                        caching_device=caching_device,
-                                        validate_shape=validate_shape)
+                                        caching_device=caching_device)
         variable_cores.append(curr_core_var)
     v = tensor_train.TensorTrain(variable_cores, convert_to_tensors=False)
 
