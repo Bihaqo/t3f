@@ -62,9 +62,9 @@ def get_tt_variable(name,
         found_v = v
         break
     if found_v is None:
-      raise ValueError('ValueError: Variable does not exist, or was not '
+      raise ValueError('ValueError: Variable %s does not exist, or was not '
                        'created with t3f.get_tt_variable(). Did you mean to '
-                       'set reuse=None in VarScope?')
+                       'set reuse=None in VarScope?' % name)
     with tf.variable_scope(name):
       # Try to get the first core through tf.get_variable to check that we don't
       # violate reuse: it will raise a ValueError otherwise.
