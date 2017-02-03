@@ -125,7 +125,11 @@ def tt_ranks(tt):
   Returns:
     A `Tensor`
   """
-  raise NotImplementedError
+  num_dims = tt.ndims()
+  tt_ranks = []
+  for i in range(num_dims):
+    tt_ranks.append(tf.shape(tt.tt_cores[i])[0])
+  return tf.stack(tt_ranks, axis=0)
 
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
