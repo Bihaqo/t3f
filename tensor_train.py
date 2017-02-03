@@ -16,26 +16,32 @@ class TensorTrain(object):
   @@graph
   @@get_raw_shape
   @@ndims
-  @@extended_ranks
+  @@get_tt_ranks
   @@is_tt_matrix
   """
 
-  def __init__(self, tt_cores, convert_to_tensors=True):
+  def __init__(self, tt_cores, shape=None, tt_ranks=None, convert_to_tensors=True):
     """Creates a `TensorTrain`.
     Args:
       tt_cores: A tuple of 3d or 4d tensor-like objects of shape
         `[r_k-1, n_k, r_k]`.
         Tensor-like can be numpy array, tf.Tensor, of tf.Variable
+      shape: Shape of the underlying tensor. If None, tries to infer from the
+        cores (not always possible even if it should be, e.g. if ranks are
+        unknown, than the whole shape of a core can be unknown).
+      tt_ranks: a TensorShape of length d+1 (d is the dimensionality of
+        the underlying tensor). The first and the last ranks are assumed to
+        equal to 1. If None, tries to infer the ranks from the cores.
       convert_to_tensors: bool, if True than convert each element of the
         tt_cores tuple into a tf.Tensor (e.g. to initialize from np.array)
+
     Returns:
       A `TensorTrain`.
+
+    Raises:
+      ValueError if the provided TT-cores are not valid or inconsistent with
+        the provided shape.
     """
-
-    if not _are_tt_cores_valid(tt_cores):
-      raise ValueError('the tt_cores provided to TensorTrain constructor are '
-                       'not valid or have different dtypes.')
-
     tt_cores = list(tt_cores)
     if convert_to_tensors:
       # TODO: what does this namescope do?
@@ -46,7 +52,15 @@ class TensorTrain(object):
           name = "core%d" % i
           tt_cores[i] = tf.convert_to_tensor(
               tt_cores[i], name=name, as_ref=False)
+
+    if not _are_tt_cores_valid(tt_cores, shape, tt_ranks):
+      raise ValueError('the tt_cores provided to TensorTrain constructor are '
+                       'not valid, have different dtypes, or are inconsistent '
+                       'with the provided shape.')
+
     self._tt_cores = tuple(tt_cores)
+    self._shape = _clean_shape(shape)
+    self._tt_ranks = tt_ranks
 
   def get_raw_shape(self):
     """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
@@ -57,16 +71,19 @@ class TensorTrain(object):
     Returns:
       A tuple of `TensorShape` objects.
     """
-    num_dims = self.ndims()
-    num_tensor_shapes = len(self.tt_cores[0].get_shape().as_list()) - 2
-    shapes = [[] for _ in range(num_tensor_shapes)]
-    for dim in range(num_dims):
-      curr_core_shape = self.tt_cores[dim].get_shape()
+    if self._shape is not None:
+      return self._shape
+    else:
+      num_dims = self.ndims()
+      num_tensor_shapes = len(self.tt_cores[0].get_shape().as_list()) - 2
+      shapes = [[] for _ in range(num_tensor_shapes)]
+      for dim in range(num_dims):
+        curr_core_shape = self.tt_cores[dim].get_shape()
+        for i in range(num_tensor_shapes):
+          shapes[i].append(curr_core_shape[i + 1])
       for i in range(num_tensor_shapes):
-        shapes[i].append(curr_core_shape[i + 1])
-    for i in range(num_tensor_shapes):
-      shapes[i] = tf.TensorShape(shapes[i])
-    return shapes
+        shapes[i] = tf.TensorShape(shapes[i])
+      return tuple(shapes)
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
@@ -131,26 +148,30 @@ class TensorTrain(object):
     """
     return len(self.tt_cores)
 
-  def extended_ranks(self):
-    """Get the ranks in an array of size `num_dims`+1.
+  def get_tt_ranks(self):
+    """Get the TT-ranks in an array of size `num_dims`+1.
 
-    The first and the last ranks are guarantied to be 1.
+    The first and the last TT-rank are guarantied to be 1.
 
     Returns:
-      np.array of size `num_dims`+1.
+      TensorShape of size `num_dims`+1.
     """
-    # TODO: is TensorShape better than np array?
-    num_dims = self.ndims()
-    extended_ranks = np.ones(num_dims + 1).astype(int)
-    for i in range(num_dims):
-      extended_ranks[i] = self.tt_cores[i].get_shape().as_list()[0]
-    return extended_ranks
+    if self._tt_ranks is not None:
+      return self._tt_ranks
+    else:
+      num_dims = self.ndims()
+      ranks = []
+      for i in range(num_dims):
+        ranks.append(self.tt_cores[i].get_shape()[0])
+      return tf.TensorShape(ranks)
 
   def is_tt_matrix(self):
     """Returns True if the TensorTrain object represents a TT-matrix.
     Returns:
       bool
     """
+    if self._shape is not None:
+      return len(self._shape) == 2
     return len(self.tt_cores[0].get_shape().as_list()) == 4
 
   def __getitem__(self, slice_spec):
@@ -220,37 +241,81 @@ class TensorTrain(object):
   #   _override_helper(SparseTensor, operator, func)
 
 
-def _are_tt_cores_valid(tt_cores):
+def _clean_shape(shape):
+  """Returns a tuple of TensorShapes for any valid shape representation.
+
+  Args:
+    shape: An np.array, a tf.TensorShape (for tensors), a tuple of
+      tf.TensorShapes (for TT-matrices or tensors), or None
+
+  Returns:
+    A tuple of tf.TensorShape, or None is the input is None
+  """
+  if shape is None:
+    return None
+
+  if isinstance(shape, tf.TensorShape) or isinstance(shape[0], tf.TensorShape):
+    # Assume tf.TensorShape.
+    if isinstance(shape, tf.TensorShape):
+      shape = (shape)
+  else:
+    shape = np.array(shape)
+    # Make sure that the shape is 2-d array both for tensors and TT-matrices.
+    shape = np.squeeze(shape)
+    if len(shape.shape) == 1:
+      # A tensor.
+      shape = [shape]
+    for i in range(len(shape)):
+      shape[i] = tf.TensorShape(shape[i])
+  return tuple(shape)
+
+
+def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
   """Check if dimensions of the TT-cores are consistent and the dtypes coincide.
 
   Args:
-    tt_cores: tuple of np.ndarray, tf.Tensor, or tf.Variable
+    tt_cores: a tuple of `Tensor` objects
+    shape: An np.array, a tf.TensorShape (for tensors), a tuple of
+      tf.TensorShapes (for TT-matrices or tensors), or None
+    tt_ranks: An np.array or a tf.TensorShape of length len(tt_cores)+1.
 
   Returns:
     boolean, True if the dimensions and dtypes are consistent.
   """
+  shape = _clean_shape(shape)
   num_dims = len(tt_cores)
 
-  def get_shape(core):
-    try:
-      # If core is np arrays.
-      return core.shape
-    except AttributeError:
-      # If core is tf.Tensor or tf.Variable.
-      return core.get_shape().as_list()
-
-  for i in range(1, num_dims):
-    if tt_cores[i].dtype != tt_cores[0].dtype:
+  for core_idx in range(1, num_dims):
+    if tt_cores[core_idx].dtype != tt_cores[0].dtype:
       return False
-    curr_core_shape = get_shape(tt_cores[i])
-    prev_core_shape = get_shape(tt_cores[i - 1])
-    if len(curr_core_shape) != len(prev_core_shape):
-      # Shapes are inconsistent.
+  try:
+    for core_idx in range(num_dims):
+      curr_core_shape = tt_cores[core_idx].get_shape()
+      if len(curr_core_shape) != len(tt_cores[0].get_shape()):
+        # Shapes are inconsistent.
+        return False
+      if shape is not None:
+        for i in range(len(shape)):
+          if curr_core_shape[i + 1] != shape[i][core_idx]:
+            # The TT-cores are not aligned with the given shape.
+            return False
+      if core_idx >= 1:
+        prev_core_shape = tt_cores[core_idx - 1].get_shape()
+        if curr_core_shape[0] != prev_core_shape[-1]:
+          # TT-ranks are inconsistent.
+          return False
+      # print(core_idx)
+      if tt_ranks is not None:
+        if curr_core_shape[0] != tt_ranks[core_idx]:
+          # The TT-ranks are not aligned with the TT-cores shape.
+          return False
+        if curr_core_shape[-1] != tt_ranks[core_idx + 1]:
+          # The TT-ranks are not aligned with the TT-cores shape.
+          return False
+    if tt_cores[0].get_shape()[0] != 1 or tt_cores[-1].get_shape()[-1] != 1:
+      # The first or the last rank is not 1.
       return False
-    if curr_core_shape[0] != prev_core_shape[-1]:
-      # Ranks are inconsistent.
-      return False
-  if get_shape(tt_cores[0])[0] != 1 or get_shape(tt_cores[-1])[-1] != 1:
-    # The first or the last rank is not 1.
-    return False
+  except ValueError:
+    # The shape of the TT-cores is undetermined, can not validate it.
+    pass
   return True
