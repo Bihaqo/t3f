@@ -50,27 +50,26 @@ def get_tt_variable(name,
   # TODO: add validate ranks flag.
   variable_cores = []
   if initializer is None:
-    # Find an existing variable.
+    # Find an existing variable in the collection.
+    path = tf.get_variable_scope().name
+    if path != '' and path[-1] != '/':
+      path += '/'
+    path += name
+
+    found_v = None
+    for v in tf.get_collection('TensorTrainVariables'):
+      if v.name == path:
+        found_v = v
+        break
+    if found_v is None:
+      raise ValueError('ValueError: Variable does not exist, or was not '
+                       'created with t3f.get_tt_variable(). Did you mean to '
+                       'set reuse=None in VarScope?')
     with tf.variable_scope(name):
-      i = 0
-      while True:
-        try:
-          curr_core_var = tf.get_variable('core_%d' % i,
-                                          dtype=dtype, trainable=trainable,
-                                          collections=collections,
-                                          caching_device=caching_device)
-          variable_cores.append(curr_core_var)
-          i += 1
-        except ValueError as e:
-          if i == 0:
-            # The variable doesn't exist or it does but scope.reuse == False,
-            # raise ValueError.
-            raise e
-          else:
-            # We found all the cores, the i-th core doesn't exist.
-            break
-    # TODO: restore all attrubutes as well.
-    v = tensor_train.TensorTrain(variable_cores, convert_to_tensors=False)
+      # Try to get the first core through tf.get_variable to check that we don't
+      # violate reuse: it will raise a ValueError otherwise.
+      tf.get_variable('core_0')
+    return found_v
   else:
     # Create new variable.
     with tf.variable_scope(name):
@@ -87,6 +86,10 @@ def get_tt_variable(name,
                                  initializer.get_tt_ranks(),
                                  convert_to_tensors=False)
 
+    # Add the create TensorTrain object into a collection so that we can
+    # retrieve it in the future by get_tt_variable('name').
+    tf.add_to_collection('TensorTrainVariables', v)
+
     # Run the regularizer if requested and save the resulting loss.
     if regularizer:
       with tf.name_scope(name + "/Regularizer/"):
@@ -95,8 +98,7 @@ def get_tt_variable(name,
         tf.logging.vlog(1, "Applied regularizer to %s and added the result %s "
                         "to REGULARIZATION_LOSSES.", v.name, loss.name)
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, loss)
-
-  return v
+    return v
 
 
 def assign(ref, value, validate_shape=None, use_locking=None, name=None):
