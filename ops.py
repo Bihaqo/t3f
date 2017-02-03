@@ -90,7 +90,7 @@ def full(tt):
     tf.Tensor.
   """
   num_dims = tt.ndims()
-  ranks = tt.extended_ranks()
+  ranks = tt_ranks(tt)
   res = tt.tt_cores[0]
   for i in range(1, num_dims):
     res = tf.reshape(res, (-1, ranks[i]))
@@ -111,6 +111,25 @@ def full(tt):
     return tf.reshape(res, tt.get_shape())
   else:
     return tf.reshape(res, tt.get_shape())
+
+
+def tt_ranks(tt):
+  """Returns the TT-ranks of a TensorTrain.
+
+  This operation returns a 1-D integer tensor representing the TT-ranks of
+  the input.
+
+  Args:
+    tt: `TensorTrain` object.
+
+  Returns:
+    A `Tensor`
+  """
+  num_dims = tt.ndims()
+  tt_ranks = []
+  for i in range(num_dims):
+    tt_ranks.append(tf.shape(tt.tt_cores[i])[0])
+  return tf.stack(tt_ranks, axis=0)
 
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
