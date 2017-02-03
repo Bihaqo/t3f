@@ -253,11 +253,10 @@ def _clean_shape(shape):
   """
   if shape is None:
     return None
-
   if isinstance(shape, tf.TensorShape) or isinstance(shape[0], tf.TensorShape):
     # Assume tf.TensorShape.
     if isinstance(shape, tf.TensorShape):
-      shape = (shape)
+      shape = tuple((shape,))
   else:
     shape = np.array(shape)
     # Make sure that the shape is 2-d array both for tensors and TT-matrices.
@@ -267,7 +266,8 @@ def _clean_shape(shape):
       shape = [shape]
     for i in range(len(shape)):
       shape[i] = tf.TensorShape(shape[i])
-  return tuple(shape)
+    shape = tuple(shape)
+  return shape
 
 
 def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
