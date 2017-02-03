@@ -53,10 +53,10 @@ def tt_rand_matrix(shape, tt_rank=2):
       shape[1] is the shape of the column index.
       shape[0] and shape[1] should have the same number of elements (d)
       Also supports ommiting one of the dimensions for vectors, e.g.
-        [[2, 2, 2], None]
+        tt_rand_matrix([[2, 2, 2], None])
       and
-        [None, [2, 2, 2]]
-      will create an 8-element column and row vector correspondingly.
+        tt_rand_matrix([None, [2, 2, 2]])
+      will create an 8-element column and row vectors correspondingly.
     tt_rank: a number or a (d-1)-element array with ranks.
 
   Returns:
@@ -66,10 +66,10 @@ def tt_rand_matrix(shape, tt_rank=2):
   # TODO: good distribution to init training.
   # In case the shape is immutable.
   shape = list(shape)
-  # In case shape is represents a vector, e.g. [None, [2, 2, 2]]
+  # In case shape represents a vector, e.g. [None, [2, 2, 2]]
   if shape[0] is None:
     shape[0] = np.ones(len(shape[1]))
-  # In case shape is represents a vector, e.g. [[2, 2, 2], None]
+  # In case shape represents a vector, e.g. [[2, 2, 2], None]
   if shape[1] is None:
     shape[1] = np.ones(len(shape[0]))
   shape = np.array(shape)
