@@ -60,7 +60,7 @@ class TensorTrain(object):
 
     self._tt_cores = tuple(tt_cores)
     self._shape = _clean_shape(shape)
-    self._tt_ranks = tt_ranks
+    self._tt_ranks = tf.TensorShape(tt_ranks)
 
   def get_raw_shape(self):
     """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
