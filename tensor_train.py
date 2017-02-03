@@ -258,14 +258,15 @@ def _clean_shape(shape):
     if isinstance(shape, tf.TensorShape):
       shape = tuple((shape,))
   else:
-    shape = np.array(shape)
+    np_shape = np.array(shape)
     # Make sure that the shape is 2-d array both for tensors and TT-matrices.
-    shape = np.squeeze(shape)
-    if len(shape.shape) == 1:
+    np_shape = np.squeeze(np_shape)
+    if len(np_shape.shape) == 1:
       # A tensor.
-      shape = [shape]
-    for i in range(len(shape)):
-      shape[i] = tf.TensorShape(shape[i])
+      np_shape = [np_shape]
+    shape = []
+    for i in range(len(np_shape)):
+      shape.append(tf.TensorShape(np_shape[i]))
     shape = tuple(shape)
   return shape
 
