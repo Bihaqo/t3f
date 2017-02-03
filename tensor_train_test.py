@@ -96,7 +96,6 @@ class TensorTrainTest(tf.test.TestCase):
           tensor_train.TensorTrain((a, b_new, c), (10, 1, 2), claimed_tt_ranks)
 
   def testTensorIndexing(self):
-    # TODO: random seed.
     tens = initializers.tt_rand_tensor((3, 3, 4))
     with self.test_session() as sess:
       desired = ops.full(tens)[:, :, :]
@@ -115,15 +114,18 @@ class TensorTrainTest(tf.test.TestCase):
       actual = ops.full(tens[0:3, :, 3])
       desired, actual = sess.run([desired, actual])
       self.assertAllClose(desired, actual)
-      # desired = ops.full(tens)[1, 2, 3]
-      # actual = ops.full(tens[1, 2, 3])
-      # desired, actual = sess.run([desired, actual])
-      # self.assertAllClose(desired, actual)
       desired = ops.full(tens)[1, :, 3]
       actual = ops.full(tens[1, :, 3])
       desired, actual = sess.run([desired, actual])
       self.assertAllClose(desired, actual)
 
+  def testTensorIndexingOneElement(self):
+    tens = initializers.tt_rand_tensor((4, 4, 4))
+    with self.test_session() as sess:
+      desired = ops.full(tens)[1, 2, 3]
+      actual = ops.full(tens[1, 2, 3])
+      desired, actual = sess.run([desired, actual])
+      self.assertAllClose(desired, actual)
 
 if __name__ == "__main__":
   tf.test.main()
