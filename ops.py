@@ -330,7 +330,26 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
     a number
     sum of products of all the elements of tt_a and sparse_b
   """
-  raise NotImplementedError
+  if tt_a.is_tt_matrix():
+    raise NotImplementedError
+  else:
+    num_elements = tf.shape(sparse_b.indices)[0]
+    tt_a_elements = tf.ones((num_elements, 1, 1))
+    for core_idx in range(tt_a.ndims()):
+      curr_elemnts_idx = sparse_b.indices[:, core_idx]
+      # TODO: probably a very slow way to do it, wait for a reasonable gather
+      # implementation
+      # https://github.com/tensorflow/tensorflow/issues/206
+      curr_core = tt_a.tt_cores[core_idx]
+      curr_core = tf.transpose(curr_core, (1, 0, 2))
+      core_slices = tf.gather(curr_core, curr_elemnts_idx)
+      tt_a_elements = tf.matmul(tt_a_elements, core_slices)
+    tt_a_elements = tf.reshape(tt_a_elements, (1, -1))
+    sparse_b_elements = tf.reshape(sparse_b.values, (-1, 1))
+    result = tf.matmul(tt_a_elements, sparse_b_elements)
+    # Convert a 1x1 matrix into a number.
+    result = result[0, 0]
+    return result
 
 
 def dense_tt_flat_inner(dense_a, tt_b):
