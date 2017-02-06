@@ -263,6 +263,11 @@ def tt_tt_flat_inner(tt_a, tt_b):
   Returns
     a number
     sum of products of all the elements of tt_a and tt_b
+
+  Raises:
+    ValueError if the arguments are not `TensorTrain` objects, have different
+      number of TT-cores, different underlying shape, or if you are trying to
+      compute inner product between a TT-matrix and a TT-tensor.
   """
   if not isinstance(tt_a, TensorTrain) or not isinstance(tt_b, TensorTrain):
     raise ValueError('Arguments should be TensorTrains')
@@ -271,6 +276,8 @@ def tt_tt_flat_inner(tt_a, tt_b):
     raise ValueError('One of the arguments is a TT-tensor, the other is '
                      'a TT-matrix, disallowed')
   are_both_matrices = tt_a.is_tt_matrix() and tt_b.is_tt_matrix()
+
+  # TODO: compare shapes and raise if not consistent.
 
   ndims = tt_a.ndims()
   if tt_b.ndims() != ndims:
