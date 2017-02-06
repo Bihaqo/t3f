@@ -264,7 +264,34 @@ def tt_tt_flat_inner(tt_a, tt_b):
     a number
     sum of products of all the elements of tt_a and tt_b
   """
-  raise NotImplementedError
+  if not isinstance(tt_a, TensorTrain) or not isinstance(tt_b, TensorTrain):
+    raise ValueError('Arguments should be TensorTrains')
+
+  if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
+    raise ValueError('One of the arguments is a TT-tensor, the other is '
+                     'a TT-matrix, disallowed')
+  are_both_matrices = tt_a.is_tt_matrix() and tt_b.is_tt_matrix()
+
+  ndims = tt_a.ndims()
+  if tt_b.ndims() != ndims:
+    raise ValueError('Arguments should have the same number of dimensions, '
+                     'got %d and %d instead.' % (ndims, tt_b.ndims()))
+
+  a_core = tt_a.tt_cores[0]
+  b_core = tt_b.tt_cores[0]
+  if are_both_matrices:
+    res = tf.einsum('aijb,cijd->bd', a_core, b_core)
+  else:
+    res = tf.einsum('aib,cid->bd', a_core, b_core)
+  # TODO: name the operation and the resulting tensor.
+  for core_idx in range(1, ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    b_core = tt_b.tt_cores[core_idx]
+    if are_both_matrices:
+      res = tf.einsum('ac,aijb,cijd->bd', res, a_core, b_core)
+    else:
+      res = tf.einsum('ac,aib,cid->bd', res, a_core, b_core)
+  return res
 
 
 def tt_dense_flat_inner(tt_a, dense_b):
