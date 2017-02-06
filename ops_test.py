@@ -147,7 +147,6 @@ class TTMatrixTest(tf.test.TestCase):
       res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
 
-
   def testFlatInnerTTTensbyTTTens(self):
     # Inner product between two TT-tensors.
     shape_list = ((2, 2),
@@ -184,6 +183,29 @@ class TTMatrixTest(tf.test.TestCase):
             [res_actual, res_desired])
           self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5, atol=1e-5)
 
+
+  def testFlatInnerTTTensbySparseTens(self):
+    # Inner product between a TT-tensor and a sparse tensor.
+    shape_list = ((2, 2),
+                  (2, 3, 4),
+                  (4, 2, 5, 2))
+    rank_list = (1, 2)
+    np.random.seed(1)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          tt_1 = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          # TODO: test with sparse tensor with one element.
+          sparse_flat_indices = np.random.choice(np.prod(shape), 20).astype(int)
+          sparse_indices = np.unravel_index(sparse_flat_indices, shape)
+          sparse_indices = np.vstack(sparse_indices).transpose()
+          values = np.random.randn(20).astype(np.float32)
+          sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
+                                     shape=shape)
+          res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+          res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
+          res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
+          self.assertAllClose(res_actual_val, res_desired_val)
 
 if __name__ == "__main__":
   tf.test.main()
