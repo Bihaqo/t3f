@@ -10,7 +10,7 @@ class UtilsTest(tf.test.TestCase):
     with self.test_session():
       shape = (7, 6)
       linear_idx = [22, 41, 37]
-      desired = [[3, 6, 6], [4, 5, 1]]
+      desired = [[3, 4], [6, 5], [6, 1]]
       actual = utils.unravel_index(linear_idx, shape)
       self.assertAllEqual(desired, actual.eval())
 
