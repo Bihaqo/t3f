@@ -85,6 +85,21 @@ class TTMatrixTest(tf.test.TestCase):
       tt_mat = ops.to_tt_matrix(tf_mat, (out_shape, inp_shape))
       self.assertAllClose(mat, ops.full(tt_mat).eval())
 
+  def testTTMatTimesTTMat(self):
+    # Multiply a TT-matrix by another TT-matrix.
+    left_shape = (2, 3, 4)
+    sum_shape = (4, 3, 5)
+    right_shape = (4, 4, 4)
+    with self.test_session() as sess:
+      tt_mat_1 = initializers.tt_rand_matrix((left_shape, sum_shape), tt_rank=3)
+      tt_mat_2 = initializers.tt_rand_matrix((sum_shape, right_shape))
+      res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
+      res_actual = ops.full(res_actual)
+      res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
+      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      # TODO: why so bad accuracy?
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
+
   def testTTMatTimesDenseVec(self):
     # Multiply a TT-matrix by a dense vector.
     inp_shape = (2, 3, 4)
