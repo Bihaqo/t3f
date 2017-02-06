@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
+from tensor_train import TensorTrain
+
 
 # TODO: add complexities to the comments.
 
@@ -104,9 +106,10 @@ def full(tt):
       intermediate_shape.append(raw_shape[1][i])
     res = tf.reshape(res, tf.TensorShape(intermediate_shape))
     transpose = []
-    for i in range(num_dims):
+    for i in range(0, 2 * num_dims, 2):
       transpose.append(i)
-      transpose.append(i + num_dims)
+    for i in range(1, 2 * num_dims, 2):
+      transpose.append(i)
     res = tf.transpose(res, transpose)
     return tf.reshape(res, tt.get_shape())
   else:
@@ -126,10 +129,10 @@ def tt_ranks(tt):
     A `Tensor`
   """
   num_dims = tt.ndims()
-  tt_ranks = []
+  ranks = []
   for i in range(num_dims):
-    tt_ranks.append(tf.shape(tt.tt_cores[i])[0])
-  return tf.stack(tt_ranks, axis=0)
+    ranks.append(tf.shape(tt.tt_cores[i])[0])
+  return tf.stack(ranks, axis=0)
 
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
@@ -141,8 +144,40 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
 
   Returns
     `TensorTrain` object containing a TT-matrix of size M x P
+
+  Raises:
+    ValueError is the arguments are not TT matrices or if their sizes are not
+    appropriate for a matrix-by-matrix multiplication.
   """
-  raise NotImplementedError
+  if not isinstance(tt_matrix_a, TensorTrain) or not isinstance(tt_matrix_b, TensorTrain):
+    raise ValueError('Arguments should be TT-matrices')
+
+  ndims = tt_matrix_a.ndims()
+  if tt_matrix_b.ndims() != ndims:
+    raise ValueError('Arguments should have the same number of dimensions, '
+                     'got %d and %d instead.' % (ndims, tt_matrix_b.ndims()))
+  result_cores = []
+  # TODO: name the operation and the resulting tensor.
+  for core_idx in range(ndims):
+    a_core = tt_matrix_a.tt_cores[core_idx]
+    b_core = tt_matrix_b.tt_cores[core_idx]
+    curr_res_core = tf.einsum('aijb,cjkd->acikbd', a_core, b_core)
+
+    res_left_rank = tf.shape(a_core)[0] * tf.shape(b_core)[0]
+    res_right_rank = tf.shape(a_core)[-1] * tf.shape(b_core)[-1]
+    left_mode = tf.shape(a_core)[1]
+    right_mode = tf.shape(b_core)[2]
+    core_shape = (res_left_rank, left_mode, right_mode, res_right_rank)
+    curr_res_core = tf.reshape(curr_res_core, core_shape)
+    result_cores.append(curr_res_core)
+  res_shape = (tt_matrix_a.get_raw_shape()[0], tt_matrix_b.get_raw_shape()[1])
+  a_ranks = tt_matrix_a.get_tt_ranks()
+  b_ranks = tt_matrix_b.get_tt_ranks()
+  res_ranks = []
+  for core_idx in range(ndims + 1):
+    res_ranks.append(a_ranks[core_idx] * b_ranks[core_idx])
+  res_ranks = tf.TensorShape(res_ranks)
+  return TensorTrain(result_cores, res_shape, res_ranks)
 
 
 def tt_dense_matmul(tt_matrix_a, matrix_b):
@@ -229,7 +264,34 @@ def tt_tt_flat_inner(tt_a, tt_b):
     a number
     sum of products of all the elements of tt_a and tt_b
   """
-  raise NotImplementedError
+  if not isinstance(tt_a, TensorTrain) or not isinstance(tt_b, TensorTrain):
+    raise ValueError('Arguments should be TensorTrains')
+
+  if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
+    raise ValueError('One of the arguments is a TT-tensor, the other is '
+                     'a TT-matrix, disallowed')
+  are_both_matrices = tt_a.is_tt_matrix() and tt_b.is_tt_matrix()
+
+  ndims = tt_a.ndims()
+  if tt_b.ndims() != ndims:
+    raise ValueError('Arguments should have the same number of dimensions, '
+                     'got %d and %d instead.' % (ndims, tt_b.ndims()))
+
+  a_core = tt_a.tt_cores[0]
+  b_core = tt_b.tt_cores[0]
+  if are_both_matrices:
+    res = tf.einsum('aijb,cijd->bd', a_core, b_core)
+  else:
+    res = tf.einsum('aib,cid->bd', a_core, b_core)
+  # TODO: name the operation and the resulting tensor.
+  for core_idx in range(1, ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    b_core = tt_b.tt_cores[core_idx]
+    if are_both_matrices:
+      res = tf.einsum('ac,aijb,cijd->bd', res, a_core, b_core)
+    else:
+      res = tf.einsum('ac,aib,cid->bd', res, a_core, b_core)
+  return res
 
 
 def tt_dense_flat_inner(tt_a, dense_b):
