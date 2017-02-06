@@ -7,7 +7,6 @@ def unravel_index(indices, shape):
   with tf.name_scope('unravel_index'):
     indices = tf.expand_dims(indices, 0)
     shape = tf.expand_dims(shape, 1)
-    strides = tf.cumprod(shape, reverse=True)
     strides_shifted = tf.cumprod(shape, exclusive=True, reverse=True)
-    res = (indices // strides_shifted) % strides
+    res = (indices // strides_shifted) % shape
     return tf.transpose(res, (1, 0))
