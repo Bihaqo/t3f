@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+import utils
 
 
 # TODO: add complexities to the comments.
@@ -263,6 +264,11 @@ def tt_tt_flat_inner(tt_a, tt_b):
   Returns
     a number
     sum of products of all the elements of tt_a and tt_b
+
+  Raises:
+    ValueError if the arguments are not `TensorTrain` objects, have different
+      number of TT-cores, different underlying shape, or if you are trying to
+      compute inner product between a TT-matrix and a TT-tensor.
   """
   if not isinstance(tt_a, TensorTrain) or not isinstance(tt_b, TensorTrain):
     raise ValueError('Arguments should be TensorTrains')
@@ -271,6 +277,8 @@ def tt_tt_flat_inner(tt_a, tt_b):
     raise ValueError('One of the arguments is a TT-tensor, the other is '
                      'a TT-matrix, disallowed')
   are_both_matrices = tt_a.is_tt_matrix() and tt_b.is_tt_matrix()
+
+  # TODO: compare shapes and raise if not consistent.
 
   ndims = tt_a.ndims()
   if tt_b.ndims() != ndims:
@@ -323,7 +331,47 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
     a number
     sum of products of all the elements of tt_a and sparse_b
   """
-  raise NotImplementedError
+  num_elements = tf.shape(sparse_b.indices)[0]
+  tt_a_elements = tf.ones((num_elements, 1, 1))
+  if tt_a.is_tt_matrix():
+    # TODO: use t3f.shape is safer??
+    tensor_shape = tt_a.get_raw_shape()
+    row_idx_linear = tf.cast(sparse_b.indices[:, 0], tf.int64)
+    row_idx = utils.unravel_index(row_idx_linear, tf.cast(tensor_shape[0], tf.int64))
+    col_idx_linear = tf.cast(sparse_b.indices[:, 1], tf.int64)
+    col_idx = utils.unravel_index(col_idx_linear, tf.cast(tensor_shape[1], tf.int64))
+    for core_idx in range(tt_a.ndims()):
+      # TODO: probably a very slow way to do it, wait for a reasonable gather
+      # implementation
+      # https://github.com/tensorflow/tensorflow/issues/206
+      curr_core = tt_a.tt_cores[core_idx]
+      left_rank = tf.shape(curr_core)[0]
+      right_rank = tf.shape(curr_core)[-1]
+      curr_core = tf.transpose(curr_core, (1, 2, 0, 3))
+      curr_core = tf.reshape(curr_core, (-1, left_rank, right_rank))
+      # Ravel multiindex (row_idx[:, core_idx], col_idx[:, core_idx]) into
+      # a linear index to use tf.gather that supports only first dimensional
+      # gather.
+      curr_elements_idx = row_idx[:, core_idx] * tensor_shape[1][core_idx]
+      curr_elements_idx += col_idx[:, core_idx]
+      core_slices = tf.gather(curr_core, curr_elements_idx)
+      tt_a_elements = tf.matmul(tt_a_elements, core_slices)
+  else:
+    for core_idx in range(tt_a.ndims()):
+      curr_elements_idx = sparse_b.indices[:, core_idx]
+      # TODO: probably a very slow way to do it, wait for a reasonable gather
+      # implementation
+      # https://github.com/tensorflow/tensorflow/issues/206
+      curr_core = tt_a.tt_cores[core_idx]
+      curr_core = tf.transpose(curr_core, (1, 0, 2))
+      core_slices = tf.gather(curr_core, curr_elements_idx)
+      tt_a_elements = tf.matmul(tt_a_elements, core_slices)
+  tt_a_elements = tf.reshape(tt_a_elements, (1, -1))
+  sparse_b_elements = tf.reshape(sparse_b.values, (-1, 1))
+  result = tf.matmul(tt_a_elements, sparse_b_elements)
+  # Convert a 1x1 matrix into a number.
+  result = result[0, 0]
+  return result
 
 
 def dense_tt_flat_inner(dense_a, tt_b):
