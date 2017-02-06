@@ -148,5 +148,42 @@ class TTMatrixTest(tf.test.TestCase):
       self.assertAllClose(res_actual.eval(), res_desired.eval())
 
 
+  def testFlatInnerTTTensbyTTTens(self):
+    # Inner product between two TT-tensors.
+    shape_list = ((2, 2),
+                  (2, 3, 4),
+                  (4, 2, 5, 2))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          tt_1 = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          tt_2 = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
+          tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
+          tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
+          res_desired = tf.matmul(tt_1_full, tt_2_full)
+          res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+          self.assertAllClose(res_actual_val, res_desired_val)
+
+  def testFlatInnerTTMatbyTTMat(self):
+    # Inner product between two TT-Matrices.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          tt_1 = initializers.tt_rand_matrix(shape, tt_rank=rank)
+          tt_2 = initializers.tt_rand_matrix(shape, tt_rank=rank)
+          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
+          tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
+          tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
+          res_desired = tf.matmul(tt_1_full, tt_2_full)
+          res_actual_val, res_desired_val = sess.run(
+            [res_actual, res_desired])
+          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5, atol=1e-5)
+
+
 if __name__ == "__main__":
   tf.test.main()
