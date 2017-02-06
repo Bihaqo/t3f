@@ -106,9 +106,10 @@ def full(tt):
       intermediate_shape.append(raw_shape[1][i])
     res = tf.reshape(res, tf.TensorShape(intermediate_shape))
     transpose = []
-    for i in range(num_dims):
+    for i in range(0, 2 * num_dims, 2):
       transpose.append(i)
-      transpose.append(i + num_dims)
+    for i in range(1, 2 * num_dims, 2):
+      transpose.append(i)
     res = tf.transpose(res, transpose)
     return tf.reshape(res, tt.get_shape())
   else:
