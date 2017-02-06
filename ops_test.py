@@ -64,6 +64,25 @@ class TTMatrixTest(tf.test.TestCase):
         actual = ops.full(tf_mat)
         self.assertAllClose(desired, actual.eval())
 
+  def testFullMatrix3d(self):
+    np.random.seed(1)
+    for rank in [1, 2]:
+      a = np.random.rand(2, 3, rank).astype(np.float32)
+      b = np.random.rand(rank, 4, 5, rank).astype(np.float32)
+      c = np.random.rand(rank, 2, 2).astype(np.float32)
+      tt_cores = (a.reshape(1, 2, 3, rank), b.reshape(rank, 4, 5, rank),
+                  c.reshape(rank, 2, 2, 1))
+      # Basically do full by hand.
+      desired = a.reshape((-1, rank)).dot(b.reshape((rank, -1)))
+      desired = desired.reshape((-1, rank)).dot(c.reshape((rank, -1)))
+      desired = desired.reshape((2, 3, 4, 5, 2, 2))
+      desired = desired.transpose((0, 2, 4, 1, 3, 5))
+      desired = desired.reshape((2 * 4 * 2, 3 * 5 * 2))
+      with self.test_session():
+        tf_mat = tensor_train.TensorTrain(tt_cores)
+        actual = ops.full(tf_mat)
+        self.assertAllClose(desired, actual.eval())
+
   def testTTVector(self):
     vec_shape = (2, 1, 4, 3)
     np.random.seed(1)
