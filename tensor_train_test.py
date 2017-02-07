@@ -96,7 +96,7 @@ class TensorTrainTest(tf.test.TestCase):
           tensor_train.TensorTrain((a, b_new, c), (10, 1, 2), claimed_tt_ranks)
 
   def testTensorIndexing(self):
-    tens = initializers.tt_rand_tensor((3, 3, 4))
+    tens = initializers.random_tensor((3, 3, 4))
     with self.test_session() as sess:
       desired = ops.full(tens)[:, :, :]
       actual = ops.full(tens[:, :, :])
@@ -120,7 +120,7 @@ class TensorTrainTest(tf.test.TestCase):
       self.assertAllClose(desired, actual)
 
   def testTensorIndexingOneElement(self):
-    tens = initializers.tt_rand_tensor((4, 4, 4))
+    tens = initializers.random_tensor((4, 4, 4))
     with self.test_session() as sess:
       desired = ops.full(tens)[1, 2, 3]
       actual = ops.full(tens[1, 2, 3])
