@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensor_train import TensorTrain
 
 
-def tt_rand_tensor(shape, tt_rank=2):
+def random_tensor(shape, tt_rank=2):
   """Generate a random TT-tensor of given shape.
 
   Args:
@@ -45,7 +45,7 @@ def tt_rand_tensor(shape, tt_rank=2):
   return TensorTrain(tt_cores, shape, tt_rank_ext)
 
 
-def tt_rand_matrix(shape, tt_rank=2):
+def random_matrix(shape, tt_rank=2):
   """Generate a random TT-matrix of given shape.
 
   Args:

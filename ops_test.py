@@ -42,7 +42,7 @@ class TTTensorTest(tf.test.TestCase):
     tens = np.random.rand(*shape).astype(np.float32)
     with self.test_session():
       tf_tens = tf.constant(tens)
-      tt_tens = ops.to_tt_tensor(tf_tens, shape)
+      tt_tens = ops.to_tt_tensor(tf_tens)
       self.assertAllClose(tens, ops.full(tt_tens).eval())
 
 
@@ -110,8 +110,8 @@ class TTMatrixTest(tf.test.TestCase):
     sum_shape = (4, 3, 5)
     right_shape = (4, 4, 4)
     with self.test_session() as sess:
-      tt_mat_1 = initializers.tt_rand_matrix((left_shape, sum_shape), tt_rank=3)
-      tt_mat_2 = initializers.tt_rand_matrix((sum_shape, right_shape))
+      tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3)
+      tt_mat_2 = initializers.random_matrix((sum_shape, right_shape))
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
@@ -128,7 +128,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session():
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
-      tt_mat = initializers.tt_rand_matrix((out_shape, inp_shape))
+      tt_mat = initializers.random_matrix((out_shape, inp_shape))
       res_actual = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
@@ -142,7 +142,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session():
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
-      tt_vec = initializers.tt_rand_matrix((inp_shape, None))
+      tt_vec = initializers.random_matrix((inp_shape, None))
       res_actual = ops.matmul(tf_mat, tt_vec)
       res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
@@ -156,8 +156,8 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt_1 = initializers.tt_rand_tensor(shape, tt_rank=rank)
-          tt_2 = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          tt_1 = initializers.random_tensor(shape, tt_rank=rank)
+          tt_2 = initializers.random_tensor(shape, tt_rank=rank)
           res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
@@ -173,8 +173,8 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt_1 = initializers.tt_rand_matrix(shape, tt_rank=rank)
-          tt_2 = initializers.tt_rand_matrix(shape, tt_rank=rank)
+          tt_1 = initializers.random_matrix(shape, tt_rank=rank)
+          tt_2 = initializers.random_matrix(shape, tt_rank=rank)
           res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
@@ -194,7 +194,7 @@ class TTMatrixTest(tf.test.TestCase):
       for shape in shape_list:
         for rank in rank_list:
           for num_elements in [1, 10]:
-            tt_1 = initializers.tt_rand_tensor(shape, tt_rank=rank)
+            tt_1 = initializers.random_tensor(shape, tt_rank=rank)
             sparse_flat_indices = np.random.choice(np.prod(shape), num_elements).astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, shape)
             sparse_indices = np.vstack(sparse_indices).transpose()
@@ -216,7 +216,7 @@ class TTMatrixTest(tf.test.TestCase):
       for tensor_shape in shape_list:
         for rank in rank_list:
           for num_elements in [1, 9]:
-            tt_1 = initializers.tt_rand_matrix(tensor_shape, tt_rank=rank)
+            tt_1 = initializers.random_matrix(tensor_shape, tt_rank=rank)
             matrix_shape = np.prod(tensor_shape[0]), np.prod(tensor_shape[1])
             sparse_flat_indices = np.random.choice(np.prod(matrix_shape), num_elements)
             sparse_flat_indices = sparse_flat_indices.astype(int)
@@ -239,7 +239,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          tt = initializers.random_tensor(shape, tt_rank=rank)
           norm_sq_actual = ops.frobenius_norm_squared(tt)
           norm_actual = ops.frobenius_norm(tt)
           vars = [norm_sq_actual, norm_actual, ops.full(tt)]
@@ -259,7 +259,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       for tensor_shape in shape_list:
         for rank in rank_list:
-          tt = initializers.tt_rand_matrix(tensor_shape, tt_rank=rank)
+          tt = initializers.random_matrix(tensor_shape, tt_rank=rank)
           norm_sq_actual = ops.frobenius_norm_squared(tt)
           norm_actual = ops.frobenius_norm(tt)
           vars = [norm_sq_actual, norm_actual, ops.full(tt)]

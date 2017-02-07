@@ -2,7 +2,7 @@ import re
 import tensorflow as tf
 
 import tensor_train
-from initializers import tt_rand_tensor
+from initializers import random_tensor
 
 def get_tt_variable(name,
                     dtype=None,
