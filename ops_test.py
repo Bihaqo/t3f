@@ -230,5 +230,23 @@ class TTMatrixTest(tf.test.TestCase):
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
             self.assertAllClose(res_actual_val, res_desired_val)
 
+  def testFrobeniusNormTens(self):
+    # Frobenius norm of a TT-tensor.
+    shape_list = ((2, 2),
+                  (2, 3, 4),
+                  (4, 2, 5, 2))
+    rank_list = (1, 2)
+    np.random.seed(1)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          tt = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          res_actual = ops.frobenius_norm_squared(tt)
+          res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
+          tt_val = tt_val.flatten()
+          res_desired_val = tt_val.dot(tt_val)
+          self.assertAllClose(res_actual_val, res_desired_val)
+
+
 if __name__ == "__main__":
   tf.test.main()
