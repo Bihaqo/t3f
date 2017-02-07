@@ -4,14 +4,15 @@ import tensorflow as tf
 import tensor_train
 from initializers import random_tensor
 
-def get_tt_variable(name,
-                    dtype=None,
-                    initializer=None,
-                    regularizer=None,
-                    trainable=True,
-                    collections=None,
-                    caching_device=None,
-                    validate_shape=True):
+
+def get_variable(name,
+                 dtype=None,
+                 initializer=None,
+                 regularizer=None,
+                 trainable=True,
+                 collections=None,
+                 caching_device=None,
+                 validate_shape=True):
   """Returns TensorTrain object with tf.Variables as the TT-cores.
 
   Args:

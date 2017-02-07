@@ -6,7 +6,7 @@ As an example lets create a neural network with a TT-matrix as a fully-connected
 def build_tt_model(x):
   # A 784 x 625 TT-matrix.
   matrix_shape = ((4, 7, 4, 7), (5, 5, 5, 5))
-  tt_W_1 = t3f.get_tt_variable('tt_W_1', t3f.random_matrix(matrix_shape))
+  tt_W_1 = t3f.get_variable('tt_W_1', initializer=t3f.random_matrix(matrix_shape))
   h_1 = tf.nn.relu(t3f.matmul(tt_W_1, x))
   W_2 = tf.get_variable('W_2', shape=[625, 10])
   y = tf.matmul(W_2, h_1)
