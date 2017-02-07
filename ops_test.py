@@ -236,11 +236,30 @@ class TTMatrixTest(tf.test.TestCase):
                   (2, 3, 4),
                   (4, 2, 5, 2))
     rank_list = (1, 2)
-    np.random.seed(1)
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
           tt = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          norm_sq_actual = ops.frobenius_norm_squared(tt)
+          norm_actual = ops.frobenius_norm(tt)
+          vars = [norm_sq_actual, norm_actual, ops.full(tt)]
+          norm_sq_actual_val, norm_actual_val, tt_val = sess.run(vars)
+          tt_val = tt_val.flatten()
+          norm_sq_desired_val = tt_val.dot(tt_val)
+          norm_desired_val = np.linalg.norm(tt_val)
+          self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
+          self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
+                              rtol=1e-5)
+
+  def testFrobeniusNormMatrix(self):
+    # Frobenius norm of a TT-matrix.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          tt = initializers.tt_rand_matrix(tensor_shape, tt_rank=rank)
           norm_sq_actual = ops.frobenius_norm_squared(tt)
           norm_actual = ops.frobenius_norm(tt)
           vars = [norm_sq_actual, norm_actual, ops.full(tt)]
