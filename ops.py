@@ -412,7 +412,7 @@ def flat_inner(a, b):
   The shapes of a and b should coincide.
 
   Args:
-    a: `TensorTrain` tf.Tensor, or tf.SparseTensor
+    a: `TensorTrain`, tf.Tensor, or tf.SparseTensor
     b: `TensorTrain`, tf.Tensor, or tf.SparseTensor
 
   Returns
@@ -420,3 +420,29 @@ def flat_inner(a, b):
     sum of products of all the elements of a and b
   """
   raise NotImplementedError
+
+
+def frobenius_norm_squared(tt):
+  """Frobenius norm squared of a TensorTrain (sum of squares of all elements).
+
+  Args:
+    tt: `TensorTrain` object
+
+  Returns
+    a number
+    sum of squares of all elements in `tt`
+  """
+  if tt.is_tt_matrix():
+    running_prod = tf.einsum('aijb,cijd->bd', tt.tt_cores[0], tt.tt_cores[0])
+  else:
+    running_prod = tf.einsum('aib,cid->bd', tt.tt_cores[0], tt.tt_cores[0])
+
+  for core_idx in range(1, tt.ndims()):
+    curr_core = tt.tt_cores[core_idx]
+    if tt.is_tt_matrix():
+      running_prod = tf.einsum('ac,aijb,cijd->bd', running_prod, curr_core,
+                               curr_core)
+    else:
+      running_prod = tf.einsum('ac,aib,cid->bd', running_prod, curr_core,
+                               curr_core)
+  return running_prod[0, 0]
