@@ -467,7 +467,7 @@ def transpose(tt_matrix):
   """Transpose a TT-matrix.
 
   Args:
-    `TensorTrain` object containing a TT-matrix.
+    tt_matrix: `TensorTrain` object containing a TT-matrix.
 
   Returns:
     `TensorTrain` object containing a transposed TT-matrix.
@@ -487,3 +487,31 @@ def transpose(tt_matrix):
   transposed_shape = tt_matrix_shape[1], tt_matrix_shape[0]
   tt_ranks = tt_matrix.get_tt_ranks()
   return TensorTrain(transposed_tt_cores, transposed_shape, tt_ranks)
+
+
+def quadratic_form(A, b, c):
+  """Computes the quadratic form b^t A c where A is a TT-matrix.
+
+  Args:
+    A: `TensorTrain` object containing a TT-matrix.
+    b: `TensorTrain` object containing a TT-vector.
+    c: `TensorTrain` object containing a TT-vector.
+
+  Returns:
+    A number, the value of the quadratic form.
+
+  Raises:
+    ValueError if the argument is not a TT-matrix or if the shapes are
+      not consistent.
+  """
+  if not isinstance(A, TensorTrain) or not A.is_tt_matrix():
+    raise ValueError('The arguments should be a TT-matrix.')
+
+  # TODO: support tf.Tensor as b and c.
+  if not isinstance(b, TensorTrain) or not b.is_tt_matrix():
+    raise ValueError('The arguments should be a TT-matrix.')
+  if not isinstance(c, TensorTrain) or not c.is_tt_matrix():
+    raise ValueError('The arguments should be a TT-matrix.')
+
+  # TODO: make a more efficient implementation taylored for this case.
+  return tt_tt_flat_inner(A, tt_tt_matmul(b, transpose(c)))
