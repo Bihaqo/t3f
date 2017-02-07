@@ -271,6 +271,19 @@ class TTMatrixTest(tf.test.TestCase):
           self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                               rtol=1e-5)
 
+  def testTranspose(self):
+    # Frobenius norm of a TT-matrix.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          tt = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          res_actual = ops.full(ops.transpose(tt))
+          res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
+          self.assertAllClose(tt_val.transpose(), res_actual_val)
+
 
 if __name__ == "__main__":
   tf.test.main()

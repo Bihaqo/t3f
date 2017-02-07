@@ -461,3 +461,29 @@ def frobenius_norm(tt, epsilon=1e-5):
     sqrt of the sum of squares of all elements in `tt`
   """
   return tf.sqrt(frobenius_norm_squared(tt) + epsilon)
+
+
+def transpose(tt_matrix):
+  """Transpose a TT-matrix.
+
+  Args:
+    `TensorTrain` object containing a TT-matrix.
+
+  Returns:
+    `TensorTrain` object containing a transposed TT-matrix.
+
+  Raises:
+    ValueError if the argument is not a TT-matrix.
+  """
+  if not isinstance(tt_matrix, TensorTrain) or not tt_matrix.is_tt_matrix():
+    raise ValueError('The argument should be a TT-matrix.')
+
+  transposed_tt_cores = []
+  for core_idx in range(tt_matrix.ndims()):
+    curr_core = tt_matrix.tt_cores[core_idx]
+    transposed_tt_cores.append(tf.transpose(curr_core, (0, 2, 1, 3)))
+
+  tt_matrix_shape = tt_matrix.get_raw_shape()
+  transposed_shape = tt_matrix_shape[1], tt_matrix_shape[0]
+  tt_ranks = tt_matrix.get_tt_ranks()
+  return TensorTrain(transposed_tt_cores, transposed_shape, tt_ranks)
