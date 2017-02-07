@@ -446,3 +446,18 @@ def frobenius_norm_squared(tt):
       running_prod = tf.einsum('ac,aib,cid->bd', running_prod, curr_core,
                                curr_core)
   return running_prod[0, 0]
+
+
+def frobenius_norm(tt, epsilon=1e-5):
+  """Frobenius norm of a TensorTrain (sqrt of the sum of squares of all elements).
+
+  Args:
+    tt: `TensorTrain` object
+    epsilon: the function actually computes sqrt(norm_squared + epsilon) for
+      numerical stability (e.g. gradient of sqrt at zero is inf).
+
+  Returns
+    a number
+    sqrt of the sum of squares of all elements in `tt`
+  """
+  return tf.sqrt(frobenius_norm_squared(tt) + epsilon)

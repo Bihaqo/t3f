@@ -241,11 +241,16 @@ class TTMatrixTest(tf.test.TestCase):
       for shape in shape_list:
         for rank in rank_list:
           tt = initializers.tt_rand_tensor(shape, tt_rank=rank)
-          res_actual = ops.frobenius_norm_squared(tt)
-          res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
+          norm_sq_actual = ops.frobenius_norm_squared(tt)
+          norm_actual = ops.frobenius_norm(tt)
+          vars = [norm_sq_actual, norm_actual, ops.full(tt)]
+          norm_sq_actual_val, norm_actual_val, tt_val = sess.run(vars)
           tt_val = tt_val.flatten()
-          res_desired_val = tt_val.dot(tt_val)
-          self.assertAllClose(res_actual_val, res_desired_val)
+          norm_sq_desired_val = tt_val.dot(tt_val)
+          norm_desired_val = np.linalg.norm(tt_val)
+          self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
+          self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
+                              rtol=1e-5)
 
 
 if __name__ == "__main__":
