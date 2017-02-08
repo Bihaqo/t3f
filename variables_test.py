@@ -53,9 +53,6 @@ class VariablesTest(tf.test.TestCase):
       self.assertEqual(init.get_tt_ranks(), var.get_tt_ranks())
       self.assertEqual(init.is_tt_matrix(), var.is_tt_matrix())
 
-
-    # self.assertAllClose(ops.full(tt_2).eval(), ops.full(tt_2_copy).eval())
-
   def testAssign(self):
     old_init = initializers.random_tensor([2, 3, 2], tt_rank=2)
     tt = variables.get_variable('tt', initializer=old_init)
