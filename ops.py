@@ -133,6 +133,7 @@ def tt_ranks(tt):
   ranks = []
   for i in range(num_dims):
     ranks.append(tf.shape(tt.tt_cores[i])[0])
+  ranks.append(tf.shape(tt.tt_cores[-1])[-1])
   return tf.stack(ranks, axis=0)
 
 

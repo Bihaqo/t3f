@@ -80,8 +80,7 @@ def get_variable(name,
                                         initializer=initializer.tt_cores[i],
                                         dtype=dtype, trainable=trainable,
                                         collections=collections,
-                                        caching_device=caching_device,
-                                        validate_shape=False)
+                                        caching_device=caching_device)
         variable_cores.append(curr_core_var)
     v = tensor_train.TensorTrain(variable_cores, initializer.get_raw_shape(),
                                  initializer.get_tt_ranks(),
@@ -109,7 +108,7 @@ def assign(ref, value, validate_shape=None, use_locking=None, name=None):
   with tf.variable_scope(name):
     for i in range(ref.ndims()):
       new_cores.append(tf.assign(ref.tt_cores[i], value.tt_cores[i],
-                                 False, use_locking))
+                                 use_locking=use_locking))
   return tensor_train.TensorTrain(new_cores, value.get_raw_shape(),
                                   value.get_tt_ranks(),
                                   convert_to_tensors=False)
