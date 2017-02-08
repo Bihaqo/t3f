@@ -39,6 +39,20 @@ class VariablesTest(tf.test.TestCase):
         tt_2_copy = variables.get_variable('tt_2')
         self.assertAllClose(ops.full(tt_2).eval(), ops.full(tt_2_copy).eval())
 
+  def testAttributes(self):
+    # Test that after converting an initializer into a variable all the
+    # attributes stays the same.
+    tens = initializers.random_tensor([2, 3, 2], tt_rank=2)
+    tens_v = variables.get_variable('tt_tens', initializer=tens)
+    mat = initializers.random_matrix([[3, 2, 2], [3, 3, 3]], tt_rank=3)
+    mat_v = variables.get_variable('tt_mat', initializer=mat)
+    for (init, var) in [[tens, tens_v], [mat, mat_v]]:
+      self.assertEqual(init.get_shape(), var.get_shape())
+      self.assertEqual(init.get_raw_shape(), var.get_raw_shape())
+      self.assertEqual(init.ndims(), var.ndims())
+      self.assertEqual(init.get_tt_ranks(), var.get_tt_ranks())
+      self.assertEqual(init.is_tt_matrix(), var.is_tt_matrix())
+
   def testAssign(self):
     old_init = initializers.random_tensor([2, 3, 2], tt_rank=2)
     tt = variables.get_variable('tt', initializer=old_init)
