@@ -56,9 +56,7 @@ class VariablesTest(tf.test.TestCase):
   def testAssign(self):
     old_init = initializers.random_tensor([2, 3, 2], tt_rank=2)
     tt = variables.get_variable('tt', initializer=old_init)
-    # The ranks of old_init and new_init should be different to check that
-    # assign correctly changes the shape of the TT-cores.
-    new_init = initializers.random_tensor([2, 3, 2], tt_rank=4)
+    new_init = initializers.random_tensor([2, 3, 2], tt_rank=2)
     assigner = variables.assign(tt, new_init)
     with self.test_session():
       tf.global_variables_initializer().run()

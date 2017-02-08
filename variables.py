@@ -108,7 +108,7 @@ def assign(ref, value, validate_shape=None, use_locking=None, name=None):
   with tf.variable_scope(name):
     for i in range(ref.ndims()):
       new_cores.append(tf.assign(ref.tt_cores[i], value.tt_cores[i],
-                                 validate_shape=False, use_locking=use_locking))
+                                 use_locking=use_locking))
   return tensor_train.TensorTrain(new_cores, value.get_raw_shape(),
                                   value.get_tt_ranks(),
                                   convert_to_tensors=False)
