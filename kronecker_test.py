@@ -9,25 +9,22 @@ import ops
 class KroneckerTest(tf.test.TestCase):
 
   def testIsKronNonKron(self):
-    """
-    Tests _is_kron on a non-Kronecker matrix
-    """
-    tt_mat = t3f.get_variable('tt_mat', initializer=t3f.random_matrix(((2, 3), (3, 2)), tt_rank=2))
+    # Tests _is_kron on a non-Kronecker matrix
+    initializer = t3f.random_matrix(((2, 3), (3, 2)), tt_rank=2)
+    tt_mat = t3f.get_variable('tt_mat', initializer=initializer)
     self.assertFalse(kr._is_kron(tt_mat))
            
   def testIsKronKron(self):
-    """
-    Tests _is_kron on a Kronecker matrix
-    """
-    kron_mat = t3f.get_variable('kron_mat', initializer=t3f.random_matrix(((2, 3), (3, 2)), tt_rank=1))
+    # Tests _is_kron on a Kronecker matrix
+    initializer = t3f.random_matrix(((2, 3), (3, 2)), tt_rank=1)
+    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
     self.assertTrue(kr._is_kron(kron_mat))
 
   def testDet(self):
-    """
-    Tests the determinant function
-    """
+    # Tests the determinant function
     tf.set_random_seed(5)
-    kron_mat = t3f.get_variable('kron_mat', initializer=t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1))
+    initializer = t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
+    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
@@ -36,14 +33,14 @@ class KroneckerTest(tf.test.TestCase):
       self.assertAllClose(desired, actual)
 
   def testSlogDet(self):
-    """
-    Tests the slog_determinant function
-    """
+    # Tests the slog_determinant function
     tf.set_random_seed(5) # negative derminant
-    kron_neg = t3f.get_variable('kron_neg', initializer=t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1))
+    initializer = t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1)
+    kron_neg = t3f.get_variable('kron_neg', initializer=initializer)
   
     tf.set_random_seed(1) # positive determinant
-    kron_pos = t3f.get_variable('kron_pos', initializer=t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1))
+    initializer = t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1)
+    kron_pos = t3f.get_variable('kron_pos', initializer=initializer)
 
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
@@ -61,11 +58,10 @@ class KroneckerTest(tf.test.TestCase):
       self.assertAllClose(desired_det, actual_det)
 
   def testInv(self):
-    """
-    Tests the inv function
-    """
+    # Tests the inv function
     tf.set_random_seed(5)
-    kron_mat = t3f.get_variable('kron_mat', initializer=t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1))
+    initializer = t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
+    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
@@ -74,9 +70,7 @@ class KroneckerTest(tf.test.TestCase):
       self.assertAllClose(desired, actual)
     
   def testCholesky(self):
-    """
-    Tests the inv function
-    """
+    # Tests the inv function
     np.random.seed(8)
 
     # generating two symmetric positive-definite tt-cores
@@ -85,7 +79,9 @@ class KroneckerTest(tf.test.TestCase):
     K_1 = L_1.dot(L_1.T)
     K_2 = L_2.dot(L_2.T)
     K = np.kron(K_1, K_2)
-    initializer = tensor_train.TensorTrain([K_1[None, :, :, None], K_2[None, :, :, None]], tt_ranks=7*[1])
+    initializer = tensor_train.TensorTrain([K_1[None, :, :, None], 
+                                            K_2[None, :, :, None]], 
+                                            tt_ranks=7*[1])
     kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:

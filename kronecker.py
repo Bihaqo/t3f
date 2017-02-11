@@ -4,9 +4,8 @@ import tensorflow as tf
 from tensor_train import TensorTrain
 
 def determinant(kron_a):
-  """Computes the determinant of a given matrix, factorized into
-  a Kronecker product of square matrices.
-  
+  """Computes the determinant of a given Kronecker-factorized matrix  
+
   Note, that this method can suffer from overflow.
 
   Args:
@@ -22,15 +21,16 @@ def determinant(kron_a):
     or the tt-ranks are not 1
   """
   if not _is_kron(kron_a):
-    raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
+    raise ValueError('The argument should be a Kronecker product (tt-ranks'
+                     'should be 1)')
 
   cores = kron_a.tt_cores
   det, pows = 1, 1
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
     if core.get_shape()[1] != core.get_shape()[2]:
-      raise ValueError('The argument should be a Kronecker product of square matrices' 
-                      '(tt-cores must be square)')
+      raise ValueError('The argument should be a Kronecker product of square ' 
+                      'matrices (tt-cores must be square)')
     pows *= core.get_shape()[1].value
   for core_idx in range(kron_a.ndims()):
     core = cores[core_idx]
@@ -42,8 +42,7 @@ def determinant(kron_a):
 
 
 def slog_determinant(kron_a):
-  """Computes the sign and (natural) logarithm of the determinant of 
-  the given matrix, factorized intoa Kronecker product of square matrices.
+  """Computes the sign and log-det of a given Kronecker-factorized matrix
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
@@ -57,14 +56,15 @@ def slog_determinant(kron_a):
     or the tt-ranks are not 1
   """
   if not _is_kron(kron_a):
-    raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
+    raise ValueError('The argument should be a Kronecker product' 
+                     '(tt-ranks should be 1)')
   
   pows = 1
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
     if core.get_shape()[1] != core.get_shape()[2]:
-      raise ValueError('The argument should be a Kronecker product of square matrices' 
-                      '(tt-cores must be square)')
+      raise ValueError('The argument should be a Kronecker product of square'
+                      'matrices (tt-cores must be square)')
     pows *= core.get_shape()[1].value
                                                           
   logdet = 0
@@ -82,8 +82,7 @@ def slog_determinant(kron_a):
   return det_sign, logdet
 
 def inv(kron_a):
-  """Computes the inverse of a given matrix, factorized into
-  a Kronecker-product of square matrices.
+  """Computes the inverse of a given Kronecker-factorized matrix
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
@@ -98,14 +97,15 @@ def inv(kron_a):
     ValueError if the cores are not square or the ranks are not 1 
   """
   if not _is_kron(kron_a):
-    raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
+    raise ValueError('The argument should be a Kronecker product' 
+                     '(tt-ranks should be 1)')
 
   inv_cores = []
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
     if core.get_shape()[1] != core.get_shape()[2]:
-      raise ValueError('The argument should be a Kronecker product of square matrices' 
-                      '(tt-cores must be square)')
+      raise ValueError('The argument should be a Kronecker product of square'
+                      'matrices (tt-cores must be square)')
  
     core_inv = tf.matrix_inverse(core[0, :, :, 0])
     inv_cores.append(tf.expand_dims(tf.expand_dims(core_inv, 0), -1))
@@ -115,8 +115,7 @@ def inv(kron_a):
   return TensorTrain(inv_cores, res_shape, res_ranks) 
 
 def cholesky(kron_a):
-  """Computes the Cholesky decomposition of a given matrix, factorized 
-  into a Kronecker-product of symmetric positive-definite square matrices.
+  """Computes the Cholesky decomposition of a given Kronecker-factorized matrix
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
@@ -131,14 +130,15 @@ def cholesky(kron_a):
     ValueError if the cores are not square or the ranks are not 1 
   """
   if not _is_kron(kron_a):
-    raise ValueError('The argument should be a Kronecker product')
+    raise ValueError('The argument should be a Kronecker product' 
+                     '(tt-ranks should be 1)')
 
   cho_cores = []
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
     if core.get_shape()[1] != core.get_shape()[2]:
-      raise ValueError('The argument should be a Kronecker product of square matrices' 
-                      '(tt-cores must be square)')
+      raise ValueError('The argument should be a Kronecker product of square'
+                      'matrices (tt-cores must be square)')
     core_cho = tf.cholesky(core[0, :, :, 0])
     cho_cores.append(tf.expand_dims(tf.expand_dims(core_cho, 0), -1))
 
@@ -147,7 +147,7 @@ def cholesky(kron_a):
   return TensorTrain(cho_cores, res_shape, res_ranks) 
 
 def _is_kron(tt_a):
-  """Returns True if the argument is a Kronecker product matrix.
+  """Returns True if the argument is a Kronecker product matrix
 
   Args:
     tt_a: `TensorTrain` object
