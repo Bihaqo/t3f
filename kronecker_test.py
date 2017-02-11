@@ -72,7 +72,7 @@ class KroneckerTest(tf.test.TestCase):
       self.assertAllClose(desired, actual)
     
   def testCholesky(self):
-    # Tests the inv function
+    # Tests the cholesky function
     np.random.seed(8)
 
     # generating two symmetric positive-definite tt-cores
