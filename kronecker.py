@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensor_train import TensorTrain
 
 def determinant(kron_a):
-  """Computes the determinant of a given Kronecker-factorized matrix  
+  """Computes the determinant of a given Kronecker-factorized matrix. 
 
   Note, that this method can suffer from overflow.
 
@@ -49,7 +49,7 @@ def determinant(kron_a):
 
 
 def slog_determinant(kron_a):
-  """Computes the sign and log-det of a given Kronecker-factorized matrix
+  """Computes the sign and log-det of a given Kronecker-factorized matrix.
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
@@ -96,7 +96,7 @@ def slog_determinant(kron_a):
   return det_sign, logdet
 
 def inv(kron_a):
-  """Computes the inverse of a given Kronecker-factorized matrix
+  """Computes the inverse of a given Kronecker-factorized matrix.
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
@@ -137,7 +137,7 @@ def inv(kron_a):
   return TensorTrain(inv_cores, res_shape, res_ranks) 
 
 def cholesky(kron_a):
-  """Computes the Cholesky decomposition of a given Kronecker-factorized matrix
+  """Computes the Cholesky decomposition of a given Kronecker-factorized matrix.
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
@@ -178,7 +178,7 @@ def cholesky(kron_a):
 
 
 def _is_kron(tt_a):
-  """Returns True if the argument is a Kronecker product matrix
+  """Returns True if the argument is a Kronecker product matrix.
 
   Args:
     tt_a: `TensorTrain` object
