@@ -13,10 +13,28 @@ def determinant(kron_a):
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
     factorized into a Kronecker product of square matrices (all 
     tt-ranks are 1 and all tt-cores are square). 
+  
   Returns:
     Number, the determinant of the given matrix
+
+  Raises:
+    ValueError if the tt-cores of the provided matrix are not square,
+    or the tt-ranks are not 1
   """
-  raise NotImplementedError
+  if not _is_kron(kron_a):
+    raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
+
+  cores = kron_a.tt_cores
+  det, pows = 1, 1
+  for core_idx in range(kron_a.ndims()):
+    core = cores[core_idx]
+    if core.get_shape()[1] != core.get_shape()[2]:
+      raise ValueError('The argument should be a Kronecker product of square matrices' 
+                      '(tt-cores must be square)')
+    pows *= core.get_shape()[1].value
+  for core in cores:
+    det *= tf.pow(tf.matrix_determinant(core[0, :, :, 0]), pows / core.get_shape()[1].value)
+  return det
 
 
 def log_determinant(kron_a):
