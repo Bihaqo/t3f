@@ -3,6 +3,22 @@ import tensorflow as tf
 
 from tensor_train import TensorTrain
 
+def determinant(kron_a):
+  """Computes the determinant of a given matrix, factorized into
+  a Kronecker product of square matrices.
+  
+  Note, that this method can suffer from overflow.
+
+  Args:
+    kron_a: `TensorTrain` object containing a matrix of size N x N, 
+    factorized into a Kronecker product of square matrices (all 
+    tt-ranks are 1 and all tt-cores are square). 
+  Returns:
+    Number, the determinant of the given matrix
+  """
+  raise NotImplementedError
+
+
 def log_determinant(kron_a):
   """Computes the log-determinant of a given matrix, factorized into
   a Kronecker product of square matrices.
@@ -14,8 +30,11 @@ def log_determinant(kron_a):
     must have positive determinants
   
   Returns:
-    If the determinants of all cores are non-negative, returns the log-determinant 
-    Else returns tf.nan
+    Number, the log-determinant of the given matrix
+
+  Raises:
+    ValueError if the cores are not square, or there determinants
+    are not positive
   """
   raise NotImplementedError
 
@@ -49,4 +68,4 @@ def cholesky(kron_a):
   Returns:
     `TensorTrain` object, containing a TT-matrix of size N x N    
   """
-  raise NotImplementedError
+  raise NotImplementedError 
