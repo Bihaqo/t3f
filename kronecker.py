@@ -92,6 +92,7 @@ def slog_determinant(kron_a):
     logdet += tf.log(core_abs_det) * core_pow
     det_sign *= core_det_sign**(core_pow)
   
+  
   return det_sign, logdet
 
 def inv(kron_a):
@@ -131,7 +132,7 @@ def inv(kron_a):
     core_inv = tf.matrix_inverse(core[0, :, :, 0])
     inv_cores.append(tf.expand_dims(tf.expand_dims(core_inv, 0), -1))
 
-  res_ranks = tf.TensorShape([1] * (kron_a.ndims() + 1))
+  res_ranks = kron_a.get_tt_ranks() 
   res_shape = kron_a.get_raw_shape()
   return TensorTrain(inv_cores, res_shape, res_ranks) 
 
@@ -171,7 +172,7 @@ def cholesky(kron_a):
     core_cho = tf.cholesky(core[0, :, :, 0])
     cho_cores.append(tf.expand_dims(tf.expand_dims(core_cho, 0), -1))
 
-  res_ranks = tf.TensorShape([1] * (kron_a.ndims() + 1))
+  res_ranks = kron_a.get_tt_ranks() 
   res_shape = kron_a.get_raw_shape()
   return TensorTrain(cho_cores, res_shape, res_ranks) 
 
