@@ -34,3 +34,19 @@ def inv(kron_a):
     `TensorTrain` object, containing a TT-matrix of size N x N    
   """
   raise NotImplementedError  
+
+
+def cholesky(kron_a):
+  """Computes the Cholesky decomposition of a given matrix, factorized 
+  into a Kronecker-product of symmetric positive-definite square matrices.
+
+  Args:
+    kron_a: `TensorTrain` object containing a matrix of size N x N, 
+    factorized into a Kronecker product of square matrices (all 
+    tt-ranks are 1 and all tt-cores are square). All the cores
+    must be symmetric positive-definite
+
+  Returns:
+    `TensorTrain` object, containing a TT-matrix of size N x N    
+  """
+  raise NotImplementedError
