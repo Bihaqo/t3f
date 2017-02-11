@@ -21,7 +21,7 @@ def determinant(kron_a):
     or the tt-ranks are not 1
   """
   if not _is_kron(kron_a):
-    raise ValueError('The argument should be a Kronecker product (tt-ranks'
+    raise ValueError('The argument should be a Kronecker product (tt-ranks '
                      'should be 1)')
 
   shapes_defined = kron_a.get_shape().is_fully_defined()
