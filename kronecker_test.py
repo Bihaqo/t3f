@@ -73,6 +73,27 @@ class KroneckerTest(tf.test.TestCase):
       actual = ops.full(kr.inv(kron_mat)).eval()
       self.assertAllClose(desired, actual)
     
+  def testCholesky(self):
+    """
+    Tests the inv function
+    """
+    np.random.seed(8)
+
+    # generating two symmetric positive-definite tt-cores
+    L_1 = np.tril(np.random.normal(scale=2., size=(2, 2)))
+    L_2 = np.tril(np.random.normal(scale=2., size=(3, 3)))
+    K_1 = L_1.dot(L_1.T)
+    K_2 = L_2.dot(L_2.T)
+    K = np.kron(K_1, K_2)
+    initializer = tensor_train.TensorTrain([K_1[None, :, :, None], K_2[None, :, :, None]], tt_ranks=7*[1])
+    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
+    init_op = tf.global_variables_initializer()
+    with self.test_session() as sess:
+      sess.run(init_op)
+      desired = np.linalg.cholesky(K)
+      actual = ops.full(kr.cholesky(kron_mat)).eval()
+      self.assertAllClose(desired, actual)
+
 
 if __name__ == "__main__":
   tf.test.main()
