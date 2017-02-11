@@ -32,8 +32,8 @@ class KroneckerTest(tf.test.TestCase):
     with self.test_session() as sess:
       sess.run(init_op)
       desired = np.linalg.det(ops.full(kron_mat).eval())
-      actual = kr.determinant(kron_mat)
-      self.assertAllClose(desired, actual.eval())
+      actual = kr.determinant(kron_mat).eval()
+      self.assertAllClose(desired, actual)
 
   def testSlogDet(self):
     """
@@ -60,6 +60,19 @@ class KroneckerTest(tf.test.TestCase):
       self.assertEqual(desired_sign, actual_sign)
       self.assertAllClose(desired_det, actual_det)
 
+  def testInv(self):
+    """
+    Tests the inv function
+    """
+    tf.set_random_seed(5)
+    kron_mat = t3f.get_variable('kron_mat', initializer=t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1))
+    init_op = tf.global_variables_initializer()
+    with self.test_session() as sess:
+      sess.run(init_op)
+      desired = np.linalg.inv(ops.full(kron_mat).eval())
+      actual = ops.full(kr.inv(kron_mat)).eval()
+      self.assertAllClose(desired, actual)
+    
 
 if __name__ == "__main__":
   tf.test.main()
