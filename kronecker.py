@@ -34,26 +34,27 @@ def determinant(kron_a):
     pows *= core.get_shape()[1].value
   for core_idx in range(kron_a.ndims()):
     core = cores[core_idx]
-    det *= tf.pow(tf.matrix_determinant(core[0, :, :, 0]), pows / core.get_shape()[1].value)
+    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    core_pow = pows / core.get_shape()[1].value
+
+    det *= tf.pow(core_det, core_pow)
   return det
 
 
-def log_determinant(kron_a):
-  """Computes the log-determinant of a given matrix, factorized into
-  a Kronecker product of square matrices.
+def slog_determinant(kron_a):
+  """Computes the sign and (natural) logarithm of the determinant of 
+  the given matrix, factorized intoa Kronecker product of square matrices.
 
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
     factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). All the cores
-    must have positive determinants
-  
+    tt-ranks are 1 and all tt-cores are square).  
   Returns:
     Number, the log-determinant of the given matrix
 
   Raises:
-    ValueError if the cores are not square, or there determinants
-    are not positive
+    ValueError if the tt-cores of the provided matrix are not square,
+    or the tt-ranks are not 1
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
@@ -67,12 +68,18 @@ def log_determinant(kron_a):
     pows *= core.get_shape()[1].value
                                                           
   logdet = 0
+  det_sign = 1
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    logdet += tf.log(tf.matrix_determinant(core[0, :, :, 0])) * (pows / core.get_shape()[1].value)
+    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    core_abs_det = tf.abs(core_det)
+    core_det_sign = tf.sign(core_det)
+    core_pow = pows / core.get_shape()[1].value
+
+    logdet += tf.log(core_abs_det) * core_pow
+    det_sign *= core_det_sign**(core_pow)
   
-  #TODO: raise error, if nan 
-  return logdet
+  return det_sign, logdet
 
 def inv(kron_a):
   """Computes the inverse of a given matrix, factorized into
@@ -86,6 +93,9 @@ def inv(kron_a):
 
   Returns:
     `TensorTrain` object, containing a TT-matrix of size N x N    
+  
+  Raises:
+    ValueError if the cores are not square or the ranks are not 1 
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
@@ -116,6 +126,9 @@ def cholesky(kron_a):
 
   Returns:
     `TensorTrain` object, containing a TT-matrix of size N x N    
+  
+  Raises:
+    ValueError if the cores are not square or the ranks are not 1 
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product')
