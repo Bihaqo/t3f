@@ -69,3 +69,18 @@ def cholesky(kron_a):
     `TensorTrain` object, containing a TT-matrix of size N x N    
   """
   raise NotImplementedError 
+
+
+def _is_kron(tt_a):
+  """Returns True if the argument is a Kronecker product matrix.
+
+  Args:
+    tt_a: `TensorTrain` object
+
+  Returns:
+    bool
+  """
+  if tt_a.is_tt_matrix():
+    return max(tt_a.get_tt_ranks()) == 1
+  return False    
+
