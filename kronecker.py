@@ -56,13 +56,14 @@ def log_determinant(kron_a):
     are not positive
   """
   if not _is_kron(kron_a):
-    raise ValueError('The argument should be a Kronecker product')
+    raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
   
   pows = 1
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
     if core.get_shape()[1] != core.get_shape()[2]:
-      raise ValueError('The argument should be a Kronecker product of square matrices')
+      raise ValueError('The argument should be a Kronecker product of square matrices' 
+                      '(tt-cores must be square)')
     pows *= core.get_shape()[1].value
                                                           
   logdet = 0
@@ -86,8 +87,22 @@ def inv(kron_a):
   Returns:
     `TensorTrain` object, containing a TT-matrix of size N x N    
   """
-  raise NotImplementedError  
+  if not _is_kron(kron_a):
+    raise ValueError('The argument should be a Kronecker product (tt-ranks should be 1)')
 
+  inv_cores = []
+  for core_idx in range(kron_a.ndims()):
+    core = kron_a.tt_cores[core_idx]
+    if core.get_shape()[1] != core.get_shape()[2]:
+      raise ValueError('The argument should be a Kronecker product of square matrices' 
+                      '(tt-cores must be square)')
+ 
+    core_inv = tf.matrix_inverse(core[0, :, :, 0])
+    inv_cores.append(tf.expand_dims(tf.expand_dims(core_inv, 0), -1))
+
+  res_ranks = tf.TensorShape([1] * (kron_a.ndims() + 1))
+  res_shape = kron_a.get_raw_shape()
+  return TensorTrain(inv_cores, res_shape, res_ranks) 
 
 def cholesky(kron_a):
   """Computes the Cholesky decomposition of a given matrix, factorized 
@@ -102,8 +117,21 @@ def cholesky(kron_a):
   Returns:
     `TensorTrain` object, containing a TT-matrix of size N x N    
   """
-  raise NotImplementedError 
+  if not _is_kron(kron_a):
+    raise ValueError('The argument should be a Kronecker product')
 
+  cho_cores = []
+  for core_idx in range(kron_a.ndims()):
+    core = kron_a.tt_cores[core_idx]
+    if core.get_shape()[1] != core.get_shape()[2]:
+      raise ValueError('The argument should be a Kronecker product of square matrices' 
+                      '(tt-cores must be square)')
+    core_cho = tf.cholesky(core[0, :, :, 0])
+    cho_cores.append(tf.expand_dims(tf.expand_dims(core_cho, 0), -1))
+
+  res_ranks = tf.TensorShape([1] * (kron_a.ndims() + 1))
+  res_shape = kron_a.get_raw_shape()
+  return TensorTrain(cho_cores, res_shape, res_ranks) 
 
 def _is_kron(tt_a):
   """Returns True if the argument is a Kronecker product matrix.
