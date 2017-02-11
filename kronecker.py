@@ -14,11 +14,11 @@ def determinant(kron_a):
     tt-ranks are 1 and all tt-cores are square). 
   
   Returns:
-    Number, the determinant of the given matrix
+    Number, the determinant of the given matrix.
 
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
-    or the tt-ranks are not 1
+    or the tt-ranks are not 1.
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product (tt-ranks '
@@ -54,15 +54,15 @@ def slog_determinant(kron_a):
   Args:
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
     factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square)
+    tt-ranks are 1 and all tt-cores are square).
 
   Returns:
     Two numbers, sign of the determinant and the log-determinant of the given 
-    matrix
+    matrix.
 
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
-    or the tt-ranks are not 1
+    or the tt-ranks are not 1.
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product ' 
@@ -102,13 +102,14 @@ def inv(kron_a):
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
     factorized into a Kronecker product of square matrices (all 
     tt-ranks are 1 and all tt-cores are square). All the cores
-    must be invertable
+    must be invertable.
 
   Returns:
-    `TensorTrain` object, containing a TT-matrix of size N x N    
+    `TensorTrain` object, containing a TT-matrix of size N x N. 
   
   Raises:
-    ValueError if the cores are not square or the ranks are not 1 
+    ValueError if the tt-cores of the provided matrix are not square,
+    or the tt-ranks are not 1.
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product ' 
@@ -143,13 +144,14 @@ def cholesky(kron_a):
     kron_a: `TensorTrain` object containing a matrix of size N x N, 
     factorized into a Kronecker product of square matrices (all 
     tt-ranks are 1 and all tt-cores are square). All the cores
-    must be symmetric positive-definite
+    must be symmetric positive-definite.
 
   Returns:
-    `TensorTrain` object, containing a TT-matrix of size N x N    
-  
+    `TensorTrain` object, containing a TT-matrix of size N x N. 
+    
   Raises:
-    ValueError if the cores are not square or the ranks are not 1 
+    ValueError if the tt-cores of the provided matrix are not square,
+    or the tt-ranks are not 1.
   """
   if not _is_kron(kron_a):
     raise ValueError('The argument should be a Kronecker product ' 
