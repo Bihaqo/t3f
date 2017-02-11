@@ -22,7 +22,6 @@ class KroneckerTest(tf.test.TestCase):
 
   def testDet(self):
     # Tests the determinant function
-    tf.set_random_seed(5)
     initializer = t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
     kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
@@ -34,6 +33,10 @@ class KroneckerTest(tf.test.TestCase):
 
   def testSlogDet(self):
     # Tests the slog_determinant function
+    
+    # TODO: use kron and -1 * kron matrices, when mul is implemented 
+    # the current version is platform-dependent
+    
     tf.set_random_seed(5) # negative derminant
     initializer = t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1)
     kron_neg = t3f.get_variable('kron_neg', initializer=initializer)
@@ -59,7 +62,6 @@ class KroneckerTest(tf.test.TestCase):
 
   def testInv(self):
     # Tests the inv function
-    tf.set_random_seed(5)
     initializer = t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
     kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
