@@ -185,6 +185,7 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     left_mode = a_shape[0][core_idx]
     right_mode = b_shape[1][core_idx]
     core_shape = (res_left_rank, left_mode, right_mode, res_right_rank)
+    # TODO: test with partually known shape (e.g. tt_ranks are undefined).
     core_shape = tf.TensorShape(core_shape)
     curr_res_core = tf.reshape(curr_res_core, core_shape)
     result_cores.append(curr_res_core)
@@ -348,8 +349,19 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
     a number
     sum of products of all the elements of tt_a and sparse_b
   """
-  num_elements = tf.shape(sparse_b.indices)[0]
+  if sparse_b.indices.get_shape().is_fully_defined():
+    num_elements = sparse_b.indices.get_shape()[0]
+  else:
+    num_elements = tf.shape(sparse_b.indices)[0]
   tt_a_elements = tf.ones((num_elements, 1, 1))
+  if tt_a.get_shape().is_fully_defined():
+    a_shape = tt_a.get_raw_shape()
+  else:
+    a_shape = raw_shape(tt_matrix_a)
+  if tt_a.get_tt_ranks().is_fully_defined():
+    a_ranks = tt_a.get_tt_ranks()
+  else:
+    a_ranks = tt_ranks(tt_a)
   if tt_a.is_tt_matrix():
     # TODO: use t3f.shape is safer??
     tensor_shape = tt_a.get_raw_shape()
@@ -362,10 +374,14 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
       # implementation
       # https://github.com/tensorflow/tensorflow/issues/206
       curr_core = tt_a.tt_cores[core_idx]
-      left_rank = tf.shape(curr_core)[0]
-      right_rank = tf.shape(curr_core)[-1]
+      left_rank = a_ranks[core_idx]
+      right_rank = a_ranks[core_idx + 1]
       curr_core = tf.transpose(curr_core, (1, 2, 0, 3))
-      curr_core = tf.reshape(curr_core, (-1, left_rank, right_rank))
+      curr_core_shape = (a_shape[0][core_idx]*a_shape[1][core_idx], left_rank,
+                         right_rank)
+      # TODO: test with partually known shape (e.g. tt_ranks are undefined).
+      curr_core_shape = tf.TensorShape(curr_core_shape)
+      curr_core = tf.reshape(curr_core, curr_core_shape)
       # Ravel multiindex (row_idx[:, core_idx], col_idx[:, core_idx]) into
       # a linear index to use tf.gather that supports only first dimensional
       # gather.
