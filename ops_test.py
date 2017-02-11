@@ -284,6 +284,23 @@ class TTMatrixTest(tf.test.TestCase):
           res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
           self.assertAllClose(tt_val.transpose(), res_actual_val)
 
+  def testQuadraticForm(self):
+    # Test quadratic form.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          b = initializers.random_matrix((tensor_shape[0], None), tt_rank=rank)
+          c = initializers.random_matrix((tensor_shape[1], None), tt_rank=rank)
+          res_actual = ops.quadratic_form(A, b, c)
+          vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
+          res_actual_val, A_val, b_val, c_val = sess.run(vars)
+          res_desired = b_val.T.dot(A_val).dot(c_val)
+          self.assertAllClose(res_desired, res_actual_val)
+
 
 if __name__ == "__main__":
   tf.test.main()
