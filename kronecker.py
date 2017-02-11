@@ -27,12 +27,13 @@ def determinant(kron_a):
   cores = kron_a.tt_cores
   det, pows = 1, 1
   for core_idx in range(kron_a.ndims()):
-    core = cores[core_idx]
+    core = kron_a.tt_cores[core_idx]
     if core.get_shape()[1] != core.get_shape()[2]:
       raise ValueError('The argument should be a Kronecker product of square matrices' 
                       '(tt-cores must be square)')
     pows *= core.get_shape()[1].value
-  for core in cores:
+  for core_idx in range(kron_a.ndims()):
+    core = cores[core_idx]
     det *= tf.pow(tf.matrix_determinant(core[0, :, :, 0]), pows / core.get_shape()[1].value)
   return det
 
@@ -54,8 +55,23 @@ def log_determinant(kron_a):
     ValueError if the cores are not square, or there determinants
     are not positive
   """
-  raise NotImplementedError
-
+  if not _is_kron(kron_a):
+    raise ValueError('The argument should be a Kronecker product')
+  
+  pows = 1
+  for core_idx in range(kron_a.ndims()):
+    core = kron_a.tt_cores[core_idx]
+    if core.get_shape()[1] != core.get_shape()[2]:
+      raise ValueError('The argument should be a Kronecker product of square matrices')
+    pows *= core.get_shape()[1].value
+                                                          
+  logdet = 0
+  for core_idx in range(kron_a.ndims()):
+    core = kron_a.tt_cores[core_idx]
+    logdet += tf.log(tf.matrix_determinant(core[0, :, :, 0])) * (pows / core.get_shape()[1].value)
+  
+  #TODO: raise error, if nan 
+  return logdet
 
 def inv(kron_a):
   """Computes the inverse of a given matrix, factorized into
