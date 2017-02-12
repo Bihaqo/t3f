@@ -114,6 +114,17 @@ class TTTensorTest(tf.test.TestCase):
     for dtype in [tf.float16, tf.float32, tf.float64]:
       self.assertEqual(ops.cast(tt_x, dtype).dtype, dtype)
 
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for tensors.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 1))
+    tt_int = tensor_train.TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -318,6 +329,17 @@ class TTMatrixTest(tf.test.TestCase):
     for dtype in [tf.float16, tf.float32, tf.float64]:
       self.assertEqual(ops.cast(tt_vec, dtype).dtype, dtype)
       self.assertEqual(ops.cast(tt_mat, dtype).dtype, dtype)
+
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for matrices.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 2, 1))
+    tt_int = tensor_train.TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
 
 
 if __name__ == "__main__":
