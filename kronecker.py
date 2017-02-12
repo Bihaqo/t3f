@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+import ops
 
 def determinant(kron_a):
   """Computes the determinant of a given Kronecker-factorized matrix. 
@@ -29,7 +30,8 @@ def determinant(kron_a):
     i_shapes = kron_a.get_raw_shape()[0]
     j_shapes = kron_a.get_raw_shape()[1]
   else:
-    i_shapes = raw_shape(kron_a)[0]
+    i_shapes = ops.raw_shape(kron_a)[0]
+    j_shapes = ops.raw_shape(kron_a)[1]
 
   if shapes_defined:
     if i_shapes != j_shapes:
@@ -73,7 +75,8 @@ def slog_determinant(kron_a):
     i_shapes = kron_a.get_raw_shape()[0]
     j_shapes = kron_a.get_raw_shape()[1]
   else:
-    i_shapes = raw_shape(kron_a)[0]
+    i_shapes = ops.raw_shape(kron_a)[0]
+    j_shapes = ops.raw_shape(kron_a)[1]
 
   if shapes_defined:
     if i_shapes != j_shapes:
@@ -120,7 +123,8 @@ def inv(kron_a):
     i_shapes = kron_a.get_raw_shape()[0]
     j_shapes = kron_a.get_raw_shape()[1]
   else:
-    i_shapes = raw_shape(kron_a)[0]
+    i_shapes = ops.raw_shape(kron_a)[0]
+    j_shapes = ops.raw_shape(kron_a)[1]
 
   if shapes_defined:
     if i_shapes != j_shapes:
@@ -162,7 +166,8 @@ def cholesky(kron_a):
     i_shapes = kron_a.get_raw_shape()[0]
     j_shapes = kron_a.get_raw_shape()[1]
   else:
-    i_shapes = raw_shape(kron_a)[0]
+    i_shapes = ops.raw_shape(kron_a)[0]
+    j_shapes = ops.raw_shape(kron_a)[1]
 
   if shapes_defined:
     if i_shapes != j_shapes:
