@@ -60,7 +60,8 @@ def slog_determinant(kron_a):
 
   Returns:
     Two numbers, sign of the determinant and the log-determinant of the given 
-    matrix.
+    matrix. If the determinant is zero, then sign will be 0 and logdet will be
+    -Inf. In all cases, the determinant is equal to sign * np.exp(logdet).
 
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
