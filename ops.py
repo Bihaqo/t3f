@@ -563,7 +563,7 @@ def cast(tt_a, dtype):
   """
 
   if not isinstance(tt_a, TensorTrain):
-    raise ValueError('Argument should be a TT-matrix')
+    raise ValueError('Argument should be a TT-tensor')
 
   res_cores = []
   cores = tt_a.tt_cores
