@@ -107,6 +107,13 @@ class TTTensorTest(tf.test.TestCase):
           self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                               rtol=1e-5)
 
+  def testCastFloat(self):
+    # Test cast function for float tt-tensors.
+    tt_x = initializers.random_tensor((2, 3, 2), tt_rank=2)
+
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_x, dtype).dtype, dtype)
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -300,6 +307,17 @@ class TTMatrixTest(tf.test.TestCase):
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = b_val.T.dot(A_val).dot(c_val)
           self.assertAllClose(res_desired, res_actual_val)
+
+  def testCastFloat(self):
+    # Test cast function for float tt-matrices and vectors.
+    
+    tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
+
+    tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_vec, dtype).dtype, dtype)
+      self.assertEqual(ops.cast(tt_mat, dtype).dtype, dtype)
 
 
 if __name__ == "__main__":
