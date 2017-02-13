@@ -549,3 +549,26 @@ def quadratic_form(A, b, c):
 
   # TODO: make a more efficient implementation taylored for this case.
   return tt_tt_flat_inner(A, tt_tt_matmul(b, transpose(c)))
+
+def cast(tt_a, dtype):
+  """Casts a tt-tensor to a new type.
+
+  Args:
+    tt_a: `TensorTrain` object.
+    dtype: The destination type. 
+
+  Raises:
+    TypeError: If `tt_a` cannot be cast to the `dtype`.
+    ValueError: If `tt_a` is not a `TensorTrain`
+  """
+
+  if not isinstance(tt_a, TensorTrain):
+    raise ValueError('Argument should be a TensorTrain')
+
+  res_cores = []
+  cores = tt_a.tt_cores
+  for core_idx in range(tt_a.ndims()):
+    res_cores.append(tf.cast(cores[core_idx], dtype))
+  res_shape = tt_a.get_raw_shape()
+  res_ranks = tt_a.get_tt_ranks()
+  return TensorTrain(res_cores, res_shape, res_ranks)

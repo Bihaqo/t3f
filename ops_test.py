@@ -107,6 +107,24 @@ class TTTensorTest(tf.test.TestCase):
           self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                               rtol=1e-5)
 
+  def testCastFloat(self):
+    # Test cast function for float tt-tensors.
+    tt_x = initializers.random_tensor((2, 3, 2), tt_rank=2)
+
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_x, dtype).dtype, dtype)
+
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for tensors.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 1))
+    tt_int = tensor_train.TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -300,6 +318,28 @@ class TTMatrixTest(tf.test.TestCase):
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = b_val.T.dot(A_val).dot(c_val)
           self.assertAllClose(res_desired, res_actual_val)
+
+  def testCastFloat(self):
+    # Test cast function for float tt-matrices and vectors.
+    
+    tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
+
+    tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_vec, dtype).dtype, dtype)
+      self.assertEqual(ops.cast(tt_mat, dtype).dtype, dtype)
+
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for matrices.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 2, 1))
+    tt_int = tensor_train.TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
 
 
 if __name__ == "__main__":
