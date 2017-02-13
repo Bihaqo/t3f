@@ -81,27 +81,27 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
     `TensorTrain` object containing a TT-tensor.
   """
   tens = tf.convert_to_tensor(tens)
-  dynamic_shape = tf.shape(tens)
+  # dynamic_shape = tf.shape(tens)
+  dynamic_shape = tens.get_shape()
   static_shape = tens.get_shape()
   d = len(tens.get_shape())
+  if np.array(max_tt_rank).size == 1:
+    max_tt_rank = (max_tt_rank * np.ones(d+1)).astype(np.int32)
   ranks = [1] * (d + 1)
   tt_cores = []
   for core_idx in range(d - 1):
-    m = ranks[core_idx] * dynamic_shape[core_idx]
+    m = ranks[core_idx] * dynamic_shape[core_idx].value
     tens = tf.reshape(tens, [m, -1])
     s, u, v = tf.svd(tens, full_matrices=False)
-    # print(max_tt_rank, tf.shape(s)[0])
-    ranks[core_idx + 1] = tf.minimum(max_tt_rank, tf.shape(s)[0])
-    # print(u.get_shape(), ranks[core_idx + 1])
+    ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], tf.shape(s)[0])
     u = u[:, 0:ranks[core_idx + 1]]
     s = s[0:ranks[core_idx + 1]]
-    v = v[0:ranks[core_idx + 1], :]
-    core_shape = (ranks[core_idx], dynamic_shape[core_idx], ranks[core_idx + 1])
+    v = v[:, 0:ranks[core_idx + 1]]
+    core_shape = (ranks[core_idx], dynamic_shape[core_idx].value, ranks[core_idx + 1])
     tt_cores.append(tf.reshape(u, core_shape))
-    tens = tf.matmul(tf.diag(s), v)
-  core_shape = (ranks[d - 1], dynamic_shape[d - 1], ranks[d])
+    tens = tf.matmul(tf.diag(s), tf.transpose(v))
+  core_shape = (ranks[d - 1], dynamic_shape[d - 1].value, ranks[d])
   tt_cores.append(tf.reshape(tens, core_shape))
-  # print(tt_cores, tens.get_shape(), tf.TensorShape(ranks))
   return TensorTrain(tt_cores, static_shape)#, tf.TensorShape(ranks))
 
 
