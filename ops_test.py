@@ -42,7 +42,7 @@ class TTTensorTest(tf.test.TestCase):
     tens = np.random.rand(*shape).astype(np.float32)
     with self.test_session():
       tf_tens = tf.constant(tens)
-      tt_tens = ops.to_tt_tensor(tf_tens, shape)
+      tt_tens = ops.to_tt_tensor(tf_tens, max_tt_rank=10)
       self.assertAllClose(tens, ops.full(tt_tens).eval())
 
 
