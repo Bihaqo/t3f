@@ -51,7 +51,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
   raise NotImplementedError
 
 
-def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
+def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   """Converts a given tf.Tensor to a TT-tensor of the same shape.
 
   Args:
@@ -82,7 +82,7 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
 
   Raises:
     ValueError if the rank of the input tensor is not defined, if max_tt_rank is
-      less than 0.
+      less than 0, if epsilon is less than 0.
   """
   tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
@@ -92,6 +92,8 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
   max_tt_rank = np.array(max_tt_rank).astype(np.int32)
   if max_tt_rank < 1:
     raise ValueError('Maximum TT-rank should be greater or equal to 1.')
+  if epsilon is not None and epsilon < 0:
+    raise ValueError('Epsilon should be nonegative.')
   # dynamic_shape = tf.shape(tens)
   dynamic_shape = tens.get_shape()
   if np.array(max_tt_rank).size == 1:
