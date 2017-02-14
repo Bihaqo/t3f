@@ -81,15 +81,19 @@ def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
     `TensorTrain` object containing a TT-tensor.
 
   Raises:
-    ValueError if the rank of the input tensor is not defined.
+    ValueError if the rank of the input tensor is not defined, if max_tt_rank is
+      less than 0.
   """
+  tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
   if not static_shape.with_rank():
     raise ValueError('Rank (number of dims) of the input should be defined.')
-  tens = tf.convert_to_tensor(tens)
+  d = len(static_shape)
+  max_tt_rank = np.array(max_tt_rank).astype(np.int32)
+  if max_tt_rank < 1:
+    raise ValueError('Maximum TT-rank should be greater or equal to 1.')
   # dynamic_shape = tf.shape(tens)
   dynamic_shape = tens.get_shape()
-  d = len(tens.get_shape())
   if np.array(max_tt_rank).size == 1:
     max_tt_rank = (max_tt_rank * np.ones(d+1)).astype(np.int32)
   ranks = [1] * (d + 1)
