@@ -305,7 +305,6 @@ def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
         if curr_core_shape[0] != prev_core_shape[-1]:
           # TT-ranks are inconsistent.
           return False
-      # print(core_idx)
       if tt_ranks is not None:
         if curr_core_shape[0] != tt_ranks[core_idx]:
           # The TT-ranks are not aligned with the TT-cores shape.
