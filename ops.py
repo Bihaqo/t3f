@@ -82,7 +82,9 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
 
   Raises:
     ValueError if the rank of the input tensor is not defined, if max_tt_rank is
-      less than 0, if epsilon is less than 0.
+      less than 0, if max_tt_rank is not a number or a vector of length d + 1
+      where d is the number of dimensions (rank) of the input tensor, if epsilon
+      is less than 0.
   """
   tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
@@ -93,11 +95,15 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   if max_tt_rank < 1:
     raise ValueError('Maximum TT-rank should be greater or equal to 1.')
   if epsilon is not None and epsilon < 0:
-    raise ValueError('Epsilon should be nonegative.')
+    raise ValueError('Epsilon should be non-negative.')
+  if max_tt_rank.size == 1:
+    max_tt_rank = (max_tt_rank * np.ones(d+1)).astype(np.int32)
+  elif max_tt_rank.size != d + 1:
+    raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
+                     'where d is the number of dimensions (rank) of the tensor.')
+
   # dynamic_shape = tf.shape(tens)
   dynamic_shape = tens.get_shape()
-  if np.array(max_tt_rank).size == 1:
-    max_tt_rank = (max_tt_rank * np.ones(d+1)).astype(np.int32)
   ranks = [1] * (d + 1)
   tt_cores = []
   for core_idx in range(d - 1):
