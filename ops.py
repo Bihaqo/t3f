@@ -88,9 +88,8 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   """
   tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
-  if not static_shape.with_rank():
-    raise ValueError('Rank (number of dims) of the input should be defined.')
-  d = len(static_shape)
+  # Raises ValueError if ndims is not defined.
+  d = static_shape.__len__()
   max_tt_rank = np.array(max_tt_rank).astype(np.int32)
   if max_tt_rank < 1:
     raise ValueError('Maximum TT-rank should be greater or equal to 1.')
@@ -101,25 +100,35 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   elif max_tt_rank.size != d + 1:
     raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
                      'where d is the number of dimensions (rank) of the tensor.')
-
-  # dynamic_shape = tf.shape(tens)
-  dynamic_shape = tens.get_shape()
   ranks = [1] * (d + 1)
   tt_cores = []
   for core_idx in range(d - 1):
-    m = ranks[core_idx] * dynamic_shape[core_idx].value
-    tens = tf.reshape(tens, [m, -1])
+    curr_mode = static_shape[core_idx].value
+    if curr_mode is None:
+      curr_mode = tf.shape(tens)[core_idx]
+    rows = ranks[core_idx] * curr_mode
+    tens = tf.reshape(tens, [rows, -1])
+    columns = tens.get_shape()[1].value
+    if columns is None:
+      columns = tf.shape(tens[1])
     s, u, v = tf.svd(tens, full_matrices=False)
-    ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], tf.shape(s)[0])
+    if max_tt_rank[core_idx + 1] == 1:
+      ranks[core_idx + 1] = 1
+    else:
+      # TODO: try catch tf.minimum
+      ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
     u = u[:, 0:ranks[core_idx + 1]]
     s = s[0:ranks[core_idx + 1]]
     v = v[:, 0:ranks[core_idx + 1]]
-    core_shape = (ranks[core_idx], dynamic_shape[core_idx].value, ranks[core_idx + 1])
+    core_shape = (ranks[core_idx], curr_mode, ranks[core_idx + 1])
     tt_cores.append(tf.reshape(u, core_shape))
     tens = tf.matmul(tf.diag(s), tf.transpose(v))
-  core_shape = (ranks[d - 1], dynamic_shape[d - 1].value, ranks[d])
+  last_mode = static_shape[-1].value
+  if last_mode is None:
+    last_mode = tf.shape(tens)[-1]
+  core_shape = (ranks[d - 1], last_mode, ranks[d])
   tt_cores.append(tf.reshape(tens, core_shape))
-  return TensorTrain(tt_cores, static_shape)#, tf.TensorShape(ranks))
+  return TensorTrain(tt_cores, static_shape, ranks)
 
 
 def full(tt):
