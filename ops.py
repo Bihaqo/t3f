@@ -102,6 +102,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
                      'where d is the number of dimensions (rank) of the tensor.')
   ranks = [1] * (d + 1)
   tt_cores = []
+  are_tt_ranks_defined = True
   for core_idx in range(d - 1):
     curr_mode = static_shape[core_idx].value
     if curr_mode is None:
@@ -115,8 +116,14 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
     if max_tt_rank[core_idx + 1] == 1:
       ranks[core_idx + 1] = 1
     else:
-      # TODO: try catch tf.minimum
-      ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
+      try:
+        ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
+      except TypeError:
+        # Some of the values are undefined on the compilation stage and thus
+        # they are tf.tensors instead of values.
+        min_dim = tf.minimum(rows, columns)
+        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)[0]
+        are_tt_ranks_defined = False
     u = u[:, 0:ranks[core_idx + 1]]
     s = s[0:ranks[core_idx + 1]]
     v = v[:, 0:ranks[core_idx + 1]]
@@ -128,6 +135,8 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
     last_mode = tf.shape(tens)[-1]
   core_shape = (ranks[d - 1], last_mode, ranks[d])
   tt_cores.append(tf.reshape(tens, core_shape))
+  if not are_tt_ranks_defined:
+    ranks = None
   return TensorTrain(tt_cores, static_shape, ranks)
 
 
