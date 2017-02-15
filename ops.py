@@ -150,14 +150,28 @@ def full(tt):
     tf.Tensor.
   """
   num_dims = tt.ndims()
-  ranks = tt_ranks(tt)
+  if tt.get_tt_ranks().is_fully_defined():
+    ranks = tt.get_tt_ranks().as_list()
+  else:
+    ranks = tt_ranks(tt)
+
+  if tt.get_shape().is_fully_defined():
+    shape = tt.get_shape().as_list()
+    raw_shape = list(tt.get_raw_shape())
+    for i in range(len(raw_shape)):
+      raw_shape[i] = raw_shape[i].as_list()
+  else:
+    print(tt.get_shape())
+    # TODO: implement shape and raw_shape, and think how to avoid name conflict.
+    shape = shape(tt)
+    raw_shape = raw_shape(tt)
+
   res = tt.tt_cores[0]
   for i in range(1, num_dims):
     res = tf.reshape(res, (-1, ranks[i]))
     curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
     res = tf.matmul(res, curr_core)
   if tt.is_tt_matrix():
-    raw_shape = tt.get_raw_shape()
     intermediate_shape = []
     for i in range(num_dims):
       intermediate_shape.append(raw_shape[0][i])
@@ -169,9 +183,9 @@ def full(tt):
     for i in range(1, 2 * num_dims, 2):
       transpose.append(i)
     res = tf.transpose(res, transpose)
-    return tf.reshape(res, tt.get_shape())
+    return tf.reshape(res, shape)
   else:
-    return tf.reshape(res, tt.get_shape())
+    return tf.reshape(res, shape)
 
 
 def tt_ranks(tt):
