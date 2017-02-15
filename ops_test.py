@@ -42,8 +42,12 @@ class TTTensorTest(tf.test.TestCase):
     tens = np.random.rand(*shape).astype(np.float32)
     with self.test_session():
       tf_tens = tf.constant(tens)
-      tt_tens = ops.to_tt_tensor(tf_tens, max_tt_rank=10)
+      tt_tens = ops.to_tt_tensor(tf_tens, max_tt_rank=3)
       self.assertAllClose(tens, ops.full(tt_tens).eval())
+      dynamic_tt_ranks = ops.tt_ranks(tt_tens).eval()
+      static_tt_ranks = tt_tens.get_tt_ranks().as_list()
+      self.assertEqual(dynamic_tt_ranks, static_tt_ranks)
+
 
 
 class TTMatrixTest(tf.test.TestCase):
