@@ -92,12 +92,11 @@ class TensorTrain(object):
     """
     raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
-      # TODO: return TensorShape.
       m = np.prod(raw_shape[0].as_list())
       n = np.prod(raw_shape[1].as_list())
-      return m, n
+      return tf.TensorShape((m, n))
     else:
-      return self.get_raw_shape()[0]
+      return raw_shape[0]
 
   @property
   def tt_cores(self):
