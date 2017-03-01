@@ -49,13 +49,14 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
     `TensorTrain` object containing a TT-matrix.
   """
   mat = tf.convert_to_tensor(mat)
-  # Vector notation: shape is ((...), None) or (None, (...))
+  # In case the shape is immutable.
+  shape = list(shape)
+  # In case shape represents a vector, e.g. [None, [2, 2, 2]]
   if shape[0] is None:
-    shape0 = np.ones(len(shape[1])).astype(int)
-    shape = np.vstack((shape0, shape[1]))
+    shape[0] = np.ones(len(shape[1])).astype(int)
+  # In case shape represents a vector, e.g. [[2, 2, 2], None]
   if shape[1] is None:
-    shape1 = np.ones(len(shape[0])).astype(int)
-    shape = np.vstack((shape[0], shape1))
+    shape[1] = np.ones(len(shape[0])).astype(int)
 
   shape = np.array(shape)
   tens = tf.reshape(mat, shape.flatten())
@@ -68,12 +69,18 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
   tens = tf.reshape(tens, new_shape)
   tt_tens = to_tt_tensor(tens, max_tt_rank, epsilon)
   tt_cores = []
-  # TODO: support dynamic ranks.
-  static_tt_ranks = tt_tens.get_tt_ranks().as_list()
+  static_tt_ranks = tt_tens.get_tt_ranks()
+  dynamic_tt_ranks = shapes.tt_ranks(tt_tens)
   for core_idx in range(d):
     curr_core = tt_tens.tt_cores[core_idx]
-    curr_core_new_shape = (static_tt_ranks[core_idx], shape[0, core_idx],
-                           shape[1, core_idx], static_tt_ranks[core_idx + 1])
+    curr_rank = static_tt_ranks[core_idx].value
+    if curr_rank is None:
+      curr_rank = dynamic_tt_ranks[core_idx]
+    next_rank = static_tt_ranks[core_idx + 1].value
+    if curr_rank is None:
+      next_rank = dynamic_tt_ranks[core_idx + 1]
+    curr_core_new_shape = (curr_rank, shape[0, core_idx],
+                           shape[1, core_idx], next_rank)
     curr_core = tf.reshape(curr_core, curr_core_new_shape)
     tt_cores.append(curr_core)
   return TensorTrain(tt_cores, shape, tt_tens.get_tt_ranks())
