@@ -8,7 +8,7 @@ import utils
 
 # TODO: add complexities to the comments.
 
-def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
+def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
   """Converts a given matrix or vector to a TT-matrix.
 
   The matrix dimensions should factorize into d numbers.
@@ -48,10 +48,31 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
   Returns:
     `TensorTrain` object containing a TT-matrix.
   """
+  mat = tf.convert_to_tensor(mat)
+  shape = np.array(shape)
+  # long_shape = np.hstack((shape[0], shape[1]))
+  # print(long_shape)
+  tens = tf.reshape(mat, shape.flatten())
+  d = len(shape[0])
+  # transpose_idx = 0, d, 1, d+1 ...
+  transpose_idx = np.arange(2 * d).reshape(2, d).T.flatten()
+  transpose_idx = transpose_idx.astype(int)
+  tens = tf.transpose(tens, (transpose_idx))
+  new_shape = np.prod(shape, axis=0)
+  tens = tf.reshape(tens, new_shape)
+  tt_tens =  to_tt_tensor(tens, max_tt_rank, epsilon)
+  tt_cores = []
+  static_tt_ranks = tt_tens.get_tt_ranks().as_list()
+  for core_idx in range(d):
+    curr_core = tt_tens.tt_cores[core_idx]
+    curr_core_new_shape = (static_tt_ranks[core_idx], shape[0, core_idx],
+                           shape[1, core_idx], static_tt_ranks[core_idx + 1])
+    curr_core = tf.reshape(curr_core, curr_core_new_shape)
+    tt_cores.append(curr_core)
+  return TensorTrain(tt_cores, shape, tt_tens.get_tt_ranks())
 
-  raise NotImplementedError
 
-
+# TODO: implement epsilon.
 def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   """Converts a given tf.Tensor to a TT-tensor of the same shape.
 
