@@ -3,6 +3,7 @@ import tensorflow as tf
 
 import tensor_train
 import ops
+import shapes
 import initializers
 
 
@@ -40,13 +41,21 @@ class TTTensorTest(tf.test.TestCase):
     shape = (2, 1, 4, 3)
     np.random.seed(1)
     tens = np.random.rand(*shape).astype(np.float32)
+    tf_tens = tf.constant(tens)
+    tt_tens = ops.to_tt_tensor(tf_tens, max_tt_rank=3)
     with self.test_session():
-      tf_tens = tf.constant(tens)
-      tt_tens = ops.to_tt_tensor(tf_tens, max_tt_rank=3)
       self.assertAllClose(tens, ops.full(tt_tens).eval())
-      dynamic_tt_ranks = ops.tt_ranks(tt_tens).eval()
+      dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval()
       static_tt_ranks = tt_tens.get_tt_ranks().as_list()
-      self.assertEqual(dynamic_tt_ranks, static_tt_ranks)
+      self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+
+      # Try to decompose the same tensor with unknown shape.
+      tf_tens_pl = tf.placeholder(tf.float32, (None, None, 4, None))
+      tt_tens = ops.to_tt_tensor(tf_tens_pl, max_tt_rank=3)
+      tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
+      self.assertAllClose(tens, tt_val)
+      dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
+      self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
 
 
@@ -167,7 +176,7 @@ class TTMatrixTest(tf.test.TestCase):
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
           res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val)
+          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5)
 
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
