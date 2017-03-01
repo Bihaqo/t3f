@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+import shapes
 import utils
 
 
@@ -88,6 +89,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   """
   tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
+  dynamic_shape = tf.shape(tens)
   # Raises ValueError if ndims is not defined.
   d = static_shape.__len__()
   max_tt_rank = np.array(max_tt_rank).astype(np.int32)
@@ -106,12 +108,12 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   for core_idx in range(d - 1):
     curr_mode = static_shape[core_idx].value
     if curr_mode is None:
-      curr_mode = tf.shape(tens)[core_idx]
+      curr_mode = dynamic_shape[core_idx]
     rows = ranks[core_idx] * curr_mode
     tens = tf.reshape(tens, [rows, -1])
     columns = tens.get_shape()[1].value
     if columns is None:
-      columns = tf.shape(tens[1])
+      columns = tf.shape(tens)[1]
     s, u, v = tf.svd(tens, full_matrices=False)
     if max_tt_rank[core_idx + 1] == 1:
       ranks[core_idx + 1] = 1
@@ -122,7 +124,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
         # Some of the values are undefined on the compilation stage and thus
         # they are tf.tensors instead of values.
         min_dim = tf.minimum(rows, columns)
-        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)[0]
+        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
         are_tt_ranks_defined = False
     u = u[:, 0:ranks[core_idx + 1]]
     s = s[0:ranks[core_idx + 1]]
@@ -132,7 +134,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
     tens = tf.matmul(tf.diag(s), tf.transpose(v))
   last_mode = static_shape[-1].value
   if last_mode is None:
-    last_mode = tf.shape(tens)[-1]
+    last_mode = dynamic_shape[-1]
   core_shape = (ranks[d - 1], last_mode, ranks[d])
   tt_cores.append(tf.reshape(tens, core_shape))
   if not are_tt_ranks_defined:
@@ -153,7 +155,7 @@ def full(tt):
   if tt.get_tt_ranks().is_fully_defined():
     ranks = tt.get_tt_ranks().as_list()
   else:
-    ranks = tt_ranks(tt)
+    ranks = shapes.tt_ranks(tt)
 
   if tt.get_shape().is_fully_defined():
     shape = tt.get_shape().as_list()
@@ -161,10 +163,8 @@ def full(tt):
     for i in range(len(raw_shape)):
       raw_shape[i] = raw_shape[i].as_list()
   else:
-    print(tt.get_shape())
-    # TODO: implement shape and raw_shape, and think how to avoid name conflict.
-    shape = shape(tt)
-    raw_shape = raw_shape(tt)
+    shape = shapes.shape(tt)
+    raw_shape = shapes.raw_shape(tt)
 
   res = tt.tt_cores[0]
   for i in range(1, num_dims):
@@ -186,25 +186,6 @@ def full(tt):
     return tf.reshape(res, shape)
   else:
     return tf.reshape(res, shape)
-
-
-def tt_ranks(tt):
-  """Returns the TT-ranks of a TensorTrain.
-
-  This operation returns a 1-D integer tensor representing the TT-ranks of
-  the input.
-
-  Args:
-    tt: `TensorTrain` object.
-
-  Returns:
-    A `Tensor`
-  """
-  num_dims = tt.ndims()
-  ranks = []
-  for i in range(num_dims):
-    ranks.append(tf.shape(tt.tt_cores[i])[0])
-  return tf.stack(ranks, axis=0)
 
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
