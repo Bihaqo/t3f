@@ -99,10 +99,11 @@ class TTMatrixTest(tf.test.TestCase):
   def testTTVector(self):
     vec_shape = (2, 1, 4, 3)
     np.random.seed(1)
-    vec = np.random.rand(np.prod(vec_shape)).astype(np.float32)
+    rows = np.prod(vec_shape)
+    vec = np.random.rand(rows, 1).astype(np.float32)
     with self.test_session():
       tf_vec = tf.constant(vec)
-      tt_vec = ops.to_tt_matrix(tf_vec, vec_shape)
+      tt_vec = ops.to_tt_matrix(tf_vec, (vec_shape, None))
       self.assertAllClose(vec, ops.full(tt_vec).eval())
 
   def testTTMatrix(self):

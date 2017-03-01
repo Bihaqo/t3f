@@ -49,19 +49,26 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
     `TensorTrain` object containing a TT-matrix.
   """
   mat = tf.convert_to_tensor(mat)
+  # Vector notation: shape is ((...), None) or (None, (...))
+  if shape[0] is None:
+    shape0 = np.ones(len(shape[1])).astype(int)
+    shape = np.vstack((shape0, shape[1]))
+  if shape[1] is None:
+    shape1 = np.ones(len(shape[0])).astype(int)
+    shape = np.vstack((shape[0], shape1))
+
   shape = np.array(shape)
-  # long_shape = np.hstack((shape[0], shape[1]))
-  # print(long_shape)
   tens = tf.reshape(mat, shape.flatten())
   d = len(shape[0])
   # transpose_idx = 0, d, 1, d+1 ...
   transpose_idx = np.arange(2 * d).reshape(2, d).T.flatten()
   transpose_idx = transpose_idx.astype(int)
-  tens = tf.transpose(tens, (transpose_idx))
+  tens = tf.transpose(tens, transpose_idx)
   new_shape = np.prod(shape, axis=0)
   tens = tf.reshape(tens, new_shape)
-  tt_tens =  to_tt_tensor(tens, max_tt_rank, epsilon)
+  tt_tens = to_tt_tensor(tens, max_tt_rank, epsilon)
   tt_cores = []
+  # TODO: support dynamic ranks.
   static_tt_ranks = tt_tens.get_tt_ranks().as_list()
   for core_idx in range(d):
     curr_core = tt_tens.tt_cores[core_idx]
