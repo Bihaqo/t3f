@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 
+# TODO: test all these functions.
 def tt_ranks(tt):
   """Returns the TT-ranks of a TensorTrain.
 
