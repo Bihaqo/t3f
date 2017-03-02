@@ -127,10 +127,10 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
     `TensorTrain` object containing a TT-tensor.
 
   Raises:
-    ValueError if the rank of the input tensor is not defined, if max_tt_rank is
-      less than 0, if max_tt_rank is not a number and not a vector of
-      length d + 1 where d is the number of dimensions (rank) of the input
-      tensor, if epsilon is less than 0.
+    ValueError if the rank (number of dimensions) of the input tensor is
+      not defined, if max_tt_rank is less than 0, if max_tt_rank is not a number
+      and not a vector of length d + 1 where d is the number of dimensions (rank)
+      of the input tensor, if epsilon is less than 0.
   """
   tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
@@ -187,6 +187,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   return TensorTrain(tt_cores, static_shape, ranks)
 
 
+# TODO: rename round so not to shadow python.round?
 def round(tt, max_tt_rank=None, epsilon=None):
   """TT-rounding procedure, returns a TT object with smaller TT-ranks.
 
