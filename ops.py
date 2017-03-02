@@ -157,11 +157,15 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
   data = tf.reshape(data, (-1, a_raw_shape[1][-1], 1))
   for core_idx in range(ndims - 1, -1, -1):
     curr_core = tt_matrix_a.tt_cores[core_idx]
-    # If core_idx = k, after einsum data becomes ik x (ik-1..., id-1, K, j0, ..., jk-1) x rank_k-1
+    # On the k = core_idx iteration, after applying einsum the shape of data
+    # becomes ik x (ik-1..., id-1, K, j0, ..., jk-1) x rank_k
     data = tf.einsum('aijb,rjb->ira', curr_core, data)
     if core_idx > 0:
-      # After einsum data becomes (ik, ..., id-1, K, j0, ..., jk-2) x jk-1 x rank_k-1
-      data = tf.reshape(data, (-1, a_raw_shape[1][core_idx - 1], a_ranks[core_idx]))
+      # After reshape the shape of data becomes
+      # (ik, ..., id-1, K, j0, ..., jk-2) x jk-1 x rank_k
+      new_data_shape = (-1, a_raw_shape[1][core_idx - 1], a_ranks[core_idx])
+      data = tf.reshape(data, new_data_shape)
+  # At the end the shape of the data is (i0, ..., id-1) x K
   return tf.reshape(data, (a_shape[0], b_shape[1]))
 
 
