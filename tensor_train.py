@@ -46,12 +46,9 @@ class TensorTrain(object):
     if convert_to_tensors:
       # TODO: what does this namescope do?
       with tf.name_scope("TensorTrain", tt_cores):
-        # TODO: should we pass as_ref=True because we want to be able to update
-        # values later if it is a VariableOp??
         for i in range(len(tt_cores)):
           name = "core%d" % i
-          tt_cores[i] = tf.convert_to_tensor(
-              tt_cores[i], name=name, as_ref=False)
+          tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
 
     if not _are_tt_cores_valid(tt_cores, shape, tt_ranks):
       raise ValueError('the tt_cores provided to TensorTrain constructor are '
@@ -92,12 +89,11 @@ class TensorTrain(object):
     """
     raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
-      # TODO: return TensorShape.
       m = np.prod(raw_shape[0].as_list())
       n = np.prod(raw_shape[1].as_list())
       return tf.TensorShape((m, n))
     else:
-      return self.get_raw_shape()[0]
+      return raw_shape[0]
 
   @property
   def tt_cores(self):
@@ -305,7 +301,6 @@ def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
         if curr_core_shape[0] != prev_core_shape[-1]:
           # TT-ranks are inconsistent.
           return False
-      # print(core_idx)
       if tt_ranks is not None:
         if curr_core_shape[0] != tt_ranks[core_idx]:
           # The TT-ranks are not aligned with the TT-cores shape.

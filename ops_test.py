@@ -36,15 +36,6 @@ class TTTensorTest(tf.test.TestCase):
         actual = ops.full(tf_tens)
         self.assertAllClose(desired, actual.eval())
 
-  def testTTTensor(self):
-    shape = (2, 1, 4, 3)
-    np.random.seed(1)
-    tens = np.random.rand(*shape).astype(np.float32)
-    with self.test_session():
-      tf_tens = tf.constant(tens)
-      tt_tens = ops.to_tt_tensor(tf_tens)
-      self.assertAllClose(tens, ops.full(tt_tens).eval())
-
   def testFlatInnerTTTensbyTTTens(self):
     # Inner product between two TT-tensors.
     shape_list = ((2, 2),
@@ -61,7 +52,7 @@ class TTTensorTest(tf.test.TestCase):
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
           res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val)
+          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5)
 
   def testFlatInnerTTTensbySparseTens(self):
     # Inner product between a TT-tensor and a sparse tensor.
@@ -80,7 +71,7 @@ class TTTensorTest(tf.test.TestCase):
             sparse_indices = np.vstack(sparse_indices).transpose()
             values = np.random.randn(num_elements).astype(np.float32)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
-                                       shape=shape)
+                                       dense_shape=shape)
             res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
             res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
@@ -163,27 +154,6 @@ class TTMatrixTest(tf.test.TestCase):
         actual = ops.full(tf_mat)
         self.assertAllClose(desired, actual.eval())
 
-  def testTTVector(self):
-    vec_shape = (2, 1, 4, 3)
-    np.random.seed(1)
-    vec = np.random.rand(np.prod(vec_shape)).astype(np.float32)
-    with self.test_session():
-      tf_vec = tf.constant(vec)
-      tt_vec = ops.to_tt_matrix(tf_vec, vec_shape)
-      self.assertAllClose(vec, ops.full(tt_vec).eval())
-
-  def testTTMatrix(self):
-    # Convert a np.prod(out_shape) x np.prod(in_shape) matrix into TT-matrix
-    # and back.
-    inp_shape = (2, 5, 2, 3)
-    out_shape = (3, 3, 2, 3)
-    np.random.seed(1)
-    mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
-    with self.test_session():
-      tf_mat = tf.constant(mat)
-      tt_mat = ops.to_tt_matrix(tf_mat, (out_shape, inp_shape))
-      self.assertAllClose(mat, ops.full(tt_mat).eval())
-
   def testTTMatTimesTTMat(self):
     # Multiply a TT-matrix by another TT-matrix.
     left_shape = (2, 3, 4)
@@ -263,7 +233,7 @@ class TTMatrixTest(tf.test.TestCase):
             sparse_indices = np.vstack(sparse_indices).transpose()
             values = np.random.randn(num_elements).astype(np.float32)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
-                                       shape=matrix_shape)
+                                       dense_shape=matrix_shape)
             res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
             res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)

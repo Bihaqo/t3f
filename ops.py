@@ -1,87 +1,11 @@
-import numpy as np
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+import shapes
 import utils
 
 
 # TODO: add complexities to the comments.
-
-def to_tt_matrix(mat, shape, max_tt_rank=10, eps=1e-6):
-  """Converts a given matrix or vector to a TT-matrix.
-
-  The matrix dimensions should factorize into d numbers.
-  If e.g. the dimensions are prime numbers, it's usually better to
-  pad the matrix with zeros until the dimensions factorize into
-  (ideally) 3-8 numbers.
-
-  Args:
-    mat: two dimensional tf.Tensor (a matrix).
-    shape: two dimensional array (np.array or list of lists)
-      Represents the tensor shape of the matrix.
-      E.g. for a (a1 * a2 * a3) x (b1 * b2 * b3) matrix `shape` should be
-      ((a1, a2, a3), (b1, b2, b3))
-      `shape[0]`` and `shape[1]`` should have the same length.
-      For vectors you may use ((a1, a2, a3), (1, 1, 1)) or, equivalently,
-      ((a1, a2, a3), None)
-    max_tt_rank: a number or a list of numbers
-      If a number, than defines the maximal TT-rank of the result.
-      If a list of numbers, than `max_tt_rank` length should be d-1
-      (where d is the length of `shape[0]`) and `max_tt_rank[i]` defines
-      the maximal (i+1)-th TT-rank of the result.
-      The following two versions are equivalent
-        `max_tt_rank = r`
-      and
-        `max_tt_rank = r * np.ones(d-1)`
-    eps: a floating point number
-      If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
-      the result would be guarantied to be `eps` close to `mat`
-      in terms of relative Frobenius error:
-        ||res - mat||_F / ||mat||_F <= eps
-      If the TT-ranks are restricted, providing a loose `eps` may reduce
-      the TT-ranks of the result.
-      E.g.
-        to_tt_matrix(mat, shape, max_tt_rank=100, eps=1)
-      will probably return you a TT-matrix with TT-ranks close to 1, not 100.
-
-  Returns:
-    `TensorTrain` object containing a TT-matrix.
-  """
-
-  raise NotImplementedError
-
-
-def to_tt_tensor(tens, max_tt_rank=10, eps=1e-6):
-  """Converts a given tf.Tensor to a TT-tensor of the same shape.
-
-  Args:
-    tens: tf.Tensor
-    max_tt_rank: a number or a list of numbers
-      If a number, than defines the maximal TT-rank of the result.
-      If a list of numbers, than `max_tt_rank` length should be d-1
-      (where d is the rank of `tens`) and `max_tt_rank[i]` defines
-      the maximal (i+1)-th TT-rank of the result.
-      The following two versions are equivalent
-        `max_tt_rank = r`
-      and
-        `max_tt_rank = r * np.ones(d-1)`
-    eps: a floating point number
-      If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
-      the result would be guarantied to be `eps` close to `tens`
-      in terms of relative Frobenius error:
-        ||res - tens||_F / ||tens||_F <= eps
-      If the TT-ranks are restricted, providing a loose `eps` may
-      reduce the TT-ranks of the result.
-      E.g.
-        to_tt_tensor(tens, max_tt_rank=100, eps=1)
-      will probably return you a TT-tensor with TT-ranks close to 1,
-      not 100.
-
-  Returns:
-    `TensorTrain` object containing a TT-tensor.
-  """
-  raise NotImplementedError
-
 
 def full(tt):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
@@ -93,14 +17,26 @@ def full(tt):
     tf.Tensor.
   """
   num_dims = tt.ndims()
-  ranks = tt_ranks(tt)
+  if tt.get_tt_ranks().is_fully_defined():
+    ranks = tt.get_tt_ranks().as_list()
+  else:
+    ranks = shapes.tt_ranks(tt)
+
+  if tt.get_shape().is_fully_defined():
+    shape = tt.get_shape().as_list()
+    raw_shape = list(tt.get_raw_shape())
+    for i in range(len(raw_shape)):
+      raw_shape[i] = raw_shape[i].as_list()
+  else:
+    shape = shapes.shape(tt)
+    raw_shape = shapes.raw_shape(tt)
+
   res = tt.tt_cores[0]
   for i in range(1, num_dims):
     res = tf.reshape(res, (-1, ranks[i]))
     curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
     res = tf.matmul(res, curr_core)
   if tt.is_tt_matrix():
-    raw_shape = tt.get_raw_shape()
     intermediate_shape = []
     for i in range(num_dims):
       intermediate_shape.append(raw_shape[0][i])
@@ -112,29 +48,9 @@ def full(tt):
     for i in range(1, 2 * num_dims, 2):
       transpose.append(i)
     res = tf.transpose(res, transpose)
-    return tf.reshape(res, tt.get_shape())
+    return tf.reshape(res, shape)
   else:
-    return tf.reshape(res, tt.get_shape())
-
-
-def tt_ranks(tt):
-  """Returns the TT-ranks of a TensorTrain.
-
-  This operation returns a 1-D integer tensor representing the TT-ranks of
-  the input.
-
-  Args:
-    tt: `TensorTrain` object.
-
-  Returns:
-    A `Tensor`
-  """
-  num_dims = tt.ndims()
-  ranks = []
-  for i in range(num_dims):
-    ranks.append(tf.shape(tt.tt_cores[i])[0])
-  ranks.append(tf.shape(tt.tt_cores[-1])[-1])
-  return tf.stack(ranks, axis=0)
+    return tf.reshape(res, shape)
 
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
