@@ -31,7 +31,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
         `max_tt_rank = r`
       and
         `max_tt_rank = r * np.ones(d-1)`
-    eps: a floating point number or None
+    epsilon: a floating point number or None
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
       the result would be guarantied to be `epsilon` close to `mat`
       in terms of relative Frobenius error:
@@ -39,7 +39,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
       If the TT-ranks are restricted, providing a loose `epsilon` may reduce
       the TT-ranks of the result.
       E.g.
-        to_tt_matrix(mat, shape, max_tt_rank=100, eps=1)
+        to_tt_matrix(mat, shape, max_tt_rank=100, epsilon=0.9)
       will probably return you a TT-matrix with TT-ranks close to 1, not 100.
       Note that providing a nontrivial `epsilon` will make the TT-ranks
       undefined on the compilation stage (e.g. tt.get_tt_ranks() will
@@ -109,7 +109,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
       If the TT-ranks are restricted, providing a loose `epsilon` may
       reduce the TT-ranks of the result.
       E.g.
-        to_tt_tensor(tens, max_tt_rank=100, eps=1)
+        to_tt_tensor(tens, max_tt_rank=100, epsilon=0.9)
       will probably return you a TT-tensor with TT-ranks close to 1,
       not 100.
       Note that providing a nontrivial `epsilon` will make the TT-ranks
@@ -202,7 +202,7 @@ def round(tt, max_tt_rank=None, epsilon=None):
       If the TT-ranks are restricted, providing a loose `epsilon` may
       reduce the TT-ranks of the result.
       E.g.
-        round(tens, max_tt_rank=100, eps=1)
+        round(tens, max_tt_rank=100, epsilon=0.9)
       will probably return you a TT-tensor with TT-ranks close to 1,
       not 100.
       Note that providing a nontrivial `epsilon` will make the TT-ranks
