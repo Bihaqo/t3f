@@ -48,6 +48,11 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
 
   Returns:
     `TensorTrain` object containing a TT-matrix.
+
+  Raises:
+    ValueError if max_tt_rank is less than 0, if max_tt_rank is not a number and
+      not a vector of length d + 1 where d is the number of dimensions (rank) of
+      the input tensor, if epsilon is less than 0.
   """
   mat = tf.convert_to_tensor(mat)
   # In case the shape is immutable.
@@ -101,7 +106,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
       The following two versions are equivalent
         `max_tt_rank = r`
       and
-        `max_tt_rank = np.vstack(1, r * np.ones(d-1), 1)`
+        `max_tt_rank = r * np.ones(d-1)`
     epsilon: a floating point number or None
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
       the result would be guarantied to be `epsilon` close to `tens`
@@ -123,9 +128,9 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
 
   Raises:
     ValueError if the rank of the input tensor is not defined, if max_tt_rank is
-      less than 0, if max_tt_rank is not a number or a vector of length d + 1
-      where d is the number of dimensions (rank) of the input tensor, if epsilon
-      is less than 0.
+      less than 0, if max_tt_rank is not a number and not a vector of
+      length d + 1 where d is the number of dimensions (rank) of the input
+      tensor, if epsilon is less than 0.
   """
   tens = tf.convert_to_tensor(tens)
   static_shape = tens.get_shape()
@@ -195,7 +200,7 @@ def round(tt, max_tt_rank=None, epsilon=None):
       The following two versions are equivalent
         `max_tt_rank = r`
       and
-        `max_tt_rank = np.vstack(1, r * np.ones(d-1), 1)`
+        `max_tt_rank = r * np.ones(d-1)`
     epsilon: a floating point number or None
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
       the result would be guarantied to be `epsilon` close to `tens`
@@ -214,6 +219,11 @@ def round(tt, max_tt_rank=None, epsilon=None):
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
+
+  Raises:
+    ValueError if max_tt_rank is less than 0, if max_tt_rank is not a number and
+      not a vector of length d + 1 where d is the number of dimensions (rank) of
+      the input tensor, if epsilon is less than 0.
   """
   ndims = tt.ndims()
   max_tt_rank = np.array(max_tt_rank).astype(np.int32)
