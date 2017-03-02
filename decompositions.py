@@ -31,16 +31,19 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
         `max_tt_rank = r`
       and
         `max_tt_rank = r * np.ones(d-1)`
-    eps: a floating point number
+    eps: a floating point number or None
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
-      the result would be guarantied to be `eps` close to `mat`
+      the result would be guarantied to be `epsilon` close to `mat`
       in terms of relative Frobenius error:
-        ||res - mat||_F / ||mat||_F <= eps
-      If the TT-ranks are restricted, providing a loose `eps` may reduce
+        ||res - mat||_F / ||mat||_F <= epsilon
+      If the TT-ranks are restricted, providing a loose `epsilon` may reduce
       the TT-ranks of the result.
       E.g.
         to_tt_matrix(mat, shape, max_tt_rank=100, eps=1)
       will probably return you a TT-matrix with TT-ranks close to 1, not 100.
+      Note that providing a nontrivial `epsilon` will make the TT-ranks
+      undefined on the compilation stage (e.g. tt.get_tt_ranks() will
+      return None, but t3f.tt_ranks(tt).eval() will work).
 
   Returns:
     `TensorTrain` object containing a TT-matrix.
@@ -98,17 +101,20 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
         `max_tt_rank = r`
       and
         `max_tt_rank = np.vstack(1, r * np.ones(d-1), 1)`
-    eps: a floating point number
+    epsilon: a floating point number or None
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
-      the result would be guarantied to be `eps` close to `tens`
+      the result would be guarantied to be `epsilon` close to `tens`
       in terms of relative Frobenius error:
-        ||res - tens||_F / ||tens||_F <= eps
-      If the TT-ranks are restricted, providing a loose `eps` may
+        ||res - tens||_F / ||tens||_F <= epsilon
+      If the TT-ranks are restricted, providing a loose `epsilon` may
       reduce the TT-ranks of the result.
       E.g.
         to_tt_tensor(tens, max_tt_rank=100, eps=1)
       will probably return you a TT-tensor with TT-ranks close to 1,
       not 100.
+      Note that providing a nontrivial `epsilon` will make the TT-ranks
+      undefined on the compilation stage (e.g. tt.get_tt_ranks() will
+      return None, but t3f.tt_ranks(tt).eval() will work).
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
@@ -172,3 +178,110 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   if not are_tt_ranks_defined:
     ranks = None
   return TensorTrain(tt_cores, static_shape, ranks)
+
+
+def round(tt, max_tt_rank=None, epsilon=None):
+  """TT-rounding procedure, returns a TT object with smaller TT-ranks.
+
+  Args:
+    tt: `TensorTrain` object, TT-tensor or TT-matrix
+    max_tt_rank: a number or a list of numbers
+      If a number, than defines the maximal TT-rank of the result.
+      If a list of numbers, than `max_tt_rank` length should be d+1
+      (where d is the rank of `tens`) and `max_tt_rank[i]` defines
+      the maximal (i+1)-th TT-rank of the result.
+      The following two versions are equivalent
+        `max_tt_rank = r`
+      and
+        `max_tt_rank = np.vstack(1, r * np.ones(d-1), 1)`
+    epsilon: a floating point number or None
+      If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
+      the result would be guarantied to be `epsilon` close to `tens`
+      in terms of relative Frobenius error:
+        ||res - tens||_F / ||tens||_F <= epsilon
+      If the TT-ranks are restricted, providing a loose `epsilon` may
+      reduce the TT-ranks of the result.
+      E.g.
+        round(tens, max_tt_rank=100, eps=1)
+      will probably return you a TT-tensor with TT-ranks close to 1,
+      not 100.
+      Note that providing a nontrivial `epsilon` will make the TT-ranks
+      undefined on the compilation stage (e.g. tt.get_tt_ranks() will
+      return None, but t3f.tt_ranks(tt).eval() will work).
+
+  Returns:
+    `TensorTrain` object containing a TT-tensor.
+  """
+  ndims = tt.ndims()
+  max_tt_rank = np.array(max_tt_rank).astype(np.int32)
+  if max_tt_rank < 1:
+    raise ValueError('Maximum TT-rank should be greater or equal to 1.')
+  if epsilon is not None and epsilon < 0:
+    raise ValueError('Epsilon should be non-negative.')
+  if max_tt_rank.size == 1:
+    max_tt_rank = (max_tt_rank * np.ones(ndims + 1)).astype(np.int32)
+  elif max_tt_rank.size != ndims + 1:
+    raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
+                     'where d is the number of dimensions (rank) of the tensor.')
+  ranks = [1] * (ndims + 1)
+  static_raw_shape = tt.get_raw_shape()
+  dynamic_raw_shape = shapes.raw_shape(tt)
+  static_tt_ranks = tt.get_tt_ranks()
+  dynamic_tt_ranks = shapes.tt_ranks(tt)
+  # Copy cores references so we can change the cores.
+  tt_cores = tt.tt_cores
+  # Left to right orthogonalization.
+  for core_idx in range(ndims - 1):
+    curr_core = tt_cores[core_idx]
+    curr_rank = static_tt_ranks[core_idx].value
+    if curr_rank is None:
+      curr_rank = dynamic_tt_ranks[core_idx]
+    next_rank = static_tt_ranks[core_idx + 1].value
+    if curr_rank is None:
+      next_rank = dynamic_tt_ranks[core_idx + 1]
+    if tt.is_tt_matrix():
+      curr_mode_left = static_raw_shape[0][core_idx].value
+      if curr_mode_left is None:
+        curr_mode_left = dynamic_raw_shape[0][core_idx]
+      curr_mode_right = static_raw_shape[1][core_idx].value
+      if curr_mode_right is None:
+        curr_mode_right = dynamic_raw_shape[1][core_idx]
+      curr_mode = curr_mode_left * curr_mode_right
+    else:
+      curr_mode = static_raw_shape[0][core_idx].value
+      if curr_mode is None:
+        curr_mode = dynamic_raw_shape[0][core_idx]
+    qr_shape = (curr_rank * curr_mode, next_rank)
+    curr_core = tf.reshape(curr_core, qr_shape)
+    curr_core, triang = tf.qr(curr_core)
+    # The rank could have changed.
+    next_rank = triang.get_shape()[0].value
+    if next_rank is None:
+      next_rank = tf.shape(triang)[0]
+    if tt.is_tt_matrix():
+      new_core_shape = (curr_rank, curr_mode_left, curr_mode_right, next_rank)
+    else:
+      new_core_shape = (curr_rank, curr_mode, next_rank)
+    tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
+
+    next_core = tf.reshape(tt_cores[core_idx + 1], (next_rank, -1))
+    tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
+
+  # Right to left SVD compression.
+  for core_idx in range(ndims - 1, 0, -1):
+    curr_core = tt_cores[core_idx]
+    s, u, v = tf.svd(curr_core, full_matrices=False)
+    if max_tt_rank[core_idx + 1] == 1:
+      ranks[core_idx + 1] = 1
+    else:
+      try:
+        ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
+      except TypeError:
+        # Some of the values are undefined on the compilation stage and thus
+        # they are tf.tensors instead of values.
+        min_dim = tf.minimum(rows, columns)
+        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
+        are_tt_ranks_defined = False
+    u = u[:, 0:ranks[core_idx + 1]]
+    s = s[0:ranks[core_idx + 1]]
+    v = v[:, 0:ranks[core_idx + 1]]
