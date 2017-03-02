@@ -41,9 +41,10 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
       E.g.
         to_tt_matrix(mat, shape, max_tt_rank=100, epsilon=0.9)
       will probably return you a TT-matrix with TT-ranks close to 1, not 100.
-      Note that providing a nontrivial `epsilon` will make the TT-ranks
-      undefined on the compilation stage (e.g. tt.get_tt_ranks() will
-      return None, but t3f.tt_ranks(tt).eval() will work).
+      Note that providing a nontrivial (= not equal to None) `epsilon` will make
+      the TT-ranks of the result undefined on the compilation stage
+      (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
+      will work).
 
   Returns:
     `TensorTrain` object containing a TT-matrix.
@@ -112,9 +113,10 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
         to_tt_tensor(tens, max_tt_rank=100, epsilon=0.9)
       will probably return you a TT-tensor with TT-ranks close to 1,
       not 100.
-      Note that providing a nontrivial `epsilon` will make the TT-ranks
-      undefined on the compilation stage (e.g. tt.get_tt_ranks() will
-      return None, but t3f.tt_ranks(tt).eval() will work).
+      Note that providing a nontrivial (= not equal to None) `epsilon` will make
+      the TT-ranks of the result undefined on the compilation stage
+      (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
+      will work).
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
@@ -205,9 +207,10 @@ def round(tt, max_tt_rank=None, epsilon=None):
         round(tens, max_tt_rank=100, epsilon=0.9)
       will probably return you a TT-tensor with TT-ranks close to 1,
       not 100.
-      Note that providing a nontrivial `epsilon` will make the TT-ranks
-      undefined on the compilation stage (e.g. tt.get_tt_ranks() will
-      return None, but t3f.tt_ranks(tt).eval() will work).
+      Note that providing a nontrivial (= not equal to None) `epsilon` will make
+      the TT-ranks of the result undefined on the compilation stage
+      (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
+      will work).
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
