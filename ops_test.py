@@ -190,13 +190,14 @@ class TTMatrixTest(tf.test.TestCase):
     out_shape = (3, 3, 3, 3)
     np.random.seed(1)
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
-    with self.test_session():
+    with self.test_session() as sess:
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
       tt_vec = initializers.random_matrix((inp_shape, None))
-      res_actual = ops.matmul(tf_mat, tt_vec)
-      res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
-      self.assertAllClose(res_actual.eval(), res_desired.eval())
+      res_actual = ops.dense_tt_matmul(tf_mat, tt_vec)
+      res_desired = tf.matmul(tf_mat, ops.full(tt_vec))
+      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
