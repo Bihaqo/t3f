@@ -45,15 +45,16 @@ def shape(tt):
 def raw_shape(tt):
   """Returns the shape of a TensorTrain.
 
-  This operation returns a 1-D integer tensor representing the shape of
-  the input. For TT-matrices the shape would have two values, see raw_shape for
-  the tensor shape.
+  This operation returns a 2-D integer tensor representing the shape of
+  the input. If the input is a TT-tensor, the shape will have 1 x d elements.
+  If the input is a TT-matrix, the shape will have 2 x d elements representing
+  the underlying tensor shape of the matrix.
 
   Args:
     tt: `TensorTrain` object.
 
   Returns:
-    A 2D `Tensor` of size ndims() x 1 or x 2
+    A 2D `Tensor` of size 1 x ndims() or 2 x ndims()
   """
   num_dims = tt.ndims()
   num_tensor_axis = len(tt.get_raw_shape())
