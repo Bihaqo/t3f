@@ -34,9 +34,9 @@ class DecompositionsTest(tf.test.TestCase):
     np.random.seed(1)
     rows = np.prod(vec_shape)
     vec = np.random.rand(rows, 1).astype(np.float32)
+    tf_vec = tf.constant(vec)
+    tt_vec = decompositions.to_tt_matrix(tf_vec, (vec_shape, None))
     with self.test_session():
-      tf_vec = tf.constant(vec)
-      tt_vec = decompositions.to_tt_matrix(tf_vec, (vec_shape, None))
       self.assertAllClose(vec, ops.full(tt_vec).eval())
 
   def testTTMatrix(self):
@@ -45,17 +45,19 @@ class DecompositionsTest(tf.test.TestCase):
     inp_shape = (2, 5, 2, 3)
     out_shape = (3, 3, 2, 3)
     np.random.seed(1)
-    mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
+    mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
+    mat = mat.astype(np.float32)
+    tf_mat = tf.constant(mat)
+    tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
+                                         max_tt_rank=90)
     with self.test_session():
-      tf_mat = tf.constant(mat)
-      tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape), max_tt_rank=90)
       # TODO: why so bad accuracy?
       self.assertAllClose(mat, ops.full(tt_mat).eval(), atol=1e-5, rtol=1e-5)
 
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     np.random.seed(1)
-    tens = initializers.random_tensor(shape, tt_rank=10)
+    tens = initializers.random_tensor(shape, tt_rank=15)
     rounded_tens = decompositions.round(tens, max_tt_rank=9)
     with self.test_session() as sess:
       vars = [ops.full(tens), ops.full(rounded_tens)]
@@ -63,7 +65,6 @@ class DecompositionsTest(tf.test.TestCase):
       # TODO: why so bad accuracy?
       self.assertAllClose(tens_value, rounded_tens_value, atol=1e-4, rtol=1e-4)
       dynamic_tt_ranks = shapes.tt_ranks(rounded_tens).eval()
-      # The ranks shrinked because of orthogonalization.
       self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
 
 if __name__ == "__main__":
