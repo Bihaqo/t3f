@@ -229,7 +229,7 @@ def round(tt, max_tt_rank=None, epsilon=None):
   static_tt_ranks = tt.get_tt_ranks()
   dynamic_tt_ranks = shapes.tt_ranks(tt)
   # Copy cores references so we can change the cores.
-  tt_cores = tt.tt_cores
+  tt_cores = list(tt.tt_cores)
   # Left to right orthogonalization.
   for core_idx in range(ndims - 1):
     curr_core = tt_cores[core_idx]
@@ -254,17 +254,19 @@ def round(tt, max_tt_rank=None, epsilon=None):
     qr_shape = (curr_rank * curr_mode, next_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
     curr_core, triang = tf.qr(curr_core)
-    # The rank could have changed.
-    next_rank = triang.get_shape()[0].value
-    if next_rank is None:
-      next_rank = tf.shape(triang)[0]
-    if tt.is_tt_matrix():
-      new_core_shape = (curr_rank, curr_mode_left, curr_mode_right, next_rank)
+    # The TT-rank could have changed.
+    if triang.get_shape().is_fully_defined():
+      triang_shape = triang.get_shape().as_list()
     else:
-      new_core_shape = (curr_rank, curr_mode, next_rank)
+      triang_shape = tf.shape(triang)
+    if tt.is_tt_matrix():
+      new_core_shape = (curr_rank, curr_mode_left, curr_mode_right,
+                        triang_shape[0])
+    else:
+      new_core_shape = (curr_rank, curr_mode, triang_shape[0])
     tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
 
-    next_core = tf.reshape(tt_cores[core_idx + 1], (next_rank, -1))
+    next_core = tf.reshape(tt_cores[core_idx + 1], (triang_shape[1], -1))
     tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
 
   # Right to left SVD compression.
