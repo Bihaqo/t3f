@@ -63,7 +63,5 @@ def raw_shape(tt):
     curr_raw_shape = []
     for core_idx in range(num_dims):
       curr_raw_shape.append(tf.shape(tt.tt_cores[core_idx])[ax + 1])
-    # print('s', tf.stack(curr_raw_shape, axis=0).get_shape())
     final_raw_shape.append(tf.stack(curr_raw_shape, axis=0))
-  # print('f', tf.stack(final_raw_shape, axis=0).get_shape())
   return tf.stack(final_raw_shape, axis=0)
