@@ -170,7 +170,7 @@ class TTMatrixTest(tf.test.TestCase):
             sparse_indices = np.vstack(sparse_indices).transpose()
             values = np.random.randn(num_elements).astype(np.float32)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
-                                       shape=shape)
+                                       dense_shape=shape)
             res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
             res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
@@ -194,7 +194,7 @@ class TTMatrixTest(tf.test.TestCase):
             sparse_indices = np.vstack(sparse_indices).transpose()
             values = np.random.randn(num_elements).astype(np.float32)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
-                                       shape=matrix_shape)
+                                       dense_shape=matrix_shape)
             res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
             res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
