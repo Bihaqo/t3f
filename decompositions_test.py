@@ -29,6 +29,29 @@ class DecompositionsTest(tf.test.TestCase):
       dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
       self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
+  def testTTTensorSimple(self):
+    # Test that a tensor of ones and of zeros can be converted into TT with
+    # TT-rank 1.
+    shape = (2, 1, 4, 3)
+    tens_arr = (np.zeros(shape).astype(np.float32),
+                np.ones(shape).astype(np.float32))
+    for tens in tens_arr:
+      tf_tens = tf.constant(tens)
+      tt_tens = decompositions.to_tt_tensor(tf_tens, max_tt_rank=1)
+      with self.test_session():
+        self.assertAllClose(tens, ops.full(tt_tens).eval())
+        dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval()
+        static_tt_ranks = tt_tens.get_tt_ranks().as_list()
+        self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+
+        # Try to decompose the same tensor with unknown shape.
+        tf_tens_pl = tf.placeholder(tf.float32, (None, None, None, None))
+        tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=1)
+        tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
+        self.assertAllClose(tens, tt_val)
+        dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
+        self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+
   def testTTVector(self):
     vec_shape = (2, 1, 4, 3)
     np.random.seed(1)
