@@ -116,8 +116,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
       reduce the TT-ranks of the result.
       E.g.
         to_tt_tensor(tens, max_tt_rank=100, epsilon=0.9)
-      will probably return you a TT-tensor with TT-ranks close to 1,
-      not 100.
+      will probably return you a TT-tensor with TT-ranks close to 1, not 100.
       Note that providing a nontrivial (= not equal to None) `epsilon` will make
       the TT-ranks of the result undefined on the compilation stage
       (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
@@ -204,15 +203,14 @@ def round(tt, max_tt_rank=None, epsilon=None):
         `max_tt_rank = r * np.ones(d-1)`
     epsilon: a floating point number or None
       If the TT-ranks are not restricted (`max_tt_rank=np.inf`), then
-      the result would be guarantied to be `epsilon` close to `tens`
+      the result would be guarantied to be `epsilon` close to `tt`
       in terms of relative Frobenius error:
-        ||res - tens||_F / ||tens||_F <= epsilon
+        ||res - tt||_F / ||tt||_F <= epsilon
       If the TT-ranks are restricted, providing a loose `epsilon` may
       reduce the TT-ranks of the result.
       E.g.
-        round(tens, max_tt_rank=100, epsilon=0.9)
-      will probably return you a TT-tensor with TT-ranks close to 1,
-      not 100.
+        round(tt, max_tt_rank=100, epsilon=0.9)
+      will probably return you a TT-tensor with TT-ranks close to 1, not 100.
       Note that providing a nontrivial (= not equal to None) `epsilon` will make
       the TT-ranks of the result undefined on the compilation stage
       (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
