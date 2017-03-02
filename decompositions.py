@@ -272,21 +272,37 @@ def round(tt, max_tt_rank=None, epsilon=None):
     next_core = tf.reshape(tt_cores[core_idx + 1], (triang_shape[1], -1))
     tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
 
-  # Right to left SVD compression.
-  for core_idx in range(ndims - 1, 0, -1):
-    curr_core = tt_cores[core_idx]
-    s, u, v = tf.svd(curr_core, full_matrices=False)
-    if max_tt_rank[core_idx + 1] == 1:
-      ranks[core_idx + 1] = 1
-    else:
-      try:
-        ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
-      except TypeError:
-        # Some of the values are undefined on the compilation stage and thus
-        # they are tf.tensors instead of values.
-        min_dim = tf.minimum(rows, columns)
-        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
-        are_tt_ranks_defined = False
-    u = u[:, 0:ranks[core_idx + 1]]
-    s = s[0:ranks[core_idx + 1]]
-    v = v[:, 0:ranks[core_idx + 1]]
+  if tt.is_tt_matrix():
+    curr_mode_left = static_raw_shape[0][-1].value
+    if curr_mode_left is None:
+      curr_mode_left = dynamic_raw_shape[0][-1]
+    curr_mode_right = static_raw_shape[1][-1].value
+    if curr_mode_right is None:
+      curr_mode_right = dynamic_raw_shape[1][-1]
+    last_core_shape = (next_rank, curr_mode_left, curr_mode_right, 1)
+  else:
+    curr_mode = static_raw_shape[0][-1].value
+    if curr_mode is None:
+      curr_mode = dynamic_raw_shape[0][-1]
+    last_core_shape = (next_rank, curr_mode, 1)
+  tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
+
+  # # Right to left SVD compression.
+  # for core_idx in range(ndims - 1, 0, -1):
+  #   curr_core = tt_cores[core_idx]
+  #   s, u, v = tf.svd(curr_core, full_matrices=False)
+  #   if max_tt_rank[core_idx + 1] == 1:
+  #     ranks[core_idx + 1] = 1
+  #   else:
+  #     try:
+  #       ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
+  #     except TypeError:
+  #       # Some of the values are undefined on the compilation stage and thus
+  #       # they are tf.tensors instead of values.
+  #       min_dim = tf.minimum(rows, columns)
+  #       ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
+  #       are_tt_ranks_defined = False
+  #   u = u[:, 0:ranks[core_idx + 1]]
+  #   s = s[0:ranks[core_idx + 1]]
+  #   v = v[:, 0:ranks[core_idx + 1]]
+  return TensorTrain(tt_cores, tt.get_raw_shape())
