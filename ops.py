@@ -179,7 +179,10 @@ def dense_tt_matmul(matrix_a, tt_matrix_b):
   Returns
     tf.Tensor of size M x P
   """
-  raise NotImplementedError
+#   TODO: make a more efficient implementation.
+  a_t = tf.transpose(matrix_a)
+  b_t = transpose(tt_matrix_b)
+  return tf.transpose(tt_dense_matmul(b_t, a_t))
 
 
 def sparse_tt_matmul(sparse_matrix_a, tt_matrix_b):
