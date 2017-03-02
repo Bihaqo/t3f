@@ -179,7 +179,7 @@ class TTMatrixTest(tf.test.TestCase):
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
       tt_mat = initializers.random_matrix((out_shape, inp_shape))
-      res_actual = ops.matmul(tt_mat, tf_vec)
+      res_actual = ops.tt_dense_matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
 

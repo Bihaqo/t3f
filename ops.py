@@ -126,7 +126,43 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
   Returns
     tf.Tensor of size M x P
   """
-  raise NotImplementedError
+  if not isinstance(tt_matrix_a, TensorTrain):
+    raise ValueError('The first argument should be a TT-matrix')
+
+  ndims = tt_matrix_a.ndims()
+  a_columns = tt_matrix_a.get_shape()[1].value
+  b_rows = matrix_b.get_shape()[0].value
+  if a_columns is not None and b_rows is not None:
+    if a_columns != b_rows:
+      raise ValueError('Arguments shapes should align got %d and %d instead.' %
+                       (tt_matrix_a.get_shape(), matrix_b.get_shape()))
+
+  if tt_matrix_a.get_shape().is_fully_defined():
+    a_shape = tt_matrix_a.get_shape().as_list()
+    a_raw_shape = [s.as_list() for s in tt_matrix_a.get_raw_shape()]
+  else:
+    a_shape = shapes.shape(tt_matrix_a)
+    a_raw_shape = shapes.raw_shape(tt_matrix_a)
+  if matrix_b.get_shape().is_fully_defined():
+    b_shape = matrix_b.get_shape().as_list()
+  else:
+    b_shape = tf.shape(matrix_b)
+  if tt_matrix_a.get_tt_ranks().is_fully_defined():
+    a_ranks = tt_matrix_a.get_tt_ranks().as_list()
+  else:
+    a_ranks = shapes.tt_ranks(tt_matrix_a)
+  # If A is (i0, ..., id-1) x (j0, ..., jd-1) and B is (j0, ..., jd-1) x K,
+  # data is (K, j0, ..., jd-2) x jd-1 x 1
+  data = tf.transpose(matrix_b)
+  data = tf.reshape(data, (-1, a_raw_shape[1][-1], 1))
+  for core_idx in range(ndims - 1, -1, -1):
+    curr_core = tt_matrix_a.tt_cores[core_idx]
+    # If core_idx = k, after einsum data becomes ik x (ik-1..., id-1, K, j0, ..., jk-1) x rank_k-1
+    data = tf.einsum('aijb,rjb->ira', curr_core, data)
+    if core_idx > 0:
+      # After einsum data becomes (ik, ..., id-1, K, j0, ..., jk-2) x jk-1 x rank_k-1
+      data = tf.reshape(data, (-1, a_raw_shape[1][core_idx - 1], a_ranks[core_idx]))
+  return tf.reshape(data, (a_shape[0], b_shape[1]))
 
 
 def dense_tt_matmul(matrix_a, tt_matrix_b):
@@ -274,11 +310,11 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
   if tt_a.get_shape().is_fully_defined():
     a_shape = tt_a.get_raw_shape()
   else:
-    a_shape = raw_shape(tt_matrix_a)
+    a_shape = shapes.raw_shape(tt_a)
   if tt_a.get_tt_ranks().is_fully_defined():
     a_ranks = tt_a.get_tt_ranks()
   else:
-    a_ranks = tt_ranks(tt_a)
+    a_ranks = shapes.tt_ranks(tt_a)
   if tt_a.is_tt_matrix():
     # TODO: use t3f.shape is safer??
     tensor_shape = tt_a.get_raw_shape()
