@@ -46,12 +46,9 @@ class TensorTrain(object):
     if convert_to_tensors:
       # TODO: what does this namescope do?
       with tf.name_scope("TensorTrain", tt_cores):
-        # TODO: should we pass as_ref=True because we want to be able to update
-        # values later if it is a VariableOp??
         for i in range(len(tt_cores)):
           name = "core%d" % i
-          tt_cores[i] = tf.convert_to_tensor(
-              tt_cores[i], name=name, as_ref=False)
+          tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
 
     if not _are_tt_cores_valid(tt_cores, shape, tt_ranks):
       raise ValueError('the tt_cores provided to TensorTrain constructor are '

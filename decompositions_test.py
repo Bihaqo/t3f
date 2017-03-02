@@ -53,21 +53,17 @@ class DecompositionsTest(tf.test.TestCase):
       self.assertAllClose(mat, ops.full(tt_mat).eval(), atol=1e-5, rtol=1e-5)
 
   def testRoundTensor(self):
-    shape = (2, 1, 4, 3)
+    shape = (2, 1, 4, 3, 3)
     np.random.seed(1)
-    tens = initializers.tt_rand_tensor(shape, tt_rank=4)
-    # Increase ranks by 1.
-    # tens_increase_rank = ops.add(tens, initializers.zeros(shape))
-    tens_increase_rank = tens
-    rounded_tens = decompositions.round(tens_increase_rank, max_tt_rank=4)
+    tens = initializers.tt_rand_tensor(shape, tt_rank=10)
+    rounded_tens = decompositions.round(tens, max_tt_rank=4)
     with self.test_session() as sess:
       vars = [ops.full(tens), ops.full(rounded_tens)]
       tens_value, rounded_tens_value = sess.run(vars)
-      self.assertAllClose(tens_value, rounded_tens_value)
+      self.assertAllClose(tens_value, rounded_tens_value, atol=1e-5, rtol=1e-5)
       dynamic_tt_ranks = shapes.tt_ranks(rounded_tens).eval()
-      static_tt_ranks = rounded_tens.get_tt_ranks().as_list()
-      self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
-      self.assertAllEqual(tens.get_tt_ranks(), static_tt_ranks)
+      # The ranks shrinked because of orthogonalization.
+      self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
 
 if __name__ == "__main__":
   tf.test.main()

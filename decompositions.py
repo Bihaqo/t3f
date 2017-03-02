@@ -229,13 +229,16 @@ def round(tt, max_tt_rank=None, epsilon=None):
   static_tt_ranks = tt.get_tt_ranks()
   dynamic_tt_ranks = shapes.tt_ranks(tt)
   # Copy cores references so we can change the cores.
-  tt_cores = tt.tt_cores
+  tt_cores = list(tt.tt_cores)
+  next_rank = static_tt_ranks[0].value
+  if next_rank is None:
+    next_rank = dynamic_tt_ranks[0]
   # Left to right orthogonalization.
   for core_idx in range(ndims - 1):
     curr_core = tt_cores[core_idx]
-    curr_rank = static_tt_ranks[core_idx].value
-    if curr_rank is None:
-      curr_rank = dynamic_tt_ranks[core_idx]
+    # Ranks could have changed on the previous iteration, so static_tt_ranks can
+    # be outdated.
+    curr_rank = next_rank
     next_rank = static_tt_ranks[core_idx + 1].value
     if curr_rank is None:
       next_rank = dynamic_tt_ranks[core_idx + 1]
@@ -254,34 +257,52 @@ def round(tt, max_tt_rank=None, epsilon=None):
     qr_shape = (curr_rank * curr_mode, next_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
     curr_core, triang = tf.qr(curr_core)
-    # The rank could have changed.
-    next_rank = triang.get_shape()[0].value
-    if next_rank is None:
-      next_rank = tf.shape(triang)[0]
+    # The TT-rank could have changed.
+    if triang.get_shape().is_fully_defined():
+      triang_shape = triang.get_shape().as_list()
+    else:
+      triang_shape = tf.shape(triang)
+    next_rank = triang_shape[0]
     if tt.is_tt_matrix():
       new_core_shape = (curr_rank, curr_mode_left, curr_mode_right, next_rank)
     else:
       new_core_shape = (curr_rank, curr_mode, next_rank)
     tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
 
-    next_core = tf.reshape(tt_cores[core_idx + 1], (next_rank, -1))
+    next_core = tf.reshape(tt_cores[core_idx + 1], (triang_shape[1], -1))
     tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
 
-  # Right to left SVD compression.
-  for core_idx in range(ndims - 1, 0, -1):
-    curr_core = tt_cores[core_idx]
-    s, u, v = tf.svd(curr_core, full_matrices=False)
-    if max_tt_rank[core_idx + 1] == 1:
-      ranks[core_idx + 1] = 1
-    else:
-      try:
-        ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
-      except TypeError:
-        # Some of the values are undefined on the compilation stage and thus
-        # they are tf.tensors instead of values.
-        min_dim = tf.minimum(rows, columns)
-        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
-        are_tt_ranks_defined = False
-    u = u[:, 0:ranks[core_idx + 1]]
-    s = s[0:ranks[core_idx + 1]]
-    v = v[:, 0:ranks[core_idx + 1]]
+  if tt.is_tt_matrix():
+    curr_mode_left = static_raw_shape[0][-1].value
+    if curr_mode_left is None:
+      curr_mode_left = dynamic_raw_shape[0][-1]
+    curr_mode_right = static_raw_shape[1][-1].value
+    if curr_mode_right is None:
+      curr_mode_right = dynamic_raw_shape[1][-1]
+    last_core_shape = (next_rank, curr_mode_left, curr_mode_right, 1)
+  else:
+    curr_mode = static_raw_shape[0][-1].value
+    if curr_mode is None:
+      curr_mode = dynamic_raw_shape[0][-1]
+    last_core_shape = (next_rank, curr_mode, 1)
+  tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
+
+  # # Right to left SVD compression.
+  # for core_idx in range(ndims - 1, 0, -1):
+  #   curr_core = tt_cores[core_idx]
+  #   s, u, v = tf.svd(curr_core, full_matrices=False)
+  #   if max_tt_rank[core_idx + 1] == 1:
+  #     ranks[core_idx + 1] = 1
+  #   else:
+  #     try:
+  #       ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
+  #     except TypeError:
+  #       # Some of the values are undefined on the compilation stage and thus
+  #       # they are tf.tensors instead of values.
+  #       min_dim = tf.minimum(rows, columns)
+  #       ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
+  #       are_tt_ranks_defined = False
+  #   u = u[:, 0:ranks[core_idx + 1]]
+  #   s = s[0:ranks[core_idx + 1]]
+  #   v = v[:, 0:ranks[core_idx + 1]]
+  return TensorTrain(tt_cores, tt.get_raw_shape())
