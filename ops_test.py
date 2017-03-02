@@ -36,6 +36,86 @@ class TTTensorTest(tf.test.TestCase):
         actual = ops.full(tf_tens)
         self.assertAllClose(desired, actual.eval())
 
+  def testFlatInnerTTTensbyTTTens(self):
+    # Inner product between two TT-tensors.
+    shape_list = ((2, 2),
+                  (2, 3, 4),
+                  (4, 2, 5, 2))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          tt_1 = initializers.random_tensor(shape, tt_rank=rank)
+          tt_2 = initializers.random_tensor(shape, tt_rank=rank)
+          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
+          tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
+          tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
+          res_desired = tf.matmul(tt_1_full, tt_2_full)
+          res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5)
+
+  def testFlatInnerTTTensbySparseTens(self):
+    # Inner product between a TT-tensor and a sparse tensor.
+    shape_list = ((2, 2),
+                  (2, 3, 4),
+                  (4, 2, 5, 2))
+    rank_list = (1, 2)
+    np.random.seed(1)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          for num_elements in [1, 10]:
+            tt_1 = initializers.random_tensor(shape, tt_rank=rank)
+            sparse_flat_indices = np.random.choice(np.prod(shape), num_elements).astype(int)
+            sparse_indices = np.unravel_index(sparse_flat_indices, shape)
+            sparse_indices = np.vstack(sparse_indices).transpose()
+            values = np.random.randn(num_elements).astype(np.float32)
+            sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
+                                       dense_shape=shape)
+            res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+            res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
+            res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
+            self.assertAllClose(res_actual_val, res_desired_val)
+
+  def testFrobeniusNormTens(self):
+    # Frobenius norm of a TT-tensor.
+    shape_list = ((2, 2),
+                  (2, 3, 4),
+                  (4, 2, 5, 2))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for rank in rank_list:
+          tt = initializers.random_tensor(shape, tt_rank=rank)
+          norm_sq_actual = ops.frobenius_norm_squared(tt)
+          norm_actual = ops.frobenius_norm(tt)
+          vars = [norm_sq_actual, norm_actual, ops.full(tt)]
+          norm_sq_actual_val, norm_actual_val, tt_val = sess.run(vars)
+          tt_val = tt_val.flatten()
+          norm_sq_desired_val = tt_val.dot(tt_val)
+          norm_desired_val = np.linalg.norm(tt_val)
+          self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
+          self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
+                              rtol=1e-5)
+
+  def testCastFloat(self):
+    # Test cast function for float tt-tensors.
+    tt_x = initializers.random_tensor((2, 3, 2), tt_rank=2)
+
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_x, dtype).dtype, dtype)
+
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for tensors.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 1))
+    tt_int = tensor_train.TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -80,8 +160,8 @@ class TTMatrixTest(tf.test.TestCase):
     sum_shape = (4, 3, 5)
     right_shape = (4, 4, 4)
     with self.test_session() as sess:
-      tt_mat_1 = initializers.tt_rand_matrix((left_shape, sum_shape), tt_rank=3)
-      tt_mat_2 = initializers.tt_rand_matrix((sum_shape, right_shape))
+      tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3)
+      tt_mat_2 = initializers.random_matrix((sum_shape, right_shape))
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
@@ -98,7 +178,7 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session():
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
-      tt_mat = initializers.tt_rand_matrix((out_shape, inp_shape))
+      tt_mat = initializers.random_matrix((out_shape, inp_shape))
       res_actual = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
@@ -112,28 +192,10 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session():
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
-      tt_vec = initializers.tt_rand_matrix((inp_shape, None))
+      tt_vec = initializers.random_matrix((inp_shape, None))
       res_actual = ops.matmul(tf_mat, tt_vec)
       res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
       self.assertAllClose(res_actual.eval(), res_desired.eval())
-
-  def testFlatInnerTTTensbyTTTens(self):
-    # Inner product between two TT-tensors.
-    shape_list = ((2, 2),
-                  (2, 3, 4),
-                  (4, 2, 5, 2))
-    rank_list = (1, 2)
-    with self.test_session() as sess:
-      for shape in shape_list:
-        for rank in rank_list:
-          tt_1 = initializers.tt_rand_tensor(shape, tt_rank=rank)
-          tt_2 = initializers.tt_rand_tensor(shape, tt_rank=rank)
-          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
-          tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
-          tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
-          res_desired = tf.matmul(tt_1_full, tt_2_full)
-          res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5)
 
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
@@ -143,8 +205,8 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt_1 = initializers.tt_rand_matrix(shape, tt_rank=rank)
-          tt_2 = initializers.tt_rand_matrix(shape, tt_rank=rank)
+          tt_1 = initializers.random_matrix(shape, tt_rank=rank)
+          tt_2 = initializers.random_matrix(shape, tt_rank=rank)
           res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
@@ -152,29 +214,6 @@ class TTMatrixTest(tf.test.TestCase):
           res_actual_val, res_desired_val = sess.run(
             [res_actual, res_desired])
           self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5, atol=1e-5)
-
-  def testFlatInnerTTTensbySparseTens(self):
-    # Inner product between a TT-tensor and a sparse tensor.
-    shape_list = ((2, 2),
-                  (2, 3, 4),
-                  (4, 2, 5, 2))
-    rank_list = (1, 2)
-    np.random.seed(1)
-    with self.test_session() as sess:
-      for shape in shape_list:
-        for rank in rank_list:
-          for num_elements in [1, 10]:
-            tt_1 = initializers.tt_rand_tensor(shape, tt_rank=rank)
-            sparse_flat_indices = np.random.choice(np.prod(shape), num_elements).astype(int)
-            sparse_indices = np.unravel_index(sparse_flat_indices, shape)
-            sparse_indices = np.vstack(sparse_indices).transpose()
-            values = np.random.randn(num_elements).astype(np.float32)
-            sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
-                                       dense_shape=shape)
-            res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
-            res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
-            res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
-            self.assertAllClose(res_actual_val, res_desired_val)
 
   def testFlatInnerTTMatbySparseMat(self):
     # Inner product between a TT-matrix and a sparse matrix.
@@ -186,7 +225,7 @@ class TTMatrixTest(tf.test.TestCase):
       for tensor_shape in shape_list:
         for rank in rank_list:
           for num_elements in [1, 9]:
-            tt_1 = initializers.tt_rand_matrix(tensor_shape, tt_rank=rank)
+            tt_1 = initializers.random_matrix(tensor_shape, tt_rank=rank)
             matrix_shape = np.prod(tensor_shape[0]), np.prod(tensor_shape[1])
             sparse_flat_indices = np.random.choice(np.prod(matrix_shape), num_elements)
             sparse_flat_indices = sparse_flat_indices.astype(int)
@@ -200,16 +239,15 @@ class TTMatrixTest(tf.test.TestCase):
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
             self.assertAllClose(res_actual_val, res_desired_val)
 
-  def testFrobeniusNormTens(self):
-    # Frobenius norm of a TT-tensor.
-    shape_list = ((2, 2),
-                  (2, 3, 4),
-                  (4, 2, 5, 2))
+  def testFrobeniusNormMatrix(self):
+    # Frobenius norm of a TT-matrix.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
     rank_list = (1, 2)
     with self.test_session() as sess:
-      for shape in shape_list:
+      for tensor_shape in shape_list:
         for rank in rank_list:
-          tt = initializers.tt_rand_tensor(shape, tt_rank=rank)
+          tt = initializers.random_matrix(tensor_shape, tt_rank=rank)
           norm_sq_actual = ops.frobenius_norm_squared(tt)
           norm_actual = ops.frobenius_norm(tt)
           vars = [norm_sq_actual, norm_actual, ops.full(tt)]
@@ -221,7 +259,7 @@ class TTMatrixTest(tf.test.TestCase):
           self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                               rtol=1e-5)
 
-  def testFrobeniusNormMatrix(self):
+  def testTranspose(self):
     # Frobenius norm of a TT-matrix.
     shape_list = (((2, 2), (3, 4)),
                   ((2, 3, 4), (2, 2, 2)))
@@ -229,17 +267,49 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       for tensor_shape in shape_list:
         for rank in rank_list:
-          tt = initializers.tt_rand_matrix(tensor_shape, tt_rank=rank)
-          norm_sq_actual = ops.frobenius_norm_squared(tt)
-          norm_actual = ops.frobenius_norm(tt)
-          vars = [norm_sq_actual, norm_actual, ops.full(tt)]
-          norm_sq_actual_val, norm_actual_val, tt_val = sess.run(vars)
-          tt_val = tt_val.flatten()
-          norm_sq_desired_val = tt_val.dot(tt_val)
-          norm_desired_val = np.linalg.norm(tt_val)
-          self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
-          self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
-                              rtol=1e-5)
+          tt = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          res_actual = ops.full(ops.transpose(tt))
+          res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
+          self.assertAllClose(tt_val.transpose(), res_actual_val)
+
+  def testQuadraticForm(self):
+    # Test quadratic form.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          b = initializers.random_matrix((tensor_shape[0], None), tt_rank=rank)
+          c = initializers.random_matrix((tensor_shape[1], None), tt_rank=rank)
+          res_actual = ops.quadratic_form(A, b, c)
+          vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
+          res_actual_val, A_val, b_val, c_val = sess.run(vars)
+          res_desired = b_val.T.dot(A_val).dot(c_val)
+          self.assertAllClose(res_desired, res_actual_val)
+
+  def testCastFloat(self):
+    # Test cast function for float tt-matrices and vectors.
+    
+    tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
+
+    tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_vec, dtype).dtype, dtype)
+      self.assertEqual(ops.cast(tt_mat, dtype).dtype, dtype)
+
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for matrices.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 2, 1))
+    tt_int = tensor_train.TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    
+    for dtype in [tf.float16, tf.float32, tf.float64]:
+      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
 
 
 if __name__ == "__main__":

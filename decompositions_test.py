@@ -55,7 +55,7 @@ class DecompositionsTest(tf.test.TestCase):
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     np.random.seed(1)
-    tens = initializers.tt_rand_tensor(shape, tt_rank=10)
+    tens = initializers.random_tensor(shape, tt_rank=10)
     rounded_tens = decompositions.round(tens, max_tt_rank=9)
     with self.test_session() as sess:
       vars = [ops.full(tens), ops.full(rounded_tens)]

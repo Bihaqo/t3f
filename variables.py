@@ -2,16 +2,17 @@ import re
 import tensorflow as tf
 
 import tensor_train
-from initializers import tt_rand_tensor
+from initializers import random_tensor
 
-def get_tt_variable(name,
-                    dtype=None,
-                    initializer=None,
-                    regularizer=None,
-                    trainable=True,
-                    collections=None,
-                    caching_device=None,
-                    validate_shape=True):
+
+def get_variable(name,
+                 dtype=None,
+                 initializer=None,
+                 regularizer=None,
+                 trainable=True,
+                 collections=None,
+                 caching_device=None,
+                 validate_shape=True):
   """Returns TensorTrain object with tf.Variables as the TT-cores.
 
   Args:
@@ -79,10 +80,9 @@ def get_tt_variable(name,
                                         initializer=initializer.tt_cores[i],
                                         dtype=dtype, trainable=trainable,
                                         collections=collections,
-                                        caching_device=caching_device,
-                                        validate_shape=False)
+                                        caching_device=caching_device)
         variable_cores.append(curr_core_var)
-    v = tensor_train.TensorTrain(variable_cores, initializer.get_shape(),
+    v = tensor_train.TensorTrain(variable_cores, initializer.get_raw_shape(),
                                  initializer.get_tt_ranks(),
                                  convert_to_tensors=False)
 
@@ -108,7 +108,7 @@ def assign(ref, value, validate_shape=None, use_locking=None, name=None):
   with tf.variable_scope(name):
     for i in range(ref.ndims()):
       new_cores.append(tf.assign(ref.tt_cores[i], value.tt_cores[i],
-                                 False, use_locking))
-  return tensor_train.TensorTrain(new_cores, value.get_shape(),
+                                 use_locking=use_locking))
+  return tensor_train.TensorTrain(new_cores, value.get_raw_shape(),
                                   value.get_tt_ranks(),
                                   convert_to_tensors=False)
