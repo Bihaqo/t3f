@@ -39,7 +39,6 @@ def shape(tt):
   if tt.is_tt_matrix():
     return tf.reduce_prod(raw_shape, axis=1)
   else:
-    print(tt_raw_shape.get_shape())
     return tt_raw_shape[0]
 
 
