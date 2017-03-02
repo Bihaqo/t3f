@@ -235,9 +235,10 @@ def round(tt, max_tt_rank=None, epsilon=None):
   elif max_tt_rank.size != ndims + 1:
     raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
                      'where d is the number of dimensions (rank) of the tensor.')
-  static_raw_shape = tt.get_raw_shape()
-  if static_raw_shape[0].is_fully_defined():
-    raw_shape = [s.as_list() for s in static_raw_shape]
+  # Its better to use get_shape() than get_raw_shape()[0] since for matrices
+  # get_shape().is_fully_defined() will check that all dimensions are defined.
+  if tt.get_shape().is_fully_defined():
+    raw_shape = [s.as_list() for s in tt.get_raw_shape()]
   else:
     raw_shape = shapes.raw_shape(tt)
   static_tt_ranks = tt.get_tt_ranks()
@@ -253,8 +254,9 @@ def round(tt, max_tt_rank=None, epsilon=None):
   # Left to right orthogonalization.
   for core_idx in range(ndims - 1):
     curr_core = tt_cores[core_idx]
-    # Ranks could have changed on the previous iteration, so static_tt_ranks can
-    # be outdated.
+    # TT-ranks could have changed on the previous iteration, so `tt_ranks` can
+    # be outdated for the current TT-rank, but should be valid for the next
+    # TT-rank.
     curr_rank = next_rank
     next_rank = tt_ranks[core_idx + 1]
     if tt.is_tt_matrix():
@@ -267,11 +269,13 @@ def round(tt, max_tt_rank=None, epsilon=None):
     qr_shape = (curr_rank * curr_mode, next_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
     curr_core, triang = tf.qr(curr_core)
-    # The TT-rank could have changed.
     if triang.get_shape().is_fully_defined():
       triang_shape = triang.get_shape().as_list()
     else:
       triang_shape = tf.shape(triang)
+    # The TT-rank could have changed: if qr_shape is e.g. 4 x 10, than q would
+    # be of size 4 x 4 and r would be 4 x 10, which means that the next rank
+    # should be changed to 4.
     next_rank = triang_shape[0]
     if tt.is_tt_matrix():
       new_core_shape = (curr_rank, curr_mode_left, curr_mode_right, next_rank)
@@ -283,18 +287,10 @@ def round(tt, max_tt_rank=None, epsilon=None):
     tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
 
   if tt.is_tt_matrix():
-    curr_mode_left = static_raw_shape[0][-1].value
-    if curr_mode_left is None:
-      curr_mode_left = dynamic_raw_shape[0][-1]
-    curr_mode_right = static_raw_shape[1][-1].value
-    if curr_mode_right is None:
-      curr_mode_right = dynamic_raw_shape[1][-1]
-    last_core_shape = (next_rank, curr_mode_left, curr_mode_right, 1)
+    last_core_shape = (next_rank, raw_shape[0][core_idx],
+                       raw_shape[1][core_idx], 1)
   else:
-    curr_mode = static_raw_shape[0][-1].value
-    if curr_mode is None:
-      curr_mode = dynamic_raw_shape[0][-1]
-    last_core_shape = (next_rank, curr_mode, 1)
+    last_core_shape = (next_rank, raw_shape[0][core_idx], 1)
   tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
 
   ranks = [1] * (ndims + 1)
