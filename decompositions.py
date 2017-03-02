@@ -287,10 +287,9 @@ def round(tt, max_tt_rank=None, epsilon=None):
     tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
 
   if tt.is_tt_matrix():
-    last_core_shape = (next_rank, raw_shape[0][core_idx],
-                       raw_shape[1][core_idx], 1)
+    last_core_shape = (next_rank, raw_shape[0][-1], raw_shape[1][-1], 1)
   else:
-    last_core_shape = (next_rank, raw_shape[0][core_idx], 1)
+    last_core_shape = (next_rank, raw_shape[0][-1], 1)
   tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
 
   ranks = [1] * (ndims + 1)
