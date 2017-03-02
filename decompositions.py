@@ -78,7 +78,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
     if curr_rank is None:
       curr_rank = dynamic_tt_ranks[core_idx]
     next_rank = static_tt_ranks[core_idx + 1].value
-    if curr_rank is None:
+    if next_rank is None:
       next_rank = dynamic_tt_ranks[core_idx + 1]
     curr_core_new_shape = (curr_rank, shape[0, core_idx],
                            shape[1, core_idx], next_rank)
