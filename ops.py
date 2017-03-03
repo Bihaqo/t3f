@@ -212,22 +212,32 @@ def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
   raise NotImplementedError
 
 
-def matmul(matrix_a, matrix_b):
+def matmul(a, b):
   """Multiplies two matrices that can be TT-, dense, or sparse.
 
   Note that multiplication of two TT-matrices returns a TT-matrix with much
   larger ranks.
 
   Args:
-    matrix_a: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size M x N
-    matrix_b: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size N x P
+    a: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size M x N
+    b: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size N x P
 
   Returns
     If both arguments are `TensorTrain` objects, returns a `TensorTrain`
       object containing a TT-matrix of size M x P
     If not, returns tf.Tensor of size M x P
   """
-  raise NotImplementedError
+#   TODO: is it safe to check types? What if a class is derived from TT?
+  if isinstance(a, TensorTrain) and isinstance(b, TensorTrain):
+    return tt_tt_matmul(a, b)
+  elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
+    return tt_dense_matmul(a, b)
+  elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
+    return dense_tt_matmul(a, b)
+  elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
+    return tt_sparse_matmul(a, b)
+  elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
+    return sparse_tt_matmul(a, b)
 
 
 def tt_tt_flat_inner(tt_a, tt_b):
