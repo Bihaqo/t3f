@@ -164,10 +164,14 @@ class TTMatrixTest(tf.test.TestCase):
       tt_mat_2 = initializers.random_matrix((sum_shape, right_shape))
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
+      res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
+      res_actual2 = ops.full(res_actual2)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
-      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       # TODO: why so bad accuracy?
       self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testTTMatTimesDenseVec(self):
     # Multiply a TT-matrix by a dense vector.
@@ -180,9 +184,12 @@ class TTMatrixTest(tf.test.TestCase):
       tf.set_random_seed(1)
       tt_mat = initializers.random_matrix((out_shape, inp_shape))
       res_actual = ops.tt_dense_matmul(tt_mat, tf_vec)
+      res_actual2 = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
-      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testDenseMatTimesTTVec(self):
     # Multiply a TT-matrix by a dense vector.
@@ -195,9 +202,12 @@ class TTMatrixTest(tf.test.TestCase):
       tf.set_random_seed(1)
       tt_vec = initializers.random_matrix((inp_shape, None))
       res_actual = ops.dense_tt_matmul(tf_mat, tt_vec)
+      res_actual2 = ops.matmul(tf_mat, tt_vec)
       res_desired = tf.matmul(tf_mat, ops.full(tt_vec))
-      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      vars = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(vars)
       self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
