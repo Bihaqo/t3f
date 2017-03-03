@@ -372,6 +372,87 @@ def flat_inner(a, b):
   raise NotImplementedError
 
 
+def add(tt_a, tt_b):
+  """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
+
+  The shapes of tt_a and tt_b should coincide.
+
+  Args:
+    tt_a: `TensorTrain`, TT-tensor or TT-matrix
+    tt_b: `TensorTrain`, TT-tensor or TT-matrix
+
+  Returns
+    a `TensorTrain` object corresponding to the element-wise sum of arguments.
+
+  Raises
+    ValueError if the arguments shapes do not coincide
+  """
+  ndims = tt_a.ndims()
+  if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
+    raise ValueError('The arguments should be both TT-tensors or both '
+                     'TT-matrices')
+
+  if tt_a.get_shape() != tt_b.get_shape():
+    raise ValueError('The arguments should have the same shape.')
+
+  static_a_ranks = tt_a.get_tt_ranks()
+  if static_a_ranks.is_fully_defined():
+    a_ranks = static_a_ranks.as_list()
+  else:
+    a_ranks = shapes.tt_ranks(tt_a)
+
+  static_b_ranks = tt_b.get_tt_ranks()
+  if static_b_ranks.is_fully_defined():
+    b_ranks = static_b_ranks.as_list()
+  else:
+    b_ranks = shapes.tt_ranks(tt_b)
+
+  # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
+  # case all dimensions are defined.
+  if tt_a.get_shape().is_fully_defined:
+    shape = [s.as_list() for s in tt_a.get_raw_shape()]
+  else:
+    shape = shapes.raw_shape(tt_a)
+
+  is_matrix = tt_a.is_tt_matrix()
+  if is_matrix:
+    last_axis = 3
+  else:
+    last_axis = 2
+  tt_cores = []
+  for core_idx in range(ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    b_core = tt_b.tt_cores[core_idx]
+    if core_idx == 0:
+      curr_core = tf.concat((a_core, b_core), axis=last_axis)
+    elif core_idx == ndims - 1:
+      curr_core = tf.concat((a_core, b_core), axis=0)
+    else:
+      if is_matrix:
+        upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
+                                shape[1][core_idx], b_ranks[core_idx + 1]))
+      else:
+        upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
+                                b_ranks[core_idx + 1]))
+      upper = tf.concat((a_core, upper_zeros), axis=last_axis)
+
+      if is_matrix:
+        lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
+                                shape[1][core_idx], a_ranks[core_idx + 1]))
+      else:
+        lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
+                                a_ranks[core_idx + 1]))
+      lower = tf.concat((lower_zeros, b_core), axis=last_axis)
+      curr_core = tf.concat((upper, lower), axis=0)
+    tt_cores.append(curr_core)
+
+  new_ranks = [1]
+  for core_idx in range(1, ndims):
+    new_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
+  new_ranks.append(1)
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
+
+
 def frobenius_norm_squared(tt):
   """Frobenius norm squared of a TensorTrain (sum of squares of all elements).
 
@@ -465,6 +546,7 @@ def quadratic_form(A, b, c):
 
   # TODO: make a more efficient implementation taylored for this case.
   return tt_tt_flat_inner(A, tt_tt_matmul(b, transpose(c)))
+
 
 def cast(tt_a, dtype):
   """Casts a tt-tensor to a new type.
