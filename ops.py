@@ -372,72 +372,6 @@ def flat_inner(a, b):
   raise NotImplementedError
 
 
-def multiply(tt_a, tt_b):
-  """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
-
-  The shapes of tt_a and tt_b should coincide.
-
-  Args:
-    tt_a: `TensorTrain`, TT-tensor or TT-matrix
-    tt_b: `TensorTrain`, TT-tensor or TT-matrix
-
-  Returns
-    a `TensorTrain` object corresponding to the element-wise product of the
-    arguments.
-
-  Raises
-    ValueError if the arguments shapes do not coincide.
-  """
-  ndims = tt_a.ndims()
-  if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
-    raise ValueError('The arguments should be both TT-tensors or both '
-                     'TT-matrices')
-
-  if tt_a.get_shape() != tt_b.get_shape():
-    raise ValueError('The arguments should have the same shape.')
-
-  static_a_ranks = tt_a.get_tt_ranks()
-  if static_a_ranks.is_fully_defined():
-    a_ranks = static_a_ranks.as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_a)
-
-  static_b_ranks = tt_b.get_tt_ranks()
-  if static_b_ranks.is_fully_defined():
-    b_ranks = static_b_ranks.as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_b)
-
-  # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
-  # case all dimensions are defined.
-  if tt_a.get_shape().is_fully_defined:
-    shape = [s.as_list() for s in tt_a.get_raw_shape()]
-  else:
-    shape = shapes.raw_shape(tt_a)
-
-  is_matrix = tt_a.is_tt_matrix()
-  tt_cores = []
-  for core_idx in range(ndims):
-    a_core = tt_a.tt_cores[core_idx]
-    b_core = tt_b.tt_cores[core_idx]
-    left_rank = a_ranks[core_idx] * b_ranks[core_idx]
-    right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
-    if is_matrix:
-      curr_core = tf.einsum('aijb,cijd->acijbd', a_core, b_core)
-      curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
-                                         shape[1][core_idx], right_rank))
-    else:
-      curr_core = tf.einsum('aib,cid->acibd', a_core, b_core)
-      curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
-                                         right_rank))
-    tt_cores.append(curr_core)
-
-  new_ranks = []
-  for core_idx in range(ndims + 1):
-    new_ranks.append(static_a_ranks[core_idx] * static_b_ranks[core_idx])
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
-
-
 def add(tt_a, tt_b):
   """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
 
@@ -516,6 +450,72 @@ def add(tt_a, tt_b):
   for core_idx in range(1, ndims):
     new_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
   new_ranks.append(1)
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
+
+
+def multiply(tt_a, tt_b):
+  """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
+
+  The shapes of tt_a and tt_b should coincide.
+
+  Args:
+    tt_a: `TensorTrain`, TT-tensor or TT-matrix
+    tt_b: `TensorTrain`, TT-tensor or TT-matrix
+
+  Returns
+    a `TensorTrain` object corresponding to the element-wise product of the
+    arguments.
+
+  Raises
+    ValueError if the arguments shapes do not coincide.
+  """
+  ndims = tt_a.ndims()
+  if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
+    raise ValueError('The arguments should be both TT-tensors or both '
+                     'TT-matrices')
+
+  if tt_a.get_shape() != tt_b.get_shape():
+    raise ValueError('The arguments should have the same shape.')
+
+  static_a_ranks = tt_a.get_tt_ranks()
+  if static_a_ranks.is_fully_defined():
+    a_ranks = static_a_ranks.as_list()
+  else:
+    a_ranks = shapes.tt_ranks(tt_a)
+
+  static_b_ranks = tt_b.get_tt_ranks()
+  if static_b_ranks.is_fully_defined():
+    b_ranks = static_b_ranks.as_list()
+  else:
+    b_ranks = shapes.tt_ranks(tt_b)
+
+  # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
+  # case all dimensions are defined.
+  if tt_a.get_shape().is_fully_defined:
+    shape = [s.as_list() for s in tt_a.get_raw_shape()]
+  else:
+    shape = shapes.raw_shape(tt_a)
+
+  is_matrix = tt_a.is_tt_matrix()
+  tt_cores = []
+  for core_idx in range(ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    b_core = tt_b.tt_cores[core_idx]
+    left_rank = a_ranks[core_idx] * b_ranks[core_idx]
+    right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
+    if is_matrix:
+      curr_core = tf.einsum('aijb,cijd->acijbd', a_core, b_core)
+      curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
+                                         shape[1][core_idx], right_rank))
+    else:
+      curr_core = tf.einsum('aib,cid->acibd', a_core, b_core)
+      curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
+                                         right_rank))
+    tt_cores.append(curr_core)
+
+  new_ranks = []
+  for core_idx in range(ndims + 1):
+    new_ranks.append(static_a_ranks[core_idx] * static_b_ranks[core_idx])
   return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
 
 
