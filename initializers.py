@@ -9,7 +9,7 @@ def random_tensor(shape, tt_rank=2):
 
   Args:
     shape: array representing the shape of the future tensor
-    tt_rank: a number or a (d-1)-element array with ranks.
+    tt_rank: a number or a (d+1)-element array with ranks.
 
   Returns:
     TensorTrain containing a TT-tensor
@@ -24,18 +24,17 @@ def random_tensor(shape, tt_rank=2):
     raise ValueError('all elements in `shape` should be positive')
   if np.any(tt_rank < 1):
     raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape.size - 1):
+  if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
     raise ValueError('`rank` array has inappropriate size')
 
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-  # Add 1 to the beginning and end to simplify working with ranks.
-  tt_rank_ext = np.insert(tt_rank, 0, 1)
-  tt_rank_ext = np.append(tt_rank_ext, 1)
+    tt_rank = np.insert(tt_rank, 0, 1)
+    tt_rank = np.append(tt_rank, 1)
   # TODO: check that ints?
   shape = shape.astype(int)
-  tt_rank_ext = tt_rank_ext.astype(int)
+  tt_rank_ext = tt_rank.astype(int)
   # TODO: variable (name?) scope.
   tt_cores = [None] * num_dims
   for i in range(num_dims):
@@ -57,7 +56,7 @@ def random_matrix(shape, tt_rank=2):
       and
         tt_rand_matrix([None, [2, 2, 2]])
       will create an 8-element column and row vectors correspondingly.
-    tt_rank: a number or a (d-1)-element array with ranks.
+    tt_rank: a number or a (d+1)-element array with ranks.
 
   Returns:
     TensorTrain containing a TT-matrix of size
@@ -82,18 +81,17 @@ def random_matrix(shape, tt_rank=2):
     raise ValueError('all elements in `shape` should be positive')
   if np.any(tt_rank < 1):
     raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size - 1):
+  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
     raise ValueError('`rank` array has inappropriate size')
 
   num_dims = shape[0].size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-  # Add 1 to the beginning and end to simplify working with ranks.
-  tt_rank_ext = np.insert(tt_rank, 0, 1)
-  tt_rank_ext = np.append(tt_rank_ext, 1)
+    tt_rank = np.insert(tt_rank, 0, 1)
+    tt_rank = np.append(tt_rank, 1)
   # TODO: check that ints?
   shape = shape.astype(int)
-  tt_rank_ext = tt_rank_ext.astype(int)
+  tt_rank_ext = tt_rank.astype(int)
   # TODO: variable (name?) scope.
   tt_cores = [None] * num_dims
   for i in range(num_dims):
