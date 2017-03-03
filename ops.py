@@ -373,7 +373,7 @@ def flat_inner(a, b):
 
 
 def multiply(tt_a, tt_b):
-  """Returns a TensorTrain corresponding to element-wise product tt_a + tt_b.
+  """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
 
   The shapes of tt_a and tt_b should coincide.
 
