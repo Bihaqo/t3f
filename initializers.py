@@ -87,16 +87,15 @@ def random_matrix(shape, tt_rank=2):
   num_dims = shape[0].size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-    tt_rank = np.insert(tt_rank, 0, 1)
-    tt_rank = np.append(tt_rank, 1)
+    tt_rank = np.concatenate([[1], tt_rank, [1]])
   # TODO: check that ints?
   shape = shape.astype(int)
-  tt_rank_ext = tt_rank.astype(int)
+  tt_rank = tt_rank.astype(int)
   # TODO: variable (name?) scope.
   tt_cores = [None] * num_dims
   for i in range(num_dims):
-    curr_core_shape = (tt_rank_ext[i], shape[0][i], shape[1][i],
-                       tt_rank_ext[i + 1])
+    curr_core_shape = (tt_rank[i], shape[0][i], shape[1][i],
+                       tt_rank[i + 1])
     tt_cores[i] = tf.random_normal(curr_core_shape)
 
-  return TensorTrain(tt_cores, shape, tt_rank_ext)
+  return TensorTrain(tt_cores, shape, tt_rank)

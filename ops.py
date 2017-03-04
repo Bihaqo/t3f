@@ -415,10 +415,7 @@ def add(tt_a, tt_b):
     shape = shapes.raw_shape(tt_a)
 
   is_matrix = tt_a.is_tt_matrix()
-  if is_matrix:
-    last_axis = 3
-  else:
-    last_axis = 2
+  last_axis = 3 if is_matrix else 2
   tt_cores = []
   for core_idx in range(ndims):
     a_core = tt_a.tt_cores[core_idx]
@@ -431,17 +428,14 @@ def add(tt_a, tt_b):
       if is_matrix:
         upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
                                 shape[1][core_idx], b_ranks[core_idx + 1]))
-      else:
-        upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
-                                b_ranks[core_idx + 1]))
-      upper = tf.concat((a_core, upper_zeros), axis=last_axis)
-
-      if is_matrix:
         lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
                                 shape[1][core_idx], a_ranks[core_idx + 1]))
       else:
+        upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
+                                b_ranks[core_idx + 1]))
         lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
                                 a_ranks[core_idx + 1]))
+      upper = tf.concat((a_core, upper_zeros), axis=last_axis)
       lower = tf.concat((lower_zeros, b_core), axis=last_axis)
       curr_core = tf.concat((upper, lower), axis=0)
     tt_cores.append(curr_core)
@@ -513,9 +507,7 @@ def multiply(tt_a, tt_b):
                                          right_rank))
     tt_cores.append(curr_core)
 
-  new_ranks = []
-  for core_idx in range(ndims + 1):
-    new_ranks.append(static_a_ranks[core_idx] * static_b_ranks[core_idx])
+  new_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
   return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
 
 
