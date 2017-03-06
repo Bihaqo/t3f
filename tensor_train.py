@@ -236,6 +236,26 @@ class TensorTrain(object):
   # def _override_operator(operator, func):
   #   _override_helper(SparseTensor, operator, func)
 
+  def __add__(self, other):
+    """Returns a TensorTrain corresponding to element-wise sum tt_a + tt_b.
+
+    Just calls t3f.add, see its documentation for details.
+    """
+    # TODO: ugly.
+    # We can't import ops in the beginning since it creates cyclic dependencies.
+    import ops
+    return ops.add(self, other)
+
+  def __mul__(self, other):
+    """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
+
+    Just calls t3f.multiply, see its documentation for details.
+    """
+    # TODO: ugly.
+    # We can't import ops in the beginning since it creates cyclic dependencies.
+    import ops
+    return ops.multiply(self, other)
+
 
 def _clean_shape(shape):
   """Returns a tuple of TensorShapes for any valid shape representation.
