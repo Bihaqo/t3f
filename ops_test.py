@@ -184,10 +184,14 @@ class TTMatrixTest(tf.test.TestCase):
       tt_mat_2 = initializers.random_matrix((sum_shape, right_shape))
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
+      res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
+      res_actual2 = ops.full(res_actual2)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
-      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       # TODO: why so bad accuracy?
       self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testTTMatTimesDenseVec(self):
     # Multiply a TT-matrix by a dense vector.
@@ -195,13 +199,17 @@ class TTMatrixTest(tf.test.TestCase):
     out_shape = (3, 4, 3)
     np.random.seed(1)
     vec = np.random.rand(np.prod(inp_shape), 1).astype(np.float32)
-    with self.test_session():
+    with self.test_session() as sess:
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
       tt_mat = initializers.random_matrix((out_shape, inp_shape))
-      res_actual = ops.matmul(tt_mat, tf_vec)
+      res_actual = ops.tt_dense_matmul(tt_mat, tf_vec)
+      res_actual2 = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
-      self.assertAllClose(res_actual.eval(), res_desired.eval())
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testDenseMatTimesTTVec(self):
     # Multiply a TT-matrix by a dense vector.
@@ -209,13 +217,17 @@ class TTMatrixTest(tf.test.TestCase):
     out_shape = (3, 3, 3, 3)
     np.random.seed(1)
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
-    with self.test_session():
+    with self.test_session() as sess:
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
       tt_vec = initializers.random_matrix((inp_shape, None))
-      res_actual = ops.matmul(tf_mat, tt_vec)
-      res_desired = tf.matmul(ops.full(tf_mat), tt_vec)
-      self.assertAllClose(res_actual.eval(), res_desired.eval())
+      res_actual = ops.dense_tt_matmul(tf_mat, tt_vec)
+      res_actual2 = ops.matmul(tf_mat, tt_vec)
+      res_desired = tf.matmul(tf_mat, ops.full(tt_vec))
+      vars = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(vars)
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
