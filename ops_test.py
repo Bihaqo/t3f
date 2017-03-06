@@ -83,9 +83,12 @@ class TTTensorTest(tf.test.TestCase):
     tt_b = initializers.random_tensor((2, 1, 3, 4), tt_rank=[1, 2, 4, 3, 1])
     with self.test_session() as sess:
       res_actual = ops.full(ops.add(tt_a, tt_b))
+      res_actual2 = ops.full(tt_a + tt_b)
       res_desired = ops.full(tt_a) + ops.full(tt_b)
-      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testMultiply(self):
     # Multiply two TT-tensors.
@@ -93,9 +96,12 @@ class TTTensorTest(tf.test.TestCase):
     tt_b = initializers.random_tensor((1, 2, 3, 4), tt_rank=[1, 1, 4, 3, 1])
     with self.test_session() as sess:
       res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(tt_a * tt_b)
       res_desired = ops.full(tt_a) * ops.full(tt_b)
-      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testFrobeniusNormTens(self):
     # Frobenius norm of a TT-tensor.
