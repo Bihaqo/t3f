@@ -344,5 +344,23 @@ class TTMatrixTest(tf.test.TestCase):
       self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
 
 
+  def testUnknownRanksTTMatmul(self):
+    # Tests tt_tt_matmul for matrices with unknown ranks
+    np.random.seed(1)
+    K_1 = np.random.rand(1, 2, 2, 2)
+    K_2 = np.random.rand(2, 3, 3, 1)
+    tt_mat = tensor_train.TensorTrain([K_1, K_2], tt_ranks=None)
+    ops.tt_tt_matmul(tt_mat, tt_mat)
+  
+  def testHalfKnownRanksTTMatmul(self):
+    # Tests tt_tt_matmul for the case  when one matrice has known ranks 
+    # and the other one doesn't    
+    np.random.seed(1)
+    K_1 = np.random.rand(1, 2, 2, 2)
+    K_2 = np.random.rand(2, 3, 3, 1)
+    tt_mat_known_ranks = tensor_train.TensorTrain([K_1, K_2], tt_ranks=[1, 2, 1])
+    tt_mat = tensor_train.TensorTrain([K_1, K_2], tt_ranks=None)
+    ops.tt_tt_matmul(tt_mat_known_ranks, tt_mat)
+
 if __name__ == "__main__":
   tf.test.main()
