@@ -421,17 +421,8 @@ def add(tt_a, tt_b):
   if tt_a.get_shape() != tt_b.get_shape():
     raise ValueError('The arguments should have the same shape.')
 
-  static_a_ranks = tt_a.get_tt_ranks()
-  if static_a_ranks.is_fully_defined():
-    a_ranks = static_a_ranks.as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_a)
-
-  static_b_ranks = tt_b.get_tt_ranks()
-  if static_b_ranks.is_fully_defined():
-    b_ranks = static_b_ranks.as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_b)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
 
   # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
   # case all dimensions are defined.
@@ -466,11 +457,13 @@ def add(tt_a, tt_b):
       curr_core = tf.concat((upper, lower), axis=0)
     tt_cores.append(curr_core)
 
-  new_ranks = [1]
+  out_ranks = [1]
+  static_a_ranks = tt_a.get_tt_ranks()
+  static_b_ranks = tt_b.get_tt_ranks()
   for core_idx in range(1, ndims):
-    new_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
-  new_ranks.append(1)
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
+    out_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
+  out_ranks.append(1)
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(out_ranks))
 
 
 def multiply(tt_a, tt_b):
@@ -497,18 +490,8 @@ def multiply(tt_a, tt_b):
   if tt_a.get_shape() != tt_b.get_shape():
     raise ValueError('The arguments should have the same shape.')
 
-  static_a_ranks = tt_a.get_tt_ranks()
-  if static_a_ranks.is_fully_defined():
-    a_ranks = static_a_ranks.as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_a)
-
-  static_b_ranks = tt_b.get_tt_ranks()
-  if static_b_ranks.is_fully_defined():
-    b_ranks = static_b_ranks.as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_b)
-
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
   shape = shapes.lazy_raw_shape(tt_a)
 
   is_matrix = tt_a.is_tt_matrix()
@@ -528,8 +511,8 @@ def multiply(tt_a, tt_b):
                                          right_rank))
     tt_cores.append(curr_core)
 
-  new_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
+  out_ranks = [a * b for a, b in zip(tt_a.get_tt_ranks(), tt_b.get_tt_ranks())]
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(out_ranks))
 
 
 def frobenius_norm_squared(tt):
