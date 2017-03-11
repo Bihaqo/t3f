@@ -87,7 +87,7 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   static_a_ranks = tt_matrix_a.get_tt_ranks()
   static_b_ranks = tt_matrix_b.get_tt_ranks()
   out_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
-  return TensorTrain(result_cores, res_shape, tf.TensorShape(out_ranks))
+  return TensorTrain(result_cores, res_shape, out_ranks)
 
 
 def tt_dense_matmul(tt_matrix_a, matrix_b):
@@ -449,7 +449,7 @@ def add(tt_a, tt_b):
   for core_idx in range(1, ndims):
     out_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
   out_ranks.append(1)
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(out_ranks))
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
 def multiply(tt_a, tt_b):
@@ -498,7 +498,7 @@ def multiply(tt_a, tt_b):
     tt_cores.append(curr_core)
 
   out_ranks = [a * b for a, b in zip(tt_a.get_tt_ranks(), tt_b.get_tt_ranks())]
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(out_ranks))
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
 def frobenius_norm_squared(tt):
