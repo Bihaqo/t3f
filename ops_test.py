@@ -349,23 +349,22 @@ class TTMatrixTest(tf.test.TestCase):
     for dtype in [tf.float16, tf.float32, tf.float64]:
       self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
 
-
   def testUnknownRanksTTMatmul(self):
     # Tests tt_tt_matmul for matrices with unknown ranks
     np.random.seed(1)
-    K_1 = np.random.rand(1, 2, 2, 2)
-    K_2 = np.random.rand(2, 3, 3, 1)
-    tt_mat = tensor_train.TensorTrain([K_1, K_2], tt_ranks=None)
+    K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
+    K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
+    tt_mat = tensor_train.TensorTrain([K_1, K_2])
     ops.tt_tt_matmul(tt_mat, tt_mat)
-  
+
   def testHalfKnownRanksTTMatmul(self):
     # Tests tt_tt_matmul for the case  when one matrice has known ranks 
     # and the other one doesn't    
     np.random.seed(1)
-    K_1 = np.random.rand(1, 2, 2, 2)
-    K_2 = np.random.rand(2, 3, 3, 1)
+    K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
+    K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
     tt_mat_known_ranks = tensor_train.TensorTrain([K_1, K_2], tt_ranks=[1, 2, 1])
-    tt_mat = tensor_train.TensorTrain([K_1, K_2], tt_ranks=None)
+    tt_mat = tensor_train.TensorTrain([K_1, K_2])
     ops.tt_tt_matmul(tt_mat_known_ranks, tt_mat)
 
 if __name__ == "__main__":
