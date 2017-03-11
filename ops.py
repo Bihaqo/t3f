@@ -67,18 +67,9 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   result_cores = []
   # TODO: name the operation and the resulting tensor.
   a_shape = shapes.lazy_raw_shape(tt_matrix_a)
-  tt_ranks_defined = True
-  if tt_matrix_a.get_tt_ranks().is_fully_defined():
-    a_ranks = tt_matrix_a.get_tt_ranks().as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_matrix_a)
-    tt_ranks_defined = False
+  a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
   b_shape = shapes.lazy_raw_shape(tt_matrix_b)
-  if tt_matrix_b.get_tt_ranks().is_fully_defined():
-    b_ranks = tt_matrix_b.get_tt_ranks().as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_matrix_b)
-    tt_ranks_defined = False
+  b_ranks = shapes.lazy_tt_ranks(tt_matrix_b)
   for core_idx in range(ndims):
     a_core = tt_matrix_a.tt_cores[core_idx]
     b_core = tt_matrix_b.tt_cores[core_idx]
@@ -91,17 +82,12 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     core_shape = (res_left_rank, left_mode, right_mode, res_right_rank)
     curr_res_core = tf.reshape(curr_res_core, core_shape)
     result_cores.append(curr_res_core)
+
   res_shape = (tt_matrix_a.get_raw_shape()[0], tt_matrix_b.get_raw_shape()[1])
-  a_ranks = tt_matrix_a.get_tt_ranks()
-  b_ranks = tt_matrix_b.get_tt_ranks()
-  if tt_ranks_defined:
-    res_ranks = []
-    for core_idx in range(ndims + 1):
-      res_ranks.append(a_ranks[core_idx] * b_ranks[core_idx])
-    res_ranks = tf.TensorShape(res_ranks)
-  else:
-    res_ranks = None
-  return TensorTrain(result_cores, res_shape, res_ranks)
+  static_a_ranks = tt_matrix_a.get_tt_ranks()
+  static_b_ranks = tt_matrix_b.get_tt_ranks()
+  out_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
+  return TensorTrain(result_cores, res_shape, tf.TensorShape(out_ranks))
 
 
 def tt_dense_matmul(tt_matrix_a, matrix_b):
