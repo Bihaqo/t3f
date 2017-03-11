@@ -57,7 +57,7 @@ class TensorTrain(object):
 
     self._tt_cores = tuple(tt_cores)
     self._shape = _clean_shape(shape)
-    self._tt_ranks = tf.TensorShape(tt_ranks)
+    self._tt_ranks = None if tt_ranks is None else tf.TensorShape(tt_ranks)
 
   def get_raw_shape(self):
     """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
@@ -155,10 +155,10 @@ class TensorTrain(object):
     if self._tt_ranks is not None:
       return self._tt_ranks
     else:
-      num_dims = self.ndims()
       ranks = []
-      for i in range(num_dims):
+      for i in range(self.ndims()):
         ranks.append(self.tt_cores[i].get_shape()[0])
+      ranks.append(self.tt_cores[-1].get_shape()[-1])
       return tf.TensorShape(ranks)
 
   def is_tt_matrix(self):
