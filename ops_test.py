@@ -349,24 +349,39 @@ class TTMatrixTest(tf.test.TestCase):
     for dtype in [tf.float16, tf.float32, tf.float64]:
       self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
 
-
   def testUnknownRanksTTMatmul(self):
     # Tests tt_tt_matmul for matrices with unknown ranks
+    K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
+    K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
+    tt_mat = tensor_train.TensorTrain([K_1, K_2])
+    res_actual = ops.full(ops.tt_tt_matmul(tt_mat, tt_mat))
+    res_desired = tf.matmul(ops.full(tt_mat), ops.full(tt_mat))
     np.random.seed(1)
-    K_1 = np.random.rand(1, 2, 2, 2)
-    K_2 = np.random.rand(2, 3, 3, 1)
-    tt_mat = tensor_train.TensorTrain([K_1, K_2], tt_ranks=None)
-    ops.tt_tt_matmul(tt_mat, tt_mat)
-  
+    K_1_val = np.random.rand(1, 2, 2, 2)
+    K_2_val = np.random.rand(2, 3, 3, 1)
+    with self.test_session() as sess:
+      res_actual_val = sess.run(res_actual, {K_1: K_1_val, K_2: K_2_val})
+      res_desired_val = sess.run(res_desired, {K_1: K_1_val, K_2: K_2_val})
+      self.assertAllClose(res_desired_val, res_actual_val)
+
+
   def testHalfKnownRanksTTMatmul(self):
     # Tests tt_tt_matmul for the case  when one matrice has known ranks 
     # and the other one doesn't    
     np.random.seed(1)
-    K_1 = np.random.rand(1, 2, 2, 2)
-    K_2 = np.random.rand(2, 3, 3, 1)
-    tt_mat_known_ranks = tensor_train.TensorTrain([K_1, K_2], tt_ranks=[1, 2, 1])
-    tt_mat = tensor_train.TensorTrain([K_1, K_2], tt_ranks=None)
-    ops.tt_tt_matmul(tt_mat_known_ranks, tt_mat)
+    K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
+    K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
+    tt_mat_known_ranks = tensor_train.TensorTrain([K_1, K_2], tt_ranks=[1, 3, 1])
+    tt_mat = tensor_train.TensorTrain([K_1, K_2])
+    res_actual = ops.full(ops.tt_tt_matmul(tt_mat_known_ranks, tt_mat))
+    res_desired = tf.matmul(ops.full(tt_mat_known_ranks), ops.full(tt_mat))
+    np.random.seed(1)
+    K_1_val = np.random.rand(1, 2, 2, 3)
+    K_2_val = np.random.rand(3, 3, 3, 1)
+    with self.test_session() as sess:
+      res_actual_val = sess.run(res_actual, {K_1: K_1_val, K_2: K_2_val})
+      res_desired_val = sess.run(res_desired, {K_1: K_1_val, K_2: K_2_val})
+      self.assertAllClose(res_desired_val, res_actual_val)
 
 if __name__ == "__main__":
   tf.test.main()

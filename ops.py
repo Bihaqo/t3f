@@ -17,19 +17,9 @@ def full(tt):
     tf.Tensor.
   """
   num_dims = tt.ndims()
-  if tt.get_tt_ranks().is_fully_defined():
-    ranks = tt.get_tt_ranks().as_list()
-  else:
-    ranks = shapes.tt_ranks(tt)
-
-  if tt.get_shape().is_fully_defined():
-    shape = tt.get_shape().as_list()
-    raw_shape = list(tt.get_raw_shape())
-    for i in range(len(raw_shape)):
-      raw_shape[i] = raw_shape[i].as_list()
-  else:
-    shape = shapes.shape(tt)
-    raw_shape = shapes.raw_shape(tt)
+  ranks = shapes.lazy_tt_ranks(tt)
+  shape = shapes.lazy_shape(tt)
+  raw_shape = shapes.lazy_raw_shape(tt)
 
   res = tt.tt_cores[0]
   for i in range(1, num_dims):
@@ -76,25 +66,10 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
                      'got %d and %d instead.' % (ndims, tt_matrix_b.ndims()))
   result_cores = []
   # TODO: name the operation and the resulting tensor.
-  if tt_matrix_a.get_shape().is_fully_defined():
-    a_shape = [s.as_list() for s in tt_matrix_a.get_raw_shape()]
-  else:
-    a_shape = shapes.raw_shape(tt_matrix_a)
-  tt_ranks_defined = True
-  if tt_matrix_a.get_tt_ranks().is_fully_defined():
-    a_ranks = tt_matrix_a.get_tt_ranks().as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_matrix_a)
-    tt_ranks_defined = False
-  if tt_matrix_b.get_shape().is_fully_defined():
-    b_shape = [s.as_list() for s in tt_matrix_b.get_raw_shape()]
-  else:
-    b_shape = shapes.raw_shape(tt_matrix_b)
-  if tt_matrix_b.get_tt_ranks().is_fully_defined():
-    b_ranks = tt_matrix_b.get_tt_ranks().as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_matrix_b)
-    tt_ranks_defined = False
+  a_shape = shapes.lazy_raw_shape(tt_matrix_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
+  b_shape = shapes.lazy_raw_shape(tt_matrix_b)
+  b_ranks = shapes.lazy_tt_ranks(tt_matrix_b)
   for core_idx in range(ndims):
     a_core = tt_matrix_a.tt_cores[core_idx]
     b_core = tt_matrix_b.tt_cores[core_idx]
@@ -107,17 +82,12 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     core_shape = (res_left_rank, left_mode, right_mode, res_right_rank)
     curr_res_core = tf.reshape(curr_res_core, core_shape)
     result_cores.append(curr_res_core)
+
   res_shape = (tt_matrix_a.get_raw_shape()[0], tt_matrix_b.get_raw_shape()[1])
-  a_ranks = tt_matrix_a.get_tt_ranks()
-  b_ranks = tt_matrix_b.get_tt_ranks()
-  if tt_ranks_defined:
-    res_ranks = []
-    for core_idx in range(ndims + 1):
-      res_ranks.append(a_ranks[core_idx] * b_ranks[core_idx])
-    res_ranks = tf.TensorShape(res_ranks)
-  else:
-    res_ranks = None
-  return TensorTrain(result_cores, res_shape, res_ranks)
+  static_a_ranks = tt_matrix_a.get_tt_ranks()
+  static_b_ranks = tt_matrix_b.get_tt_ranks()
+  out_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
+  return TensorTrain(result_cores, res_shape, out_ranks)
 
 
 def tt_dense_matmul(tt_matrix_a, matrix_b):
@@ -141,20 +111,13 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
       raise ValueError('Arguments shapes should align got %d and %d instead.' %
                        (tt_matrix_a.get_shape(), matrix_b.get_shape()))
 
-  if tt_matrix_a.get_shape().is_fully_defined():
-    a_shape = tt_matrix_a.get_shape().as_list()
-    a_raw_shape = [s.as_list() for s in tt_matrix_a.get_raw_shape()]
-  else:
-    a_shape = shapes.shape(tt_matrix_a)
-    a_raw_shape = shapes.raw_shape(tt_matrix_a)
+  a_shape = shapes.lazy_shape(tt_matrix_a)
+  a_raw_shape = shapes.lazy_raw_shape(tt_matrix_a)
   if matrix_b.get_shape().is_fully_defined():
     b_shape = matrix_b.get_shape().as_list()
   else:
     b_shape = tf.shape(matrix_b)
-  if tt_matrix_a.get_tt_ranks().is_fully_defined():
-    a_ranks = tt_matrix_a.get_tt_ranks().as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_matrix_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
   # If A is (i0, ..., id-1) x (j0, ..., jd-1) and B is (j0, ..., jd-1) x K,
   # data is (K, j0, ..., jd-2) x jd-1 x 1
   data = tf.transpose(matrix_b)
@@ -328,14 +291,8 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
   else:
     num_elements = tf.shape(sparse_b.indices)[0]
   tt_a_elements = tf.ones((num_elements, 1, 1))
-  if tt_a.get_shape().is_fully_defined():
-    a_shape = tt_a.get_raw_shape()
-  else:
-    a_shape = shapes.raw_shape(tt_a)
-  if tt_a.get_tt_ranks().is_fully_defined():
-    a_ranks = tt_a.get_tt_ranks()
-  else:
-    a_ranks = shapes.tt_ranks(tt_a)
+  a_shape = shapes.lazy_raw_shape(tt_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
   if tt_a.is_tt_matrix():
     # TODO: use t3f.shape is safer??
     tensor_shape = tt_a.get_raw_shape()
@@ -353,8 +310,6 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
       curr_core = tf.transpose(curr_core, (1, 2, 0, 3))
       curr_core_shape = (a_shape[0][core_idx]*a_shape[1][core_idx], left_rank,
                          right_rank)
-      # TODO: test with partually known shape (e.g. tt_ranks are undefined).
-      curr_core_shape = tf.TensorShape(curr_core_shape)
       curr_core = tf.reshape(curr_core, curr_core_shape)
       # Ravel multiindex (row_idx[:, core_idx], col_idx[:, core_idx]) into
       # a linear index to use tf.gather that supports only first dimensional
@@ -452,17 +407,8 @@ def add(tt_a, tt_b):
   if tt_a.get_shape() != tt_b.get_shape():
     raise ValueError('The arguments should have the same shape.')
 
-  static_a_ranks = tt_a.get_tt_ranks()
-  if static_a_ranks.is_fully_defined():
-    a_ranks = static_a_ranks.as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_a)
-
-  static_b_ranks = tt_b.get_tt_ranks()
-  if static_b_ranks.is_fully_defined():
-    b_ranks = static_b_ranks.as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_b)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
 
   # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
   # case all dimensions are defined.
@@ -497,11 +443,13 @@ def add(tt_a, tt_b):
       curr_core = tf.concat((upper, lower), axis=0)
     tt_cores.append(curr_core)
 
-  new_ranks = [1]
+  out_ranks = [1]
+  static_a_ranks = tt_a.get_tt_ranks()
+  static_b_ranks = tt_b.get_tt_ranks()
   for core_idx in range(1, ndims):
-    new_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
-  new_ranks.append(1)
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
+    out_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
+  out_ranks.append(1)
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
 def multiply(tt_a, tt_b):
@@ -528,24 +476,9 @@ def multiply(tt_a, tt_b):
   if tt_a.get_shape() != tt_b.get_shape():
     raise ValueError('The arguments should have the same shape.')
 
-  static_a_ranks = tt_a.get_tt_ranks()
-  if static_a_ranks.is_fully_defined():
-    a_ranks = static_a_ranks.as_list()
-  else:
-    a_ranks = shapes.tt_ranks(tt_a)
-
-  static_b_ranks = tt_b.get_tt_ranks()
-  if static_b_ranks.is_fully_defined():
-    b_ranks = static_b_ranks.as_list()
-  else:
-    b_ranks = shapes.tt_ranks(tt_b)
-
-  # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
-  # case all dimensions are defined.
-  if tt_a.get_shape().is_fully_defined:
-    shape = [s.as_list() for s in tt_a.get_raw_shape()]
-  else:
-    shape = shapes.raw_shape(tt_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
+  shape = shapes.lazy_raw_shape(tt_a)
 
   is_matrix = tt_a.is_tt_matrix()
   tt_cores = []
@@ -564,8 +497,8 @@ def multiply(tt_a, tt_b):
                                          right_rank))
     tt_cores.append(curr_core)
 
-  new_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), tf.TensorShape(new_ranks))
+  out_ranks = [a * b for a, b in zip(tt_a.get_tt_ranks(), tt_b.get_tt_ranks())]
+  return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
 def frobenius_norm_squared(tt):
