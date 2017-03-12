@@ -8,4 +8,8 @@ setup(name='t3f',
       author_email='sasha.v.novikov@gmail.com',
       license='MIT',
       packages=['t3f'],
+      install_requires=[
+            'tensorflow>=1,<2',
+            'numpy',
+      ],
       zip_safe=False)
