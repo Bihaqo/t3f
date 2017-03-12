@@ -1,8 +1,6 @@
-import re
 import tensorflow as tf
 
 import tensor_train
-from initializers import random_tensor
 
 
 def get_variable(name,
