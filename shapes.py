@@ -84,7 +84,7 @@ def lazy_tt_ranks(tt):
   """
   static_tt_ranks = tt.get_tt_ranks()
   if static_tt_ranks.is_fully_defined():
-    return static_tt_ranks.as_list()
+    return np.array(static_tt_ranks.as_list())
   else:
     return tt_ranks(tt)
 
@@ -104,7 +104,7 @@ def lazy_shape(tt):
   """
   static_shape = tt.get_shape()
   if static_shape.is_fully_defined():
-    return static_shape.as_list()
+    return np.array(static_shape.as_list())
   else:
     return shape(tt)
 
