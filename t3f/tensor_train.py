@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+import shapes
 
 # TODO: check the methods of _TensorLike
 class TensorTrain(object):
@@ -56,7 +57,7 @@ class TensorTrain(object):
                        'with the provided shape.')
 
     self._tt_cores = tuple(tt_cores)
-    self._shape = _clean_shape(shape)
+    self._shape = shapes.clean_raw_shape(shape)
     self._tt_ranks = None if tt_ranks is None else tf.TensorShape(tt_ranks)
 
   def get_raw_shape(self):
@@ -264,36 +265,6 @@ class TensorTrain(object):
     return ops.multiply(self, other)
 
 
-def _clean_shape(shape):
-  """Returns a tuple of TensorShapes for any valid shape representation.
-
-  Args:
-    shape: An np.array, a tf.TensorShape (for tensors), a tuple of
-      tf.TensorShapes (for TT-matrices or tensors), or None
-
-  Returns:
-    A tuple of tf.TensorShape, or None is the input is None
-  """
-  if shape is None:
-    return None
-  if isinstance(shape, tf.TensorShape) or isinstance(shape[0], tf.TensorShape):
-    # Assume tf.TensorShape.
-    if isinstance(shape, tf.TensorShape):
-      shape = tuple((shape,))
-  else:
-    np_shape = np.array(shape)
-    # Make sure that the shape is 2-d array both for tensors and TT-matrices.
-    np_shape = np.squeeze(np_shape)
-    if len(np_shape.shape) == 1:
-      # A tensor.
-      np_shape = [np_shape]
-    shape = []
-    for i in range(len(np_shape)):
-      shape.append(tf.TensorShape(np_shape[i]))
-    shape = tuple(shape)
-  return shape
-
-
 def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
   """Check if dimensions of the TT-cores are consistent and the dtypes coincide.
 
@@ -306,7 +277,7 @@ def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
   Returns:
     boolean, True if the dimensions and dtypes are consistent.
   """
-  shape = _clean_shape(shape)
+  shape = shapes.clean_raw_shape(shape)
   num_dims = len(tt_cores)
 
   for core_idx in range(1, num_dims):

@@ -131,3 +131,33 @@ def lazy_raw_shape(tt):
     return np.array([s.as_list() for s in tt.get_raw_shape()])
   else:
     return raw_shape(tt)
+
+
+def clean_raw_shape(shape):
+  """Returns a tuple of TensorShapes for any valid shape representation.
+
+  Args:
+    shape: An np.array, a tf.TensorShape (for tensors), a tuple of
+      tf.TensorShapes (for TT-matrices or tensors), or None
+
+  Returns:
+    A tuple of tf.TensorShape, or None if the input is None
+  """
+  if shape is None:
+    return None
+  if isinstance(shape, tf.TensorShape) or isinstance(shape[0], tf.TensorShape):
+    # Assume tf.TensorShape.
+    if isinstance(shape, tf.TensorShape):
+      shape = tuple((shape,))
+  else:
+    np_shape = np.array(shape)
+    # Make sure that the shape is 2-d array both for tensors and TT-matrices.
+    np_shape = np.squeeze(np_shape)
+    if len(np_shape.shape) == 1:
+      # A tensor.
+      np_shape = [np_shape]
+    shape = []
+    for i in range(len(np_shape)):
+      shape.append(tf.TensorShape(np_shape[i]))
+    shape = tuple(shape)
+  return shape
