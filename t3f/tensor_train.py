@@ -8,16 +8,16 @@ class TensorTrain(object):
   t3f represents a Tensor Train object as a tuple of TT-cores.
   ```
   @@__init__
+  @@get_raw_shape
   @@get_shape
-  @@name
   @@tt_cores
   @@dtype
-  @@op
+  @@name
   @@graph
-  @@get_raw_shape
   @@ndims
   @@get_tt_ranks
   @@is_tt_matrix
+  @@eval
   """
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, convert_to_tensors=True):
@@ -120,16 +120,10 @@ class TensorTrain(object):
     idx = core_name.rfind('/')
     return core_name[:idx]
 
-  # TODO: it seems like instead of dense_shape we should use get_shape().
-  # But maybe dense_shape() name is better?
-  # @property
-  # def dense_shape(self):
-  #   """A 1-D Tensor of int64 representing the shape of the dense tensor."""
-  #   return self._dense_shape
-
   @property
   def graph(self):
     """The `Graph` that contains the tt_cores tensors."""
+    # TODO: check in init that the other cores are from the same graph.
     return self.tt_cores[0].graph
 
   def __str__(self):
