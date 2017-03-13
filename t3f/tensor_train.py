@@ -144,6 +144,7 @@ class TensorTrain(object):
 
   def ndims(self):
     """Get the number of dimensions of the underlying TT-tensor.
+
     Returns:
       A number.
     """
@@ -168,6 +169,7 @@ class TensorTrain(object):
 
   def is_tt_matrix(self):
     """Returns True if the TensorTrain object represents a TT-matrix.
+
     Returns:
       bool
     """
@@ -216,20 +218,20 @@ class TensorTrain(object):
 
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
+
     Calling this method will execute all preceding operations that
     produce the inputs needed for the operation that produces this
     tensor.
     *N.B.* Before invoking `SparseTensor.eval()`, its graph must have been
     launched in a session, and either a default session must be
     available, or `session` must be specified explicitly.
+
     Args:
       feed_dict: A dictionary that maps `Tensor` objects to feed values.
         See [`Session.run()`](../../api_docs/python/client.md#Session.run) for a
         description of the valid feed values.
       session: (Optional.) The `Session` to be used to evaluate this sparse
         tensor. If none, the default session will be used.
-    Returns:
-      ????
     """
     # TODO: what to return, None?
     if session is None:
