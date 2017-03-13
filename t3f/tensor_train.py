@@ -84,6 +84,7 @@ class TensorTrain(object):
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
+
     Returns:
       A `TensorShape` object.
     """
@@ -98,6 +99,7 @@ class TensorTrain(object):
   @property
   def tt_cores(self):
     """A tuple of TT-cores.
+
     Returns:
       A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
     """
@@ -127,9 +129,18 @@ class TensorTrain(object):
     return self.tt_cores[0].graph
 
   def __str__(self):
-    raise NotImplementedError
-    # return "TensorTrain(indices=%s, values=%s, dense_shape=%s)" % (
-    #     self._indices, self._values, self._dense_shape)
+    """A string describing the TensorTrain object, its TT-rank and shape."""
+    # TODO: tensors vs variables.
+    shape = self.get_shape()
+    tt_ranks = self.get_tt_ranks()
+    if self.is_tt_matrix():
+      raw_shape = self.get_raw_shape()
+      return "A Tensor Train Matrix of size %d x %d, underlying tensor " \
+             "shape: %s x %s, TT-ranks: %s" % (shape[0], shape[1],
+                                               raw_shape[0], raw_shape[1],
+                                               tt_ranks)
+    else:
+      return "A Tensor Train of shape %s, TT-ranks: %s" % (shape, tt_ranks)
 
   def ndims(self):
     """Get the number of dimensions of the underlying TT-tensor.
