@@ -60,9 +60,9 @@ class TensorTrain(object):
                        'with the provided shape.')
 
     self._tt_cores = tuple(tt_cores)
-    self._shape = shapes.clean_raw_shape(shape)
-    if self._shape is None:
-      self._shape = _infer_raw_shape(self._tt_cores)
+    self._raw_shape = shapes.clean_raw_shape(shape)
+    if self._raw_shape is None:
+      self._raw_shape = _infer_raw_shape(self._tt_cores)
     self._tt_ranks = None if tt_ranks is None else tf.TensorShape(tt_ranks)
     if self._tt_ranks is None:
       self._tt_ranks = _infer_tt_ranks(self._tt_cores)
@@ -76,7 +76,7 @@ class TensorTrain(object):
     Returns:
       A tuple of `TensorShape` objects.
     """
-    return self._shape
+    return self._raw_shape
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
@@ -162,8 +162,8 @@ class TensorTrain(object):
     Returns:
       bool
     """
-    if self._shape is not None:
-      return len(self._shape) == 2
+    if self._raw_shape is not None:
+      return len(self._raw_shape) == 2
     return len(self.tt_cores[0].get_shape().as_list()) == 4
 
   def __getitem__(self, slice_spec):
