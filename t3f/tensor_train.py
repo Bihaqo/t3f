@@ -3,9 +3,11 @@ import tensorflow as tf
 
 import shapes
 
+
 # TODO: check the methods of _TensorLike
 class TensorTrain(object):
   """Represents a Tensor Train object (a TT-tensor or TT-matrix).
+
   t3f represents a Tensor Train object as a tuple of TT-cores.
   ```
   @@__init__
@@ -23,6 +25,7 @@ class TensorTrain(object):
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, convert_to_tensors=True):
     """Creates a `TensorTrain`.
+
     Args:
       tt_cores: A tuple of 3d or 4d tensor-like objects of shape
         `[r_k-1, n_k, r_k]`.
@@ -58,7 +61,11 @@ class TensorTrain(object):
 
     self._tt_cores = tuple(tt_cores)
     self._shape = shapes.clean_raw_shape(shape)
+    if self._shape is None:
+      self._shape = _infer_raw_shape(self._tt_cores)
     self._tt_ranks = None if tt_ranks is None else tf.TensorShape(tt_ranks)
+    if self._tt_ranks is None:
+      self._tt_ranks = _infer_tt_ranks(self._tt_cores)
 
   def get_raw_shape(self):
     """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
@@ -69,19 +76,7 @@ class TensorTrain(object):
     Returns:
       A tuple of `TensorShape` objects.
     """
-    if self._shape is not None:
-      return self._shape
-    else:
-      num_dims = self.ndims()
-      num_tensor_shapes = len(self.tt_cores[0].get_shape().as_list()) - 2
-      shapes = [[] for _ in range(num_tensor_shapes)]
-      for dim in range(num_dims):
-        curr_core_shape = self.tt_cores[dim].get_shape()
-        for i in range(num_tensor_shapes):
-          shapes[i].append(curr_core_shape[i + 1])
-      for i in range(num_tensor_shapes):
-        shapes[i] = tf.TensorShape(shapes[i])
-      return tuple(shapes)
+    return self._shape
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
@@ -159,14 +154,7 @@ class TensorTrain(object):
     Returns:
       TensorShape of size `num_dims`+1.
     """
-    if self._tt_ranks is not None:
-      return self._tt_ranks
-    else:
-      ranks = []
-      for i in range(self.ndims()):
-        ranks.append(self.tt_cores[i].get_shape()[0])
-      ranks.append(self.tt_cores[-1].get_shape()[-1])
-      return tf.TensorShape(ranks)
+    return self._tt_ranks
 
   def is_tt_matrix(self):
     """Returns True if the TensorTrain object represents a TT-matrix.
@@ -313,3 +301,26 @@ def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
     # The shape of the TT-cores is undetermined, can not validate it.
     pass
   return True
+
+
+def _infer_raw_shape(tt_cores):
+  """Tries to infer the (static) raw shape from the TT-cores."""
+  num_dims = len(tt_cores)
+  num_tensor_shapes = len(tt_cores[0].get_shape().as_list()) - 2
+  raw_shape = [[] for _ in range(num_tensor_shapes)]
+  for dim in range(num_dims):
+    curr_core_shape = tt_cores[dim].get_shape()
+    for i in range(num_tensor_shapes):
+      raw_shape[i].append(curr_core_shape[i + 1])
+  for i in range(num_tensor_shapes):
+    raw_shape[i] = tf.TensorShape(raw_shape[i])
+  return tuple(raw_shape)
+
+
+def _infer_tt_ranks(tt_cores):
+  """Tries to infer the (static) raw shape from the TT-cores."""
+  tt_ranks = []
+  for i in range(len(tt_cores)):
+    tt_ranks.append(tt_cores[i].get_shape()[0])
+  tt_ranks.append(tt_cores[-1].get_shape()[-1])
+  return tf.TensorShape(tt_ranks)
