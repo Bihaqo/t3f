@@ -16,6 +16,7 @@ def random_tensor(shape, tt_rank=2):
   """
   # TODO: good distribution to init training.
   # TODO: support shape and tt_ranks as TensorShape?.
+  # TODO: support None as a dimension.
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
   if len(shape.shape) != 1:

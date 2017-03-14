@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+import shapes
 
 # TODO: check the methods of _TensorLike
 class TensorTrain(object):
@@ -8,16 +9,16 @@ class TensorTrain(object):
   t3f represents a Tensor Train object as a tuple of TT-cores.
   ```
   @@__init__
+  @@get_raw_shape
   @@get_shape
-  @@name
   @@tt_cores
   @@dtype
-  @@op
+  @@name
   @@graph
-  @@get_raw_shape
   @@ndims
   @@get_tt_ranks
   @@is_tt_matrix
+  @@eval
   """
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, convert_to_tensors=True):
@@ -56,7 +57,7 @@ class TensorTrain(object):
                        'with the provided shape.')
 
     self._tt_cores = tuple(tt_cores)
-    self._shape = _clean_shape(shape)
+    self._shape = shapes.clean_raw_shape(shape)
     self._tt_ranks = None if tt_ranks is None else tf.TensorShape(tt_ranks)
 
   def get_raw_shape(self):
@@ -84,6 +85,7 @@ class TensorTrain(object):
 
   def get_shape(self):
     """Get the `TensorShape` representing the shape of the dense tensor.
+
     Returns:
       A `TensorShape` object.
     """
@@ -98,6 +100,7 @@ class TensorTrain(object):
   @property
   def tt_cores(self):
     """A tuple of TT-cores.
+
     Returns:
       A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
     """
@@ -120,25 +123,29 @@ class TensorTrain(object):
     idx = core_name.rfind('/')
     return core_name[:idx]
 
-  # TODO: it seems like instead of dense_shape we should use get_shape().
-  # But maybe dense_shape() name is better?
-  # @property
-  # def dense_shape(self):
-  #   """A 1-D Tensor of int64 representing the shape of the dense tensor."""
-  #   return self._dense_shape
-
   @property
   def graph(self):
     """The `Graph` that contains the tt_cores tensors."""
+    # TODO: check in init that the other cores are from the same graph.
     return self.tt_cores[0].graph
 
   def __str__(self):
-    raise NotImplementedError
-    # return "TensorTrain(indices=%s, values=%s, dense_shape=%s)" % (
-    #     self._indices, self._values, self._dense_shape)
+    """A string describing the TensorTrain object, its TT-rank and shape."""
+    # TODO: tensors vs variables.
+    shape = self.get_shape()
+    tt_ranks = self.get_tt_ranks()
+    if self.is_tt_matrix():
+      raw_shape = self.get_raw_shape()
+      return "A Tensor Train Matrix of size %d x %d, underlying tensor " \
+             "shape: %s x %s, TT-ranks: %s" % (shape[0], shape[1],
+                                               raw_shape[0], raw_shape[1],
+                                               tt_ranks)
+    else:
+      return "A Tensor Train of shape %s, TT-ranks: %s" % (shape, tt_ranks)
 
   def ndims(self):
     """Get the number of dimensions of the underlying TT-tensor.
+
     Returns:
       A number.
     """
@@ -163,6 +170,7 @@ class TensorTrain(object):
 
   def is_tt_matrix(self):
     """Returns True if the TensorTrain object represents a TT-matrix.
+
     Returns:
       bool
     """
@@ -211,20 +219,20 @@ class TensorTrain(object):
 
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
+
     Calling this method will execute all preceding operations that
     produce the inputs needed for the operation that produces this
     tensor.
     *N.B.* Before invoking `SparseTensor.eval()`, its graph must have been
     launched in a session, and either a default session must be
     available, or `session` must be specified explicitly.
+
     Args:
       feed_dict: A dictionary that maps `Tensor` objects to feed values.
         See [`Session.run()`](../../api_docs/python/client.md#Session.run) for a
         description of the valid feed values.
       session: (Optional.) The `Session` to be used to evaluate this sparse
         tensor. If none, the default session will be used.
-    Returns:
-      ????
     """
     # TODO: what to return, None?
     if session is None:
@@ -257,36 +265,6 @@ class TensorTrain(object):
     return ops.multiply(self, other)
 
 
-def _clean_shape(shape):
-  """Returns a tuple of TensorShapes for any valid shape representation.
-
-  Args:
-    shape: An np.array, a tf.TensorShape (for tensors), a tuple of
-      tf.TensorShapes (for TT-matrices or tensors), or None
-
-  Returns:
-    A tuple of tf.TensorShape, or None is the input is None
-  """
-  if shape is None:
-    return None
-  if isinstance(shape, tf.TensorShape) or isinstance(shape[0], tf.TensorShape):
-    # Assume tf.TensorShape.
-    if isinstance(shape, tf.TensorShape):
-      shape = tuple((shape,))
-  else:
-    np_shape = np.array(shape)
-    # Make sure that the shape is 2-d array both for tensors and TT-matrices.
-    np_shape = np.squeeze(np_shape)
-    if len(np_shape.shape) == 1:
-      # A tensor.
-      np_shape = [np_shape]
-    shape = []
-    for i in range(len(np_shape)):
-      shape.append(tf.TensorShape(np_shape[i]))
-    shape = tuple(shape)
-  return shape
-
-
 def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
   """Check if dimensions of the TT-cores are consistent and the dtypes coincide.
 
@@ -299,7 +277,7 @@ def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
   Returns:
     boolean, True if the dimensions and dtypes are consistent.
   """
-  shape = _clean_shape(shape)
+  shape = shapes.clean_raw_shape(shape)
   num_dims = len(tt_cores)
 
   for core_idx in range(1, num_dims):
