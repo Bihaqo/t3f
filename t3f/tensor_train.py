@@ -96,6 +96,13 @@ class TensorTrain(TensorTrainBase):
 
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrain` containing the specified region.
+
+    Examples:
+      >>> a = t3f.random_tensor((2, 3, 4))
+      >>> a[1, :, :]
+      is a 2D TensorTrain 3 x 4.
+      >>> a[1:2, :, :]
+      is a 3D TensorTrain 1 x 3 x 4
     """
     new_tt_cores = []
     remainder = None
