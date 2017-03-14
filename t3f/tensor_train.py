@@ -19,6 +19,7 @@ class TensorTrain(object):
   @@graph
   @@ndims
   @@get_tt_ranks
+  @@num_tensor_axes
   @@is_tt_matrix
   @@eval
   """
@@ -156,15 +157,13 @@ class TensorTrain(object):
     """
     return self._tt_ranks
 
-  def is_tt_matrix(self):
-    """Returns True if the TensorTrain object represents a TT-matrix.
+  def num_tensor_axes(self):
+    """Number of modes per core. 1 for TT-tensors and 2 for TT-matrices."""
+    return len(self.get_raw_shape())
 
-    Returns:
-      bool
-    """
-    if self._raw_shape is not None:
-      return len(self._raw_shape) == 2
-    return len(self.tt_cores[0].get_shape().as_list()) == 4
+  def is_tt_matrix(self):
+    """Returns True if the TensorTrain object represents a TT-matrix."""
+    return self.num_tensor_axes() == 2
 
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrain` containing the specified region.
