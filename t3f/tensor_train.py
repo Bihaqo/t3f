@@ -128,10 +128,7 @@ class TensorTrain(TensorTrainBase):
 
     if remainder is not None:
       # The reminder obtained from collapsing the last cores.
-      old_shape = new_tt_cores[-1].get_shape().as_list()
-      new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (-1, old_shape[-1]))
-      new_tt_cores[-1] = tf.matmul(new_tt_cores[-1], remainder)
-      new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (old_shape[0], old_shape[1], 1))
+      new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1], remainder)
       remainder = None
     return TensorTrain(new_tt_cores)
 
