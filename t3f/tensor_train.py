@@ -18,7 +18,6 @@ class TensorTrain(TensorTrainBase):
   @@graph
   @@ndims
   @@get_tt_ranks
-  @@num_tensor_axes
   @@is_tt_matrix
   @@is_variable
   @@eval

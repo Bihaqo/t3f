@@ -15,7 +15,6 @@ class TensorTrainBase(object):
   @@graph
   @@ndims
   @@get_tt_ranks
-  @@num_tensor_axes
   @@is_tt_matrix
   @@is_variable
   @@eval
@@ -101,13 +100,9 @@ class TensorTrainBase(object):
     """
     return self._tt_ranks
 
-  def num_tensor_axes(self):
-    """Number of modes per core. 1 for TT-tensors and 2 for TT-matrices."""
-    return len(self.get_raw_shape())
-
   def is_tt_matrix(self):
     """Returns True if the TensorTrain object represents a TT-matrix."""
-    return self.num_tensor_axes() == 2
+    return len(self.get_raw_shape()) == 2
 
   def is_variable(self):
     """True if the TensorTrain object is a variable (e.g. is trainable)."""
