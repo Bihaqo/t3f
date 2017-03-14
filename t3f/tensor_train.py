@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 
 from tensor_train_base import TensorTrainBase
@@ -21,6 +20,7 @@ class TensorTrain(TensorTrainBase):
   @@get_tt_ranks
   @@num_tensor_axes
   @@is_tt_matrix
+  @@is_variable
   @@eval
   """
 
@@ -56,9 +56,9 @@ class TensorTrain(TensorTrainBase):
           tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
 
     if not _are_tt_cores_valid(tt_cores, shape, tt_ranks):
-      raise ValueError('the tt_cores provided to TensorTrain constructor are '
+      raise ValueError('The tt_cores provided to TensorTrain constructor are '
                        'not valid, have different dtypes, or are inconsistent '
-                       'with the provided shape.')
+                       'with the provided shape or TT-ranks.')
 
     self._tt_cores = tuple(tt_cores)
     self._raw_shape = shapes.clean_raw_shape(shape)
@@ -73,23 +73,27 @@ class TensorTrain(TensorTrainBase):
     """A tuple of TT-cores.
 
     Returns:
-      A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
+      A tuple of 3d or 4d tensors shape
+        `[r_k-1, n_k, r_k]`
+      or
+        `[r_k-1, n_k, m_k, r_k]`
     """
     return self._tt_cores
 
   def __str__(self):
-    """A string describing the TensorTrain object, its TT-rank and shape."""
-    # TODO: tensors vs variables.
+    """A string describing the TensorTrain object, its TT-rank, and shape."""
     shape = self.get_shape()
     tt_ranks = self.get_tt_ranks()
+    variable_str = ' variable' if self.is_variable() else ''
     if self.is_tt_matrix():
       raw_shape = self.get_raw_shape()
-      return "A Tensor Train Matrix of size %d x %d, underlying tensor " \
-             "shape: %s x %s, TT-ranks: %s" % (shape[0], shape[1],
+      return "A TT-Matrix%s of size %d x %d, underlying tensor " \
+             "shape: %s x %s, TT-ranks: %s" % (variable_str, shape[0], shape[1],
                                                raw_shape[0], raw_shape[1],
                                                tt_ranks)
     else:
-      return "A Tensor Train of shape %s, TT-ranks: %s" % (shape, tt_ranks)
+      return "A Tensor Train%s of shape %s, TT-ranks: %s" % (variable_str,
+                                                              shape, tt_ranks)
 
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrain` containing the specified region.

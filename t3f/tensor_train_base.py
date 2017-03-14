@@ -17,6 +17,7 @@ class TensorTrainBase(object):
   @@get_tt_ranks
   @@num_tensor_axes
   @@is_tt_matrix
+  @@is_variable
   @@eval
   """
 
@@ -107,6 +108,10 @@ class TensorTrainBase(object):
   def is_tt_matrix(self):
     """Returns True if the TensorTrain object represents a TT-matrix."""
     return self.num_tensor_axes() == 2
+
+  def is_variable(self):
+    """True if the TensorTrain object is a variable (e.g. is trainable)."""
+    return isinstance(self.tt_cores[0], tf.Variable)
 
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
