@@ -122,12 +122,7 @@ class TensorTrain(TensorTrainBase):
           if remainder is not None:
             # Add reminder from the previous collapsed cores to the current
             # core.
-            # TODO: is it bad to use as_list? E.g. if we dont now the ranks
-            # on the graph construction stage.
-            old_shape = sliced_core.get_shape().as_list()
-            sliced_core = tf.reshape(sliced_core, (old_shape[0], -1))
-            sliced_core = tf.matmul(remainder, sliced_core)
-            sliced_core = tf.reshape(sliced_core, (-1, old_shape[1], old_shape[2]))
+            sliced_core = tf.einsum('ab,bid->aid', remainder, sliced_core)
             remainder = None
           new_tt_cores.append(sliced_core)
 
