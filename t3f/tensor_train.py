@@ -130,6 +130,7 @@ class TensorTrain(TensorTrainBase):
       # The reminder obtained from collapsing the last cores.
       new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1], remainder)
       remainder = None
+    # TODO: infer the output ranks and shape.
     return TensorTrain(new_tt_cores)
 
 
