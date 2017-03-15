@@ -458,7 +458,7 @@ class TTTensorBatchTest(tf.test.TestCase):
     with self.test_session() as sess:
       for shape in shape_list:
         for num_elements in [1, 10]:
-          shape_with_batch = np.vstack(2, shape)
+          shape_with_batch = np.hstack((2, shape))
           tt_1 = initializers.random_tensor_batch(shape, batch_size=2)
           sparse_2 = _random_sparse(shape_with_batch, num_elements)
           dense_2 = tf.sparse_tensor_to_dense(sparse_2)
@@ -505,6 +505,49 @@ class TTTensorBatchTest(tf.test.TestCase):
       sparse_2 = _random_sparse((4, 3, 4, 5))
       with self.assertRaises(ValueError):
         ops.tt_sparse_flat_inner(tt_1, sparse_2)
+
+  def testAddSameBatchSize(self):
+    # Sum two TT-tensors with the same batch size.
+    tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=3)
+    tt_b = initializers.random_tensor_batch((2, 1, 4), tt_rank=[1, 2, 4, 1],
+                                            batch_size=3)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.add(tt_a, tt_b))
+      res_actual2 = ops.full(tt_a + tt_b)
+      res_desired = ops.full(tt_a) + ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testAddBroadcasting(self):
+    # Sum two TT-tensors with broadcasting.
+    tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=1)
+    tt_b = initializers.random_tensor_batch((2, 1, 4), tt_rank=[1, 2, 4, 1],
+                                            batch_size=3)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.add(tt_a, tt_b))
+      res_actual2 = ops.full(tt_b + tt_a)
+      res_desired = ops.full(tt_a) + ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testFrobeniusNormTens(self):
+    # Frobenius norm of a batch of TT-tensors.
+    with self.test_session() as sess:
+      tt = initializers.random_tensor_batch((2, 1, 3), batch_size=3)
+      norm_sq_actual = ops.frobenius_norm_squared(tt)
+      norm_actual = ops.frobenius_norm(tt)
+      vars = [norm_sq_actual, norm_actual, ops.full(tt)]
+      norm_sq_actual_val, norm_actual_val, tt_val = sess.run(vars)
+      tt_val = tt_val.reshape((3, -1))
+      norm_sq_desired_val = np.sum(tt_val * tt_val, axis=1)
+      norm_desired_val = np.sqrt(norm_sq_desired_val)
+      self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
+      self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
+                          rtol=1e-5)
 
 
 def _random_sparse(shape, non_zeros):
