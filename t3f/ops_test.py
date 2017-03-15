@@ -398,5 +398,19 @@ class TTTensorBatchTest(tf.test.TestCase):
         actual = ops.full(tf_tens)
         self.assertAllClose(desired, actual.eval())
 
+  def testFullTensor3d(self):
+    np.random.seed(1)
+    for rank_1 in [1, 2]:
+      a = np.random.rand(3, 10, rank_1).astype(np.float32)
+      b = np.random.rand(3, rank_1, 9, 3).astype(np.float32)
+      c = np.random.rand(3, 3, 8).astype(np.float32)
+      tt_cores = (a.reshape(3, 1, 10, rank_1), b, c.reshape((3, 3, 8, 1)))
+      # Basically do full by hand.
+      desired = np.einsum('oia,oajb,obk->oijk', a, b, c)
+      with self.test_session():
+        tf_tens = TensorTrainBatch(tt_cores)
+        actual = ops.full(tf_tens)
+        self.assertAllClose(desired, actual.eval())
+
 if __name__ == "__main__":
   tf.test.main()
