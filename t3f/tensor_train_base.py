@@ -22,7 +22,6 @@ class TensorTrainBase(object):
 
   def __init__(self, tt_cores):
     """Creates a `TensorTrainBase`."""
-    self._tt_cores = tt_cores
     pass
 
   def get_raw_shape(self):
@@ -44,6 +43,7 @@ class TensorTrainBase(object):
     """
     raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
+      # TODO: as list is not available if shape is partly known.
       m = np.prod(raw_shape[0].as_list())
       n = np.prod(raw_shape[1].as_list())
       return tf.TensorShape((m, n))
