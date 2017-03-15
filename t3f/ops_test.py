@@ -429,7 +429,25 @@ class TTTensorBatchTest(tf.test.TestCase):
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
           res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5)
+          self.assertAllClose(res_actual_val, res_desired_val)
+
+  def testFlatInnerTTTensbyTTTensBroadcasting(self):
+    # Inner product between two batch TT-tensors with broadcasting.
+    tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=1)
+    tt_2 = initializers.random_tensor_batch((2, 3, 4), batch_size=3)
+    res_actual_1 = ops.tt_tt_flat_inner(tt_1, tt_2)
+    res_actual_2 = ops.tt_tt_flat_inner(tt_2, tt_1)
+    res_desired = tf.einsum('ijk,oijk->o', ops.full(tt_1[0]), ops.full(tt_2))
+    with self.test_session() as sess:
+      res = sess.run([res_actual_1, res_actual_2, res_desired])
+      res_actual_1_val, res_actual_2_val, res_desired_val = res
+      self.assertAllClose(res_actual_1_val, res_desired_val)
+      self.assertAllClose(res_actual_2_val, res_desired_val)
+
+    tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=2)
+    with self.assertRaises(ValueError):
+      # The batch_sizes are different.
+      ops.tt_tt_flat_inner(tt_1, tt_2)
 
 if __name__ == "__main__":
   tf.test.main()
