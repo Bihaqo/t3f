@@ -460,19 +460,61 @@ class TTTensorBatchTest(tf.test.TestCase):
         for num_elements in [1, 10]:
           shape_with_batch = np.vstack(2, shape)
           tt_1 = initializers.random_tensor_batch(shape, batch_size=2)
-          sparse_flat_indices = np.random.choice(np.prod(shape_with_batch), num_elements).astype(int)
-          sparse_indices = np.unravel_index(sparse_flat_indices, shape)
-          sparse_indices = np.vstack(sparse_indices).transpose()
-          values = np.random.randn(num_elements).astype(np.float32)
-          sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
-                                     dense_shape=shape_with_batch)
+          sparse_2 = _random_sparse(shape_with_batch, num_elements)
+          dense_2 = tf.sparse_tensor_to_dense(sparse_2)
           res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
-          res_actual_2 = ops.tt_sparse_flat_inner(sparse_2, tt_1)
-          res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1)])
-          res_actual_1_val, res_actual_2_val, tt_1_val = res
-          res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
+          res_actual_2 = ops.sparse_tt_flat_inner(sparse_2, tt_1)
+          res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
+          res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
+          res_desired_val = tt_1_val.flatten().dot(dense_2_val.flatten())
           self.assertAllClose(res_actual_1_val, res_desired_val)
           self.assertAllClose(res_actual_2_val, res_desired_val)
+
+  def testFlatInnerTTTensbySparseTensBroadcasting(self):
+    # Inner product between a batch of TT-tensor and a batch of sparse tensors
+    # with broadcasting.
+    np.random.seed(1)
+    with self.test_session() as sess:
+      # TT batch size is 1, sparse batch size is 2.
+      tt_1 = initializers.random_tensor_batch((3, 4, 5), batch_size=1)
+      sparse_2 = _random_sparse((2, 3, 4, 5), 5)
+      res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+      res_actual_2 = ops.sparse_tt_flat_inner(sparse_2, tt_1)
+      dense_2 = tf.sparse_tensor_to_dense(sparse_2)
+      res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
+      res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
+      tt_1_batch = np.repeat(tt_1_val, 2)
+      res_desired_val = tt_1_batch.flatten().dot(dense_2_val.flatten())
+      self.assertAllClose(res_actual_1_val, res_desired_val)
+      self.assertAllClose(res_actual_2_val, res_desired_val)
+
+      # TT batch size is 2, sparse batch size is 1.
+      tt_1 = initializers.random_tensor_batch((3, 4, 5), batch_size=2)
+      sparse_2 = _random_sparse((1, 3, 4, 5))
+      res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+      res_actual_2 = ops.sparse_tt_flat_inner(sparse_2, tt_1)
+      dense_2 = tf.sparse_tensor_to_dense(sparse_2)
+      res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
+      res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
+      dense_2_batch = np.repeat(dense_2_val, 2)
+      res_desired_val = tt_1_val.flatten().dot(dense_2_batch.flatten())
+      self.assertAllClose(res_actual_1_val, res_desired_val)
+      self.assertAllClose(res_actual_2_val, res_desired_val)
+
+      # The batch_sizes are different.
+      sparse_2 = _random_sparse((4, 3, 4, 5))
+      with self.assertRaises(ValueError):
+        ops.tt_sparse_flat_inner(tt_1, sparse_2)
+
+
+def _random_sparse(shape, non_zeros):
+  sparse_flat_indices = np.random.choice(np.prod(shape), non_zeros).astype(int)
+  sparse_indices = np.unravel_index(sparse_flat_indices, shape)
+  sparse_indices = np.vstack(sparse_indices).transpose()
+  values = np.random.randn(non_zeros).astype(np.float32)
+  sparse = tf.SparseTensor(indices=sparse_indices, values=values,
+                             dense_shape=shape)
+  return sparse
 
 if __name__ == "__main__":
   tf.test.main()
