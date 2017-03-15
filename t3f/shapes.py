@@ -72,6 +72,13 @@ def raw_shape(tt):
   return tf.stack(final_raw_shape, axis=0)
 
 
+def batch_size(tt):
+  """Return the number of elements in a TensorTrainBatch.
+
+  Return 0-D integer tensor."""
+  return tf.shape(tt.tt_cores[0])[0]
+
+
 def lazy_tt_ranks(tt):
   """Returns static TT-ranks of a TensorTrain if defined, and dynamic otherwise.
 
@@ -134,6 +141,23 @@ def lazy_raw_shape(tt):
     return np.array([s.as_list() for s in tt.get_raw_shape()])
   else:
     return raw_shape(tt)
+
+
+def lazy_batch_size(tt):
+  """Return static batch_size if available and dynamic otherwise.
+
+  Args:
+    tt: `TensorTrainBatch` object.
+
+  Returns:
+    A number or a 0-D `tf.Tensor`
+
+  Raises:
+    ValueError if got `TensorTrain` which doesn't have batch_size as input."""
+  if tt.batch_size is not None:
+    return tt.batch_size
+  else:
+    return batch_size(tt)
 
 
 def clean_raw_shape(shape):
