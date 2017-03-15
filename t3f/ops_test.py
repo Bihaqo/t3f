@@ -449,5 +449,30 @@ class TTTensorBatchTest(tf.test.TestCase):
       # The batch_sizes are different.
       ops.tt_tt_flat_inner(tt_1, tt_2)
 
+  def testFlatInnerTTTensbySparseTensSameBatchSize(self):
+    # Inner product between a batch of TT-tensor and a batch of sparse tensors
+    # (with the same batch size).
+    shape_list = ((2, 2),
+                  (2, 3, 4))
+    np.random.seed(1)
+    with self.test_session() as sess:
+      for shape in shape_list:
+        for num_elements in [1, 10]:
+          shape_with_batch = np.vstack(2, shape)
+          tt_1 = initializers.random_tensor_batch(shape, batch_size=2)
+          sparse_flat_indices = np.random.choice(np.prod(shape_with_batch), num_elements).astype(int)
+          sparse_indices = np.unravel_index(sparse_flat_indices, shape)
+          sparse_indices = np.vstack(sparse_indices).transpose()
+          values = np.random.randn(num_elements).astype(np.float32)
+          sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
+                                     dense_shape=shape_with_batch)
+          res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+          res_actual_2 = ops.tt_sparse_flat_inner(sparse_2, tt_1)
+          res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1)])
+          res_actual_1_val, res_actual_2_val, tt_1_val = res
+          res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
+          self.assertAllClose(res_actual_1_val, res_desired_val)
+          self.assertAllClose(res_actual_2_val, res_desired_val)
+
 if __name__ == "__main__":
   tf.test.main()
