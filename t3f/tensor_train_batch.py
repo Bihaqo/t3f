@@ -1,4 +1,5 @@
 import numbers
+import numpy as np
 import tensorflow as tf
 
 from tensor_train_base import TensorTrainBase
@@ -77,6 +78,17 @@ class TensorTrainBatch(TensorTrainBase):
     if self._tt_ranks is None:
       self._tt_ranks = _infer_batch_tt_ranks(self._tt_cores)
 
+  def get_shape(self):
+    """Get the `TensorShape` representing the shape of the dense tensor.
+
+    The first dimension is the batch_size.
+
+    Returns:
+      A `TensorShape` object.
+    """
+    shape = TensorTrainBase.get_shape(self)
+    return tf.TensorShape(np.hstack((self.batch_size, shape)))
+
   @property
   def tt_cores(self):
     """A tuple of TT-cores.
@@ -88,6 +100,11 @@ class TensorTrainBatch(TensorTrainBase):
         `[batch_size, r_k-1, n_k, m_k, r_k]`
     """
     return self._tt_cores
+
+  @property
+  def batch_size(self):
+    """The number of elements or None if not known."""
+    return self._batch_size
 
   def __str__(self):
     """A string describing the TensorTrainBatch, its TT-rank and shape."""
