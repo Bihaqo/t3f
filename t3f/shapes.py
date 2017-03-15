@@ -61,10 +61,13 @@ def raw_shape(tt):
   num_dims = tt.ndims()
   num_tensor_axis = len(tt.get_raw_shape())
   final_raw_shape = []
+  # TODO: ugly.
+  from tensor_train import TensorTrain
+  axes_shift = 1 if isinstance(tt, TensorTrain) else 2
   for ax in range(num_tensor_axis):
     curr_raw_shape = []
     for core_idx in range(num_dims):
-      curr_raw_shape.append(tf.shape(tt.tt_cores[core_idx])[ax + 1])
+      curr_raw_shape.append(tf.shape(tt.tt_cores[core_idx])[ax + axes_shift])
     final_raw_shape.append(tf.stack(curr_raw_shape, axis=0))
   return tf.stack(final_raw_shape, axis=0)
 
