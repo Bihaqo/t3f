@@ -75,7 +75,12 @@ def raw_shape(tt):
 def batch_size(tt):
   """Return the number of elements in a TensorTrainBatch.
 
-  Return 0-D integer tensor."""
+  Return 0-D integer tensor.
+
+  Raises:
+    ValueError if got `TensorTrain` which doesn't have batch_size as input."""
+  if not hasattr(tt, 'batch_size'):
+    raise ValueError('batch size is not available for a TensorTrain object.')
   return tf.shape(tt.tt_cores[0])[0]
 
 
@@ -154,6 +159,8 @@ def lazy_batch_size(tt):
 
   Raises:
     ValueError if got `TensorTrain` which doesn't have batch_size as input."""
+  if not hasattr(tt, 'batch_size'):
+    raise ValueError('batch size is not available for a TensorTrain object.')
   if tt.batch_size is not None:
     return tt.batch_size
   else:
