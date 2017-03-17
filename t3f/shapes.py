@@ -81,7 +81,9 @@ def batch_size(tt):
     ValueError if got `TensorTrain` which doesn't have batch_size as input."""
   if not hasattr(tt, 'batch_size'):
     raise ValueError('batch size is not available for a TensorTrain object.')
-  return tf.shape(tt.tt_cores[0])[0]
+  first_core = tt.tt_cores[0]
+  # The first dimension of any TT-core in TensorTrainBatch is the batch size.
+  return tf.shape(first_core)[0]
 
 
 def lazy_tt_ranks(tt):
