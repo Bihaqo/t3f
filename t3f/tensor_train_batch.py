@@ -127,6 +127,97 @@ class TensorTrainBatch(TensorTrainBase):
       return "A %d element batch of %s of shape %s, TT-ranks: %s" % \
              (self.batch_size, type_str, shape, tt_ranks)
 
+  def _batch_dim_getitem(self, element_spec):
+    """__getitem__ when provided only one (batch) index.
+
+    Examples:
+      a[1]
+      a[1:3]
+    """
+
+    # This object index is specified exactly and we want to collapse the
+    # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
+    do_collapse_batch_dim = isinstance(element_spec, numbers.Number)
+    if not isinstance(element_spec, slice) and not do_collapse_batch_dim:
+      raise ValueError('Expected just 1 index, got %s' % element_spec)
+
+    new_tt_cores = []
+    for core_idx in range(self.ndims()):
+      curr_core = self.tt_cores[core_idx]
+      if self.is_tt_matrix():
+        new_tt_cores.append(curr_core[element_spec, :, :, :, :])
+      else:
+        new_tt_cores.append(curr_core[element_spec, :, :, :])
+    if do_collapse_batch_dim:
+      # This index is specified exactly and we want to collapse the batch_size
+      # axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
+      return TensorTrain(new_tt_cores, self.get_raw_shape(),
+                         self.get_tt_ranks())
+    else:
+      batch_size = new_tt_cores[0].get_shape()[0].value
+      return TensorTrainBatch(new_tt_cores, self.get_raw_shape(),
+                              self.get_tt_ranks(), batch_size)
+
+  def _full_getitem(self, slice_spec):
+    """__getitem__ when provided full index of length ndims + 1.
+
+    Examples:
+      a = t3f.random_tensor_batch((2, 3, 4), batch_size=5)
+      a[:3, 1:2, 4, :]
+    """
+    if len(slice_spec) != self.ndims() + 1:
+      raise ValueError('Expected %d indices, got %d' % (self.ndims() + 1,
+                                                        len(slice_spec)))
+    # This object index is specified exactly and we want to collapse the
+    # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
+    do_collapse_batch_dim = isinstance(slice_spec[0], numbers.Number)
+    remainder = None
+    new_tt_cores = []
+    for core_idx in range(self.ndims()):
+      curr_core = self.tt_cores[core_idx]
+      if self.is_tt_matrix():
+        raise NotImplementedError
+      else:
+        sliced_core = curr_core[slice_spec[0], :, slice_spec[core_idx + 1], :]
+        do_collapse_curr_dim = isinstance(slice_spec[core_idx + 1],
+                                          numbers.Number)
+        if do_collapse_curr_dim:
+          # This index is specified exactly and we want to collapse this axis.
+          if remainder is None:
+            remainder = sliced_core
+          else:
+            if do_collapse_batch_dim:
+              remainder = tf.einsum('ab,bd->ad', remainder, sliced_core)
+            else:
+              remainder = tf.einsum('oab,obd->oad', remainder, sliced_core)
+        else:
+          if remainder is not None:
+            # Add reminder from the previous collapsed cores to the current
+            # core.
+            if do_collapse_batch_dim:
+              sliced_core = tf.einsum('ab,bid->aid', remainder, sliced_core)
+            else:
+              sliced_core = tf.einsum('oab,obid->oaid', remainder,
+                                      sliced_core)
+            remainder = None
+          new_tt_cores.append(sliced_core)
+
+    if remainder is not None:
+      # The reminder obtained from collapsing the last cores.
+      if do_collapse_batch_dim:
+        new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1],
+                                     remainder)
+
+      else:
+        new_tt_cores[-1] = tf.einsum('oaib,obd->oaid', new_tt_cores[-1],
+                                     remainder)
+      remainder = None
+    # TODO: infer the output ranks and shape.
+    if do_collapse_batch_dim:
+      return TensorTrain(new_tt_cores)
+    else:
+      return TensorTrainBatch(new_tt_cores)
+
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrainBatch` with the specified region.
 
@@ -144,82 +235,24 @@ class TensorTrainBatch(TensorTrainBase):
       is a 2D TensorTrainBatch 2 x 4 with batch_size = 2.
       >>> a[1, :, 1, :]
       is a 2D TensorTrain 2 x 4.
+
+    Returns:
+      `TensorTrainBatch` or `TensorTrain` depending on whether the first
+      (batch) dim was specified as a range or as a number.
     """
     new_tt_cores = []
     slice_only_batch_dim = isinstance(slice_spec, slice) or \
                            isinstance(slice_spec, numbers.Number)
-    first_slice_spec = slice_spec if slice_only_batch_dim else slice_spec[0]
-    # This object index is specified exactly and we want to collapse the
-    # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
-    do_collapse_batch_dim = isinstance(first_slice_spec, numbers.Number)
 
     if slice_only_batch_dim:
       # Indexing only for the batch_size axis, e.g. a[1:3].
-      for core_idx in range(self.ndims()):
-        curr_core = self.tt_cores[core_idx]
-        if self.is_tt_matrix():
-          new_tt_cores.append(curr_core[first_slice_spec, :, :, :, :])
-        else:
-          new_tt_cores.append(curr_core[first_slice_spec, :, :, :])
-      if do_collapse_batch_dim:
-        # This index is specified exactly and we want to collapse the batch_size
-        # axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
-        return TensorTrain(new_tt_cores, self.get_raw_shape(),
-                           self.get_tt_ranks())
-      else:
-        batch_size = new_tt_cores[0].get_shape()[0].value
-        return TensorTrainBatch(new_tt_cores, self.get_raw_shape(),
-                                self.get_tt_ranks(), batch_size)
+      return self._batch_dim_getitem(slice_spec)
     elif len(slice_spec) == self.ndims() + 1:
-      remainder = None
-      for core_idx in range(self.ndims()):
-        curr_core = self.tt_cores[core_idx]
-        if self.is_tt_matrix():
-          raise NotImplementedError
-        else:
-          sliced_core = curr_core[slice_spec[0], :, slice_spec[core_idx + 1], :]
-          do_collapse_curr_dim = isinstance(slice_spec[core_idx + 1],
-                                            numbers.Number)
-          if do_collapse_curr_dim:
-            # This index is specified exactly and we want to collapse this axis.
-            if remainder is None:
-              remainder = sliced_core
-            else:
-              if do_collapse_batch_dim:
-                remainder = tf.einsum('ab,bd->ad', remainder, sliced_core)
-              else:
-                remainder = tf.einsum('oab,obd->oad', remainder, sliced_core)
-          else:
-            if remainder is not None:
-              # Add reminder from the previous collapsed cores to the current
-              # core.
-              if do_collapse_batch_dim:
-                sliced_core = tf.einsum('ab,bid->aid', remainder, sliced_core)
-              else:
-                sliced_core = tf.einsum('oab,obid->oaid', remainder,
-                                        sliced_core)
-              remainder = None
-            new_tt_cores.append(sliced_core)
-
-      if remainder is not None:
-        # The reminder obtained from collapsing the last cores.
-        if do_collapse_batch_dim:
-          new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1],
-                                       remainder)
-
-        else:
-          new_tt_cores[-1] = tf.einsum('oaib,obd->oaid', new_tt_cores[-1],
-                                       remainder)
-        remainder = None
-      # TODO: infer the output ranks and shape.
-      if do_collapse_batch_dim:
-        return TensorTrain(new_tt_cores)
-      else:
-        return TensorTrainBatch(new_tt_cores)
+      return self._full_getitem(slice_spec)
     else:
       raise ValueError('TensorTrainBatch.__getitem__: wrong number of '
-                       'dimensions, expected %d, got %d' % (self.ndims() + 1,
-                                                            len(slice_spec)))
+                       'dimensions, expected 1 or %d, got %d' %
+                       (self.ndims() + 1, len(slice_spec)))
 
 
 def _are_batch_tt_cores_valid(tt_cores, shape, tt_ranks, batch_size):
