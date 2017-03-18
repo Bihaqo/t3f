@@ -101,38 +101,63 @@ def _full_tt_batch(tt):
 
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   """Multiplies two TT-matrices and returns the TT-matrix of the result.
+
   Args:
     tt_matrix_a: `TensorTrain` object containing a TT-matrix of size M x N
     tt_matrix_b: `TensorTrain` object containing a TT-matrix of size N x P
+
   Returns
     `TensorTrain` object containing a TT-matrix of size M x P
+
   Raises:
     ValueError is the arguments are not TT matrices or if their sizes are not
     appropriate for a matrix-by-matrix multiplication.
   """
-  if not isinstance(tt_matrix_a, TensorTrain) or not isinstance(tt_matrix_b, TensorTrain):
+  # Both TensorTrain and TensorTrainBatch are inherited from TensorTrainBase.
+  if not isinstance(tt_matrix_a, TensorTrainBase) or \
+      not isinstance(tt_matrix_b, TensorTrainBase) or \
+      not tt_matrix_a.is_tt_matrix() or \
+      not tt_matrix_b.is_tt_matrix():
     raise ValueError('Arguments should be TT-matrices')
 
   ndims = tt_matrix_a.ndims()
   if tt_matrix_b.ndims() != ndims:
     raise ValueError('Arguments should have the same number of dimensions, '
                      'got %d and %d instead.' % (ndims, tt_matrix_b.ndims()))
+
+  is_a_batch = isinstance(tt_matrix_a, TensorTrainBatch)
+  is_b_batch = isinstance(tt_matrix_b, TensorTrainBatch)
+  is_res_batch = is_a_batch or is_b_batch
+  a_batch_str = 'o' if is_a_batch else ''
+  b_batch_str = 'o' if is_b_batch else ''
+  res_batch_str = 'o' if is_res_batch else ''
+  einsum_str = '{}aijb,{}cjkd->{}acikbd'.format(a_batch_str, b_batch_str,
+                                                res_batch_str)
   result_cores = []
   # TODO: name the operation and the resulting tensor.
   a_shape = shapes.lazy_raw_shape(tt_matrix_a)
   a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
   b_shape = shapes.lazy_raw_shape(tt_matrix_b)
   b_ranks = shapes.lazy_tt_ranks(tt_matrix_b)
+  if is_res_batch:
+    if is_a_batch:
+      batch_size = shapes.lazy_batch_size(tt_matrix_a)
+    if is_a_batch:
+      batch_size = shapes.lazy_batch_size(tt_matrix_b)
   for core_idx in range(ndims):
     a_core = tt_matrix_a.tt_cores[core_idx]
     b_core = tt_matrix_b.tt_cores[core_idx]
-    curr_res_core = tf.einsum('aijb,cjkd->acikbd', a_core, b_core)
+    curr_res_core = tf.einsum(einsum_str, a_core, b_core)
 
     res_left_rank = a_ranks[core_idx] * b_ranks[core_idx]
     res_right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
     left_mode = a_shape[0][core_idx]
     right_mode = b_shape[1][core_idx]
-    core_shape = (res_left_rank, left_mode, right_mode, res_right_rank)
+    if is_res_batch:
+      core_shape = (batch_size, res_left_rank, left_mode, right_mode, res_right_rank)
+    else:
+      core_shape = (res_left_rank, left_mode, right_mode,
+                    res_right_rank)
     curr_res_core = tf.reshape(curr_res_core, core_shape)
     result_cores.append(curr_res_core)
 
@@ -140,7 +165,10 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   static_a_ranks = tt_matrix_a.get_tt_ranks()
   static_b_ranks = tt_matrix_b.get_tt_ranks()
   out_ranks = [a_r * b_r for a_r, b_r in zip(static_a_ranks, static_b_ranks)]
-  return TensorTrain(result_cores, res_shape, out_ranks)
+  if is_res_batch:
+    return TensorTrainBatch(result_cores, res_shape, out_ranks, batch_size)
+  else:
+    return TensorTrain(result_cores, res_shape, out_ranks)
 
 
 def tt_dense_matmul(tt_matrix_a, matrix_b):
@@ -248,15 +276,15 @@ def matmul(a, b):
     If not, returns tf.Tensor of size M x P
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
-  if isinstance(a, TensorTrain) and isinstance(b, TensorTrain):
+  if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
     return tt_tt_matmul(a, b)
-  elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
+  elif isinstance(a, TensorTrainBase) and isinstance(b, tf.Tensor):
     return tt_dense_matmul(a, b)
-  elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
+  elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrainBase):
     return dense_tt_matmul(a, b)
-  elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
+  elif isinstance(a, TensorTrainBase) and isinstance(b, tf.SparseTensor):
     return tt_sparse_matmul(a, b)
-  elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
+  elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrainBase):
     return sparse_tt_matmul(a, b)
 
 
