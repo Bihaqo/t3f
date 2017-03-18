@@ -594,10 +594,10 @@ class TTMatrixTestBatch(tf.test.TestCase):
     sum_shape = (4, 3)
     right_shape = (4, 4)
     with self.test_session() as sess:
-      tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3,
-                                            batch_size=3)
-      tt_mat_2 = initializers.random_matrix((sum_shape, right_shape),
-                                            batch_size=3)
+      tt_mat_1 = initializers.random_matrix_batch((left_shape, sum_shape),
+                                                  tt_rank=3, batch_size=3)
+      tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape),
+                                                  batch_size=3)
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
