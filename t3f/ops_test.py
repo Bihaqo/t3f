@@ -386,6 +386,7 @@ class TTMatrixTest(tf.test.TestCase):
 
 
 class TTTensorBatchTest(tf.test.TestCase):
+
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -548,6 +549,43 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
       self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                           rtol=1e-5)
+
+
+class TTMatrixTestBatch(tf.test.TestCase):
+
+  def testFullMatrix2d(self):
+    np.random.seed(1)
+    for rank in [1, 2]:
+      a = np.random.rand(3, 2, 3, rank).astype(np.float32)
+      b = np.random.rand(3, rank, 4, 5).astype(np.float32)
+      tt_cores = (a.reshape(3, 1, 2, 3, rank), b.reshape((3, rank, 4, 5, 1)))
+      # Basically do full by hand.
+      desired = np.einsum('oijb,obkl->oijkl', a, b)
+      desired = desired.reshape((3, 2, 3, 4, 5))
+      desired = desired.transpose((0, 1, 3, 2, 4))
+      desired = desired.reshape((3, 2 * 4, 3 * 5))
+      with self.test_session():
+        tf_mat = TensorTrainBatch(tt_cores)
+        actual = ops.full(tf_mat)
+        self.assertAllClose(desired, actual.eval())
+
+  def testFullMatrix3d(self):
+    np.random.seed(1)
+    for rank in [1, 2]:
+      a = np.random.rand(3, 2, 3, rank).astype(np.float32)
+      b = np.random.rand(3, rank, 4, 5, rank).astype(np.float32)
+      c = np.random.rand(3, rank, 2, 2).astype(np.float32)
+      tt_cores = (a.reshape(3, 1, 2, 3, rank), b.reshape(3, rank, 4, 5, rank),
+                  c.reshape(3, rank, 2, 2, 1))
+      # Basically do full by hand.
+      desired = np.einsum('oija,oaklb,obpq->oijklpq', a, b, c)
+      desired = desired.reshape((3, 2, 3, 4, 5, 2, 2))
+      desired = desired.transpose((0, 1, 3, 5, 2, 4, 6))
+      desired = desired.reshape((3, 2 * 4 * 2, 3 * 5 * 2))
+      with self.test_session():
+        tf_mat = TensorTrainBatch(tt_cores)
+        actual = ops.full(tf_mat)
+        self.assertAllClose(desired, actual.eval())
 
 
 def _random_sparse(shape, non_zeros):
