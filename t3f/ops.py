@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+from tensor_train_batch import TensorTrainBatch
 import shapes
 import utils
 
@@ -11,7 +12,7 @@ def full(tt):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
   Args:
-    tt: `TensorTrain` object.
+    tt: `TensorTrain` or `TensorTrainBatch` object.
 
   Returns:
     tf.Tensor.
@@ -22,10 +23,21 @@ def full(tt):
   raw_shape = shapes.lazy_raw_shape(tt)
 
   res = tt.tt_cores[0]
-  for i in range(1, num_dims):
-    res = tf.reshape(res, (-1, ranks[i]))
-    curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
-    res = tf.matmul(res, curr_core)
+  if isinstance(tt, TensorTrainBatch):
+    # Batch of Tensor Trains.
+    batch_size = shapes.lazy_batch_size(tt)
+    for i in range(1, num_dims):
+      res = tf.reshape(res, (batch_size, -1, ranks[i]))
+      curr_core = tf.reshape(tt.tt_cores[i], (batch_size, ranks[i], -1))
+      res = tf.einsum('oqb,obw->oqw', res, curr_core)
+  else:
+    # TensorTrain object (not batch).
+    for i in range(1, num_dims):
+      res = tf.reshape(res, (-1, ranks[i]))
+      curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
+      # Can write as Matmul(res, curr_core), but we are using einsum to
+      # resemble the batch case.
+      res = tf.einsum('qb,bw->qw', res, curr_core)
   if tt.is_tt_matrix():
     intermediate_shape = []
     for i in range(num_dims):

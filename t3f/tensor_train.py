@@ -1,11 +1,12 @@
-import numpy as np
 import tensorflow as tf
 
+from tensor_train_base import TensorTrainBase
 import shapes
 
-# TODO: check the methods of _TensorLike
-class TensorTrain(object):
+
+class TensorTrain(TensorTrainBase):
   """Represents a Tensor Train object (a TT-tensor or TT-matrix).
+
   t3f represents a Tensor Train object as a tuple of TT-cores.
   ```
   @@__init__
@@ -18,11 +19,13 @@ class TensorTrain(object):
   @@ndims
   @@get_tt_ranks
   @@is_tt_matrix
+  @@is_variable
   @@eval
   """
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, convert_to_tensors=True):
     """Creates a `TensorTrain`.
+
     Args:
       tt_cores: A tuple of 3d or 4d tensor-like objects of shape
         `[r_k-1, n_k, r_k]`.
@@ -52,134 +55,54 @@ class TensorTrain(object):
           tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
 
     if not _are_tt_cores_valid(tt_cores, shape, tt_ranks):
-      raise ValueError('the tt_cores provided to TensorTrain constructor are '
+      raise ValueError('The tt_cores provided to TensorTrain constructor are '
                        'not valid, have different dtypes, or are inconsistent '
-                       'with the provided shape.')
+                       'with the provided shape or TT-ranks.')
 
     self._tt_cores = tuple(tt_cores)
-    self._shape = shapes.clean_raw_shape(shape)
+    self._raw_shape = shapes.clean_raw_shape(shape)
+    if self._raw_shape is None:
+      self._raw_shape = _infer_raw_shape(self._tt_cores)
     self._tt_ranks = None if tt_ranks is None else tf.TensorShape(tt_ranks)
-
-  def get_raw_shape(self):
-    """Get tuple of `TensorShapes` representing the shapes of the underlying TT-tensor.
-
-    Tuple contains one `TensorShape` for TT-tensor and 2 `TensorShapes` for
-    TT-matrix
-
-    Returns:
-      A tuple of `TensorShape` objects.
-    """
-    if self._shape is not None:
-      return self._shape
-    else:
-      num_dims = self.ndims()
-      num_tensor_shapes = len(self.tt_cores[0].get_shape().as_list()) - 2
-      shapes = [[] for _ in range(num_tensor_shapes)]
-      for dim in range(num_dims):
-        curr_core_shape = self.tt_cores[dim].get_shape()
-        for i in range(num_tensor_shapes):
-          shapes[i].append(curr_core_shape[i + 1])
-      for i in range(num_tensor_shapes):
-        shapes[i] = tf.TensorShape(shapes[i])
-      return tuple(shapes)
-
-  def get_shape(self):
-    """Get the `TensorShape` representing the shape of the dense tensor.
-
-    Returns:
-      A `TensorShape` object.
-    """
-    raw_shape = self.get_raw_shape()
-    if self.is_tt_matrix():
-      m = np.prod(raw_shape[0].as_list())
-      n = np.prod(raw_shape[1].as_list())
-      return tf.TensorShape((m, n))
-    else:
-      return raw_shape[0]
+    if self._tt_ranks is None:
+      self._tt_ranks = _infer_tt_ranks(self._tt_cores)
 
   @property
   def tt_cores(self):
     """A tuple of TT-cores.
 
     Returns:
-      A tuple of 3d or 4d tensors shape `[r_k-1, n_k, r_k]`.
+      A tuple of 3d or 4d tensors shape
+        `[r_k-1, n_k, r_k]`
+      or
+        `[r_k-1, n_k, m_k, r_k]`
     """
     return self._tt_cores
 
-  @property
-  def dtype(self):
-    """The `DType` of elements in this tensor."""
-    # TODO: where is this created?
-    return self.tt_cores[0].dtype
-
-  @property
-  def name(self):
-    """The name of the TensorTrain.
-
-    Returns:
-      String, the scope in which the TT-cores are defined.
-    """
-    core_name = self.tt_cores[0].name
-    idx = core_name.rfind('/')
-    return core_name[:idx]
-
-  @property
-  def graph(self):
-    """The `Graph` that contains the tt_cores tensors."""
-    # TODO: check in init that the other cores are from the same graph.
-    return self.tt_cores[0].graph
-
   def __str__(self):
-    """A string describing the TensorTrain object, its TT-rank and shape."""
-    # TODO: tensors vs variables.
+    """A string describing the TensorTrain object, its TT-rank, and shape."""
     shape = self.get_shape()
     tt_ranks = self.get_tt_ranks()
+    variable_str = ' variable' if self.is_variable() else ''
     if self.is_tt_matrix():
       raw_shape = self.get_raw_shape()
-      return "A Tensor Train Matrix of size %d x %d, underlying tensor " \
-             "shape: %s x %s, TT-ranks: %s" % (shape[0], shape[1],
+      return "A TT-Matrix%s of size %d x %d, underlying tensor " \
+             "shape: %s x %s, TT-ranks: %s" % (variable_str, shape[0], shape[1],
                                                raw_shape[0], raw_shape[1],
                                                tt_ranks)
     else:
-      return "A Tensor Train of shape %s, TT-ranks: %s" % (shape, tt_ranks)
-
-  def ndims(self):
-    """Get the number of dimensions of the underlying TT-tensor.
-
-    Returns:
-      A number.
-    """
-    return len(self.tt_cores)
-
-  def get_tt_ranks(self):
-    """Get the TT-ranks in an array of size `num_dims`+1.
-
-    The first and the last TT-rank are guarantied to be 1.
-
-    Returns:
-      TensorShape of size `num_dims`+1.
-    """
-    if self._tt_ranks is not None:
-      return self._tt_ranks
-    else:
-      ranks = []
-      for i in range(self.ndims()):
-        ranks.append(self.tt_cores[i].get_shape()[0])
-      ranks.append(self.tt_cores[-1].get_shape()[-1])
-      return tf.TensorShape(ranks)
-
-  def is_tt_matrix(self):
-    """Returns True if the TensorTrain object represents a TT-matrix.
-
-    Returns:
-      bool
-    """
-    if self._shape is not None:
-      return len(self._shape) == 2
-    return len(self.tt_cores[0].get_shape().as_list()) == 4
+      return "A Tensor Train%s of shape %s, TT-ranks: %s" % (variable_str,
+                                                              shape, tt_ranks)
 
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrain` containing the specified region.
+
+    Examples:
+      >>> a = t3f.random_tensor((2, 3, 4))
+      >>> a[1, :, :]
+      is a 2D TensorTrain 3 x 4.
+      >>> a[1:2, :, :]
+      is a 3D TensorTrain 1 x 3 x 4
     """
     new_tt_cores = []
     remainder = None
@@ -199,70 +122,16 @@ class TensorTrain(object):
           if remainder is not None:
             # Add reminder from the previous collapsed cores to the current
             # core.
-            # TODO: is it bad to use as_list? E.g. if we dont now the ranks
-            # on the graph construction stage.
-            old_shape = sliced_core.get_shape().as_list()
-            sliced_core = tf.reshape(sliced_core, (old_shape[0], -1))
-            sliced_core = tf.matmul(remainder, sliced_core)
-            sliced_core = tf.reshape(sliced_core, (-1, old_shape[1], old_shape[2]))
+            sliced_core = tf.einsum('ab,bid->aid', remainder, sliced_core)
             remainder = None
           new_tt_cores.append(sliced_core)
 
     if remainder is not None:
       # The reminder obtained from collapsing the last cores.
-      old_shape = new_tt_cores[-1].get_shape().as_list()
-      new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (-1, old_shape[-1]))
-      new_tt_cores[-1] = tf.matmul(new_tt_cores[-1], remainder)
-      new_tt_cores[-1] = tf.reshape(new_tt_cores[-1], (old_shape[0], old_shape[1], 1))
+      new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1], remainder)
       remainder = None
+    # TODO: infer the output ranks and shape.
     return TensorTrain(new_tt_cores)
-
-  def eval(self, feed_dict=None, session=None):
-    """Evaluates this sparse tensor in a `Session`.
-
-    Calling this method will execute all preceding operations that
-    produce the inputs needed for the operation that produces this
-    tensor.
-    *N.B.* Before invoking `SparseTensor.eval()`, its graph must have been
-    launched in a session, and either a default session must be
-    available, or `session` must be specified explicitly.
-
-    Args:
-      feed_dict: A dictionary that maps `Tensor` objects to feed values.
-        See [`Session.run()`](../../api_docs/python/client.md#Session.run) for a
-        description of the valid feed values.
-      session: (Optional.) The `Session` to be used to evaluate this sparse
-        tensor. If none, the default session will be used.
-    """
-    # TODO: what to return, None?
-    if session is None:
-      session = tf.get_default_session()
-    session.run(self.tt_cores)
-
-  # TODO: do we need this?
-  # @staticmethod
-  # def _override_operator(operator, func):
-  #   _override_helper(SparseTensor, operator, func)
-
-  def __add__(self, other):
-    """Returns a TensorTrain corresponding to element-wise sum tt_a + tt_b.
-
-    Just calls t3f.add, see its documentation for details.
-    """
-    # TODO: ugly.
-    # We can't import ops in the beginning since it creates cyclic dependencies.
-    import ops
-    return ops.add(self, other)
-
-  def __mul__(self, other):
-    """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
-
-    Just calls t3f.multiply, see its documentation for details.
-    """
-    # TODO: ugly.
-    # We can't import ops in the beginning since it creates cyclic dependencies.
-    import ops
-    return ops.multiply(self, other)
 
 
 def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
@@ -313,3 +182,26 @@ def _are_tt_cores_valid(tt_cores, shape, tt_ranks):
     # The shape of the TT-cores is undetermined, can not validate it.
     pass
   return True
+
+
+def _infer_raw_shape(tt_cores):
+  """Tries to infer the (static) raw shape from the TT-cores."""
+  num_dims = len(tt_cores)
+  num_tensor_shapes = len(tt_cores[0].get_shape().as_list()) - 2
+  raw_shape = [[] for _ in range(num_tensor_shapes)]
+  for dim in range(num_dims):
+    curr_core_shape = tt_cores[dim].get_shape()
+    for i in range(num_tensor_shapes):
+      raw_shape[i].append(curr_core_shape[i + 1])
+  for i in range(num_tensor_shapes):
+    raw_shape[i] = tf.TensorShape(raw_shape[i])
+  return tuple(raw_shape)
+
+
+def _infer_tt_ranks(tt_cores):
+  """Tries to infer the (static) raw shape from the TT-cores."""
+  tt_ranks = []
+  for i in range(len(tt_cores)):
+    tt_ranks.append(tt_cores[i].get_shape()[0])
+  tt_ranks.append(tt_cores[-1].get_shape()[-1])
+  return tf.TensorShape(tt_ranks)

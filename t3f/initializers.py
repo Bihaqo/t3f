@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+from tensor_train_batch import TensorTrainBatch
 
 
 def random_tensor(shape, tt_rank=2):
@@ -44,6 +45,50 @@ def random_tensor(shape, tt_rank=2):
 
   return TensorTrain(tt_cores, shape, tt_rank_ext)
 
+
+def random_tensor_batch(shape, tt_rank=2, batch_size=1):
+  """Generate a batch of random TT-tensors of given shape.
+
+  Args:
+    shape: array representing the shape of the future tensor
+    tt_rank: a number or a (d+1)-element array with ranks.
+    batch_size: a number
+
+  Returns:
+    TensorTrainBatch containing a TT-tensor
+  """
+  # TODO: good distribution to init training.
+  # TODO: support shape and tt_ranks as TensorShape?.
+  # TODO: support None as a dimension.
+  shape = np.array(shape)
+  tt_rank = np.array(tt_rank)
+  if len(shape.shape) != 1:
+    raise ValueError('shape should be 1d array')
+  if np.any(shape < 1):
+    raise ValueError('all elements in `shape` should be positive')
+  if np.any(tt_rank < 1):
+    raise ValueError('`rank` should be positive')
+  if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
+    raise ValueError('`rank` array has inappropriate size')
+  if batch_size < 1:
+    raise ValueError('Batch size should be positive')
+
+  num_dims = shape.size
+  if tt_rank.size == 1:
+    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = np.insert(tt_rank, 0, 1)
+    tt_rank = np.append(tt_rank, 1)
+  # TODO: check that ints?
+  shape = shape.astype(int)
+  batch_size = int(batch_size)
+  tt_rank_ext = tt_rank.astype(int)
+  # TODO: variable (name?) scope.
+  tt_cores = [None] * num_dims
+  for i in range(num_dims):
+    curr_core_shape = (batch_size, tt_rank_ext[i], shape[i], tt_rank_ext[i + 1])
+    tt_cores[i] = tf.random_normal(curr_core_shape)
+
+  return TensorTrainBatch(tt_cores, shape, tt_rank_ext, batch_size)
 
 def random_matrix(shape, tt_rank=2):
   """Generate a random TT-matrix of given shape.
