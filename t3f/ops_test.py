@@ -587,6 +587,28 @@ class TTMatrixTestBatch(tf.test.TestCase):
         actual = ops.full(tf_mat)
         self.assertAllClose(desired, actual.eval())
 
+  def testTTMatTimesTTMatSameBatchSize(self):
+    # Multiply a batch of TT-matrices by another batch of TT-matrices with the
+    # same batch sizes.
+    left_shape = (2, 3)
+    sum_shape = (4, 3)
+    right_shape = (4, 4)
+    with self.test_session() as sess:
+      tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3,
+                                            batch_size=3)
+      tt_mat_2 = initializers.random_matrix((sum_shape, right_shape),
+                                            batch_size=3)
+      res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
+      res_actual = ops.full(res_actual)
+      res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
+      res_actual2 = ops.full(res_actual2)
+      res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      # TODO: why so bad accuracy?
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
+
 
 def _random_sparse(shape, non_zeros):
   sparse_flat_indices = np.random.choice(np.prod(shape), non_zeros).astype(int)
