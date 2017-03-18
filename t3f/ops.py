@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from tensor_train_base import TensorTrainBase
 from tensor_train import TensorTrain
 from tensor_train_batch import TensorTrainBatch
 import shapes
@@ -17,33 +18,39 @@ def full(tt):
   Returns:
     tf.Tensor.
   """
+  if isinstance(tt, TensorTrainBatch):
+    # Batch of Tensor Trains.
+    return _full_tt_batch(tt)
+  else:
+    # TensorTrain object (not batch).
+    return _full_tt(tt)
+
+
+def _full_tt(tt):
+  """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
+
+  Args:
+    tt: `TensorTrain` object.
+
+  Returns:
+    tf.Tensor.
+  """
   num_dims = tt.ndims()
   ranks = shapes.lazy_tt_ranks(tt)
   shape = shapes.lazy_shape(tt)
   raw_shape = shapes.lazy_raw_shape(tt)
 
   res = tt.tt_cores[0]
-  if isinstance(tt, TensorTrainBatch):
-    # Batch of Tensor Trains.
-    batch_size = shapes.lazy_batch_size(tt)
-    for i in range(1, num_dims):
-      res = tf.reshape(res, (batch_size, -1, ranks[i]))
-      curr_core = tf.reshape(tt.tt_cores[i], (batch_size, ranks[i], -1))
-      res = tf.einsum('oqb,obw->oqw', res, curr_core)
-  else:
-    # TensorTrain object (not batch).
-    for i in range(1, num_dims):
-      res = tf.reshape(res, (-1, ranks[i]))
-      curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
-      # Can write as Matmul(res, curr_core), but we are using einsum to
-      # resemble the batch case.
-      res = tf.einsum('qb,bw->qw', res, curr_core)
+  for i in range(1, num_dims):
+    res = tf.reshape(res, (-1, ranks[i]))
+    curr_core = tf.reshape(tt.tt_cores[i], (ranks[i], -1))
+    res = tf.matmul(res, curr_core)
   if tt.is_tt_matrix():
     intermediate_shape = []
     for i in range(num_dims):
       intermediate_shape.append(raw_shape[0][i])
       intermediate_shape.append(raw_shape[1][i])
-    res = tf.reshape(res, tf.TensorShape(intermediate_shape))
+    res = tf.reshape(res, intermediate_shape)
     transpose = []
     for i in range(0, 2 * num_dims, 2):
       transpose.append(i)
@@ -55,16 +62,50 @@ def full(tt):
     return tf.reshape(res, shape)
 
 
+def _full_tt_batch(tt):
+  """Converts a TensorTrainBatch into a regular tensor or matrix (tf.Tensor).
+
+  Args:
+    tt: `TensorTrainBatch` object.
+
+  Returns:
+    tf.Tensor.
+  """
+  num_dims = tt.ndims()
+  ranks = shapes.lazy_tt_ranks(tt)
+  shape = shapes.lazy_shape(tt)
+  raw_shape = shapes.lazy_raw_shape(tt)
+
+  res = tt.tt_cores[0]
+  batch_size = shapes.lazy_batch_size(tt)
+  for i in range(1, num_dims):
+    res = tf.reshape(res, (batch_size, -1, ranks[i]))
+    curr_core = tf.reshape(tt.tt_cores[i], (batch_size, ranks[i], -1))
+    res = tf.einsum('oqb,obw->oqw', res, curr_core)
+  if tt.is_tt_matrix():
+    intermediate_shape = [batch_size]
+    for i in range(num_dims):
+      intermediate_shape.append(raw_shape[0][i])
+      intermediate_shape.append(raw_shape[1][i])
+    res = tf.reshape(res, intermediate_shape)
+    transpose = [0]
+    for i in range(0, 2 * num_dims, 2):
+      transpose.append(i + 1)
+    for i in range(1, 2 * num_dims, 2):
+      transpose.append(i + 1)
+    res = tf.transpose(res, transpose)
+    return tf.reshape(res, shape)
+  else:
+    return tf.reshape(res, shape)
+
+
 def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   """Multiplies two TT-matrices and returns the TT-matrix of the result.
-
   Args:
     tt_matrix_a: `TensorTrain` object containing a TT-matrix of size M x N
     tt_matrix_b: `TensorTrain` object containing a TT-matrix of size N x P
-
   Returns
     `TensorTrain` object containing a TT-matrix of size M x P
-
   Raises:
     ValueError is the arguments are not TT matrices or if their sizes are not
     appropriate for a matrix-by-matrix multiplication.
