@@ -225,3 +225,43 @@ def is_batch_broadcasting_possible(tt_a, tt_b):
     # One or both of the arguments are not batch tensor, but single TT tensors.
     # In this case broadcasting is always possible.
     return True
+
+
+def squeeze_batch_dim(tt):
+  """Converts batch size 1 TensorTrainBatch into TensorTrain.
+
+  Args:
+    tt: TensorTrain or TensorTrainBatch.
+
+  Returns:
+    TensorTrain if the input is a TensorTrainBatch with batch_size == 1 (known
+      at compilation stage) or a TensorTrain.
+    TensorTrainBatch otherwise.
+    """
+  try:
+    if tt.batch_size == 1:
+      return tt[0]
+  except AttributeError:
+    # tt object does not have attribute batch_size, probably already
+    # a TensorTrain.
+    return tt
+
+
+def expand_batch_dim(tt):
+  """Creates a 1-element TensorTrainBatch from a TensorTrain.
+
+  Args:
+    tt: TensorTrain or TensorTrainBatch.
+
+  Returns:
+    TensorTrainBatch
+  """
+  if hasattr(tt, 'batch_size'):
+    return tt
+  else:
+    from tensor_train_batch import TensorTrainBatch
+    tt_cores = []
+    for core_idx in range(tt.ndims()):
+      tt_cores.append(tf.expand_dims(tt.tt_cores[core_idx], 0))
+    return TensorTrainBatch(tt_cores, tt.get_raw_shape(), tt.get_tt_ranks(),
+                            batch_size=1)
