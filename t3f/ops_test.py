@@ -623,7 +623,8 @@ class TTMatrixTestBatch(tf.test.TestCase):
       res_actual = ops.full(res_actual)
       res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual2 = ops.full(res_actual2)
-      res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
+      res_desired = tf.einsum('oij,jk->oik', ops.full(tt_mat_1),
+                              ops.full(tt_mat_2[0]))
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       # TODO: why so bad accuracy?
