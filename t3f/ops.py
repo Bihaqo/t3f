@@ -129,16 +129,11 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     raise ValueError('Arguments should have the same number of dimensions, '
                      'got %d and %d instead.' % (ndims, tt_matrix_b.ndims()))
 
+  # Convert BatchSize 1 batch into TT object to simplify broadcasting.
+  tt_matrix_a = shapes.squeeze_batch_dim(tt_matrix_a)
+  tt_matrix_b = shapes.squeeze_batch_dim(tt_matrix_b)
   is_a_batch = isinstance(tt_matrix_a, TensorTrainBatch)
-  if is_a_batch and tt_matrix_a.batch_size == 1:
-    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
-    tt_matrix_a = tt_matrix_a[0]
-    is_a_batch = False
   is_b_batch = isinstance(tt_matrix_b, TensorTrainBatch)
-  if is_b_batch and tt_matrix_b.batch_size == 1:
-    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
-    tt_matrix_b = tt_matrix_b[0]
-    is_b_batch = False
   is_res_batch = is_a_batch or is_b_batch
   a_batch_str = 'o' if is_a_batch else ''
   b_batch_str = 'o' if is_b_batch else ''
@@ -342,16 +337,11 @@ def tt_tt_flat_inner(tt_a, tt_b):
                      'got %d and %d instead.' % (ndims, tt_b.ndims()))
 
   axes_str = 'ij' if are_both_matrices else 'i'
+  # Convert BatchSize 1 batch into TT object to simplify broadcasting.
+  tt_a = shapes.squeeze_batch_dim(tt_a)
+  tt_b = shapes.squeeze_batch_dim(tt_b)
   is_a_batch = isinstance(tt_a, TensorTrainBatch)
-  if is_a_batch and tt_a.batch_size == 1:
-    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
-    tt_a = tt_a[0]
-    is_a_batch = False
   is_b_batch = isinstance(tt_b, TensorTrainBatch)
-  if is_b_batch and tt_b.batch_size == 1:
-    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
-    tt_b = tt_b[0]
-    is_b_batch = False
   is_res_batch = is_a_batch or is_b_batch
   a_batch_str = 'o' if is_a_batch else ''
   b_batch_str = 'o' if is_b_batch else ''
