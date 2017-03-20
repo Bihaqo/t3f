@@ -570,6 +570,36 @@ class TTMatrixTestBatch(tf.test.TestCase):
       res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
       self.assertAllClose(tt_val.transpose((0, 2, 1)), res_actual_val)
 
+  def testAddSameBatchSize(self):
+    # Sum two TT-matrices with the same batch size.
+    tt_a = initializers.random_matrix_batch(((2, 1, 4), None), tt_rank=2,
+                                            batch_size=3)
+    tt_b = initializers.random_matrix_batch(((2, 1, 4), None),
+                                            tt_rank=[1, 2, 4, 1], batch_size=3)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.add(tt_a, tt_b))
+      res_actual2 = ops.full(tt_a + tt_b)
+      res_desired = ops.full(tt_a) + ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testAddBroadcasting(self):
+    # Sum two TT-matrices with broadcasting.
+    tt_a = initializers.random_matrix_batch(((2, 1, 4), (2, 2, 2)), tt_rank=2,
+                                            batch_size=3)
+    tt_b = initializers.random_matrix_batch(((2, 1, 4), (2, 2, 2)),
+                                            tt_rank=[1, 2, 4, 1], batch_size=1)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.add(tt_a, tt_b))
+      res_actual2 = ops.full(tt_b + tt_a)
+      res_desired = ops.full(tt_a) + ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
 
 def _random_sparse(shape, non_zeros):
   sparse_flat_indices = np.random.choice(np.prod(shape), non_zeros).astype(int)
