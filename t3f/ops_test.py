@@ -623,8 +623,8 @@ class TTMatrixTestBatch(tf.test.TestCase):
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       # TT by TT-batch.
-      res_actual2 = ops.matmul(tt_mat_2[0], tt_mat_1)
-      res_actual2 = ops.full(res_actual2)
+      res_actual2 = ops.matmul(ops.transpose(tt_mat_2[0]), ops.transpose(tt_mat_1))
+      res_actual2 = ops.full(ops.transpose(res_actual2))
       res_desired = tf.einsum('oij,jk->oik', ops.full(tt_mat_1),
                               ops.full(tt_mat_2[0]))
       to_run = [res_actual, res_actual2, res_desired]
