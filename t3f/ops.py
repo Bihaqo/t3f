@@ -193,7 +193,7 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
   Returns
     tf.Tensor of size M x P
   """
-  if not isinstance(tt_matrix_a, TensorTrain):
+  if not isinstance(tt_matrix_a, TensorTrain) or not tt_matrix_a.is_tt_matrix():
     raise ValueError('The first argument should be a TT-matrix')
 
   ndims = tt_matrix_a.ndims()
@@ -318,13 +318,18 @@ def tt_tt_flat_inner(tt_a, tt_b):
       number of TT-cores, different underlying shape, or if you are trying to
       compute inner product between a TT-matrix and a TT-tensor.
   """
-  if not isinstance(tt_a, TensorTrain) or not isinstance(tt_b, TensorTrain):
+  if not isinstance(tt_a, TensorTrainBase) or not isinstance(tt_b,
+                                                             TensorTrainBase):
     raise ValueError('Arguments should be TensorTrains')
 
   if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
     raise ValueError('One of the arguments is a TT-tensor, the other is '
                      'a TT-matrix, disallowed')
   are_both_matrices = tt_a.is_tt_matrix() and tt_b.is_tt_matrix()
+
+  if not shapes.is_batch_broadcasting_possible(tt_a, tt_b):
+    raise ValueError('The batch sizes are different and not 1, broadcasting is '
+                     'not available.')
 
   # TODO: compare shapes and raise if not consistent.
 
@@ -335,18 +340,40 @@ def tt_tt_flat_inner(tt_a, tt_b):
 
   a_core = tt_a.tt_cores[0]
   b_core = tt_b.tt_cores[0]
-  if are_both_matrices:
-    res = tf.einsum('aijb,cijd->bd', a_core, b_core)
-  else:
-    res = tf.einsum('aib,cid->bd', a_core, b_core)
+  axes_str = 'ij' if are_both_matrices else 'i'
+  is_a_batch = isinstance(tt_a, TensorTrainBatch)
+  if is_a_batch and tt_a.batch_size == 1:
+    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
+    tt_a = tt_a[0]
+    is_a_batch = False
+  is_b_batch = isinstance(tt_b, TensorTrainBatch)
+  if is_b_batch and tt_b.batch_size == 1:
+    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
+    tt_b = tt_b[0]
+    is_b_batch = False
+  is_res_batch = is_a_batch or is_b_batch
+  a_batch_str = 'o' if is_a_batch else ''
+  b_batch_str = 'o' if is_b_batch else ''
+  res_batch_str = 'o' if is_res_batch else ''
+  init_einsum_str = '{1}a{0}b,{2}c{0}d->{3}bd'.format(axes_str, a_batch_str,
+                                                      b_batch_str,
+                                                      res_batch_str)
+  # Simplest example of this operation:
+  # if both arguments are TT-tensors, then it is
+  # res = tf.einsum('aib,cid->bd', a_core, b_core)
+  res = tf.einsum(init_einsum_str, a_core, b_core)
   # TODO: name the operation and the resulting tensor.
+
+  einsum_str = '{3}ac,{1}a{0}b,{2}c{0}d->{3}bd'.format(axes_str, a_batch_str,
+                                                       b_batch_str,
+                                                       res_batch_str)
   for core_idx in range(1, ndims):
     a_core = tt_a.tt_cores[core_idx]
     b_core = tt_b.tt_cores[core_idx]
-    if are_both_matrices:
-      res = tf.einsum('ac,aijb,cijd->bd', res, a_core, b_core)
-    else:
-      res = tf.einsum('ac,aib,cid->bd', res, a_core, b_core)
+    # Simplest example of this operation:
+    # if both arguments are TT-tensors, then it is
+    # res = tf.einsum('ac,aib,cid->bd', res, a_core, b_core)
+    res = tf.einsum(einsum_str, res, a_core, b_core)
   return res
 
 
