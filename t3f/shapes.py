@@ -197,3 +197,31 @@ def clean_raw_shape(shape):
       shape.append(tf.TensorShape(np_shape[i]))
     shape = tuple(shape)
   return shape
+
+
+def is_batch_broadcasting_possible(tt_a, tt_b):
+  """Check that the batch broadcasting possible for the given batch sizes.
+
+  Returns true if the batch sizes are the same or if one of them is 1.
+
+  Args:
+    tt_a: TensorTrain or TensorTrainBatch
+    tt_b: TensorTrain or TensorTrainBatch
+
+  Returns:
+    Bool
+  """
+  try:
+    if tt_a.batch_size is None or tt_b.batch_size is None:
+      # If one of the batch sizes is not available on the compilation stage,
+      # we cannot say if broadcasting is possible.
+      return True
+    if tt_a.batch_size == tt_b.batch_size:
+      return True
+    if tt_a.batch_size == 1 or tt_b.batch_size == 1:
+      return True
+    return False
+  except AttributeError:
+    # One or both of the arguments are not batch tensor, but single TT tensors.
+    # In this case broadcasting is always possible.
+    return True
