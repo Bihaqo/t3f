@@ -290,14 +290,17 @@ def matmul(a, b):
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
     return tt_tt_matmul(a, b)
-  elif isinstance(a, TensorTrainBase) and isinstance(b, tf.Tensor):
+  elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
     return tt_dense_matmul(a, b)
-  elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrainBase):
+  elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
     return dense_tt_matmul(a, b)
-  elif isinstance(a, TensorTrainBase) and isinstance(b, tf.SparseTensor):
+  elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
     return tt_sparse_matmul(a, b)
-  elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrainBase):
+  elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
     return sparse_tt_matmul(a, b)
+  else:
+    raise ValueError('Argument types are not supported in matmul: %s x %s' %
+                     (a, b))
 
 
 def tt_tt_flat_inner(tt_a, tt_b):
@@ -501,7 +504,20 @@ def flat_inner(a, b):
     a number
     sum of products of all the elements of a and b
   """
-  raise NotImplementedError
+#   TODO: is it safe to check types? What if a class is derived from TT?
+  if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
+    return tt_tt_flat_inner(a, b)
+  elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
+    return tt_dense_flat_inner(a, b)
+  elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
+    return dense_tt_flat_inner(a, b)
+  elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
+    return tt_sparse_flat_inner(a, b)
+  elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
+    return sparse_tt_flat_inner(a, b)
+  else:
+    raise ValueError('Argument types are not supported in flat_inner: %s x %s' %
+                     (a, b))
 
 
 def add(tt_a, tt_b):
