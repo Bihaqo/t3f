@@ -241,6 +241,8 @@ def squeeze_batch_dim(tt):
   try:
     if tt.batch_size == 1:
       return tt[0]
+    else:
+      return tt
   except AttributeError:
     # tt object does not have attribute batch_size, probably already
     # a TensorTrain.
