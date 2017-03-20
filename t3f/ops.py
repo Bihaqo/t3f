@@ -619,6 +619,47 @@ def _add_matrix_cores(tt_a, tt_b):
   return tt_cores
 
 
+def _add_batch_matrix_cores(tt_a, tt_b):
+  """Internal function to be called from add for two batches of TT-matrices.
+
+  Does the actual assembling of the TT-cores to add two batches of TT-matrices.
+  """
+  ndims = tt_a.ndims()
+  shape = shapes.lazy_raw_shape(tt_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
+  if isinstance(tt_a, TensorTrainBatch) and tt_a.batch_size == 1:
+    # We add 1 element batch tt_a to a batch_size element batch tt_b to get
+    # the answer TensorTrainBatch of batch_size == tt_b.batch_size.
+    batch_size = shapes.lazy_batch_size(tt_b)
+  else:
+    batch_size = shapes.lazy_batch_size(tt_a)
+  tt_a = shapes.expand_batch_dim(tt_a)
+  tt_b = shapes.expand_batch_dim(tt_b)
+  tt_cores = []
+  for core_idx in range(ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    if tt_a.batch_size == 1:
+      a_core = tf.tile(a_core, (batch_size, 1, 1, 1, 1))
+    b_core = tt_b.tt_cores[core_idx]
+    if tt_b.batch_size == 1:
+      b_core = tf.tile(b_core, (batch_size, 1, 1, 1, 1))
+    if core_idx == 0:
+      curr_core = tf.concat((a_core, b_core), axis=4)
+    elif core_idx == ndims - 1:
+      curr_core = tf.concat((a_core, b_core), axis=1)
+    else:
+      upper_zeros = tf.zeros((batch_size, a_ranks[core_idx], shape[0][core_idx],
+                              shape[1][core_idx], b_ranks[core_idx + 1]))
+      lower_zeros = tf.zeros((batch_size, b_ranks[core_idx], shape[0][core_idx],
+                              shape[1][core_idx], a_ranks[core_idx + 1]))
+      upper = tf.concat((a_core, upper_zeros), axis=4)
+      lower = tf.concat((lower_zeros, b_core), axis=4)
+      curr_core = tf.concat((upper, lower), axis=1)
+    tt_cores.append(curr_core)
+  return tt_cores, batch_size
+
+
 def add(tt_a, tt_b):
   """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
 
@@ -647,9 +688,10 @@ def add(tt_a, tt_b):
                      'not available.')
 
   is_batch_case = isinstance(tt_a, TensorTrainBatch) or isinstance(tt_b, TensorTrainBatch)
+  batch_size = None
   if is_batch_case:
     if tt_a.is_tt_matrix():
-      tt_cores = _add_batch_matrix_cores(tt_a, tt_b)
+      tt_cores, batch_size = _add_batch_matrix_cores(tt_a, tt_b)
     else:
       tt_cores, batch_size = _add_batch_tensor_cores(tt_a, tt_b)
   else:
