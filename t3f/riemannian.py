@@ -17,7 +17,7 @@ def project(tangent_space_tens, tensor, coef=None):
   [1] C. Lubich, I. Oseledets and B. Vandereycken, Time integration of
 
   Args:
-    tangent_space: TensorTrain.
+    tangent_space_tens: TensorTrain.
     tensor: TensorTrain or TensorTrainBatch. In the case of batch returns
     projection of the sum of elements in the batch.
 
