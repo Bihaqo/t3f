@@ -451,64 +451,6 @@ class TTTensorBatchTest(tf.test.TestCase):
       # The batch_sizes are different.
       ops.tt_tt_flat_inner(tt_1, tt_2)
 
-  def testFlatInnerTTTensbySparseTensSameBatchSize(self):
-    # Inner product between a batch of TT-tensor and a batch of sparse tensors
-    # (with the same batch size).
-    shape_list = ((2, 2),
-                  (2, 3, 4))
-    np.random.seed(1)
-    with self.test_session() as sess:
-      for shape in shape_list:
-        for num_elements in [1, 10]:
-          shape_with_batch = np.hstack((2, shape))
-          tt_1 = initializers.random_tensor_batch(shape, batch_size=2)
-          sparse_2 = _random_sparse(shape_with_batch, num_elements)
-          dense_2 = tf.sparse_tensor_to_dense(sparse_2)
-          res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
-          res_actual_2 = ops.sparse_tt_flat_inner(sparse_2, tt_1)
-          res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
-          res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
-          res_desired_val = tt_1_val.flatten().dot(dense_2_val.flatten())
-          res_desired_val = np.squeeze(res_desired_val)
-          self.assertAllClose(res_actual_1_val, res_desired_val)
-          self.assertAllClose(res_actual_2_val, res_desired_val)
-
-  def testFlatInnerTTTensbySparseTensBroadcasting(self):
-    # Inner product between a batch of TT-tensor and a batch of sparse tensors
-    # with broadcasting.
-    np.random.seed(1)
-    with self.test_session() as sess:
-      # TT batch size is 1, sparse batch size is 2.
-      tt_1 = initializers.random_tensor_batch((3, 4, 5), batch_size=1)
-      sparse_2 = _random_sparse((2, 3, 4, 5), 5)
-      res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
-      res_actual_2 = ops.sparse_tt_flat_inner(sparse_2, tt_1)
-      dense_2 = tf.sparse_tensor_to_dense(sparse_2)
-      res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
-      res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
-      tt_1_batch = np.repeat(tt_1_val, 2)
-      res_desired_val = tt_1_batch.flatten().dot(dense_2_val.flatten())
-      self.assertAllClose(res_actual_1_val, res_desired_val)
-      self.assertAllClose(res_actual_2_val, res_desired_val)
-
-      # TT batch size is 2, sparse batch size is 1.
-      tt_1 = initializers.random_tensor_batch((3, 4, 5), batch_size=2)
-      sparse_2 = _random_sparse((1, 3, 4, 5))
-      res_actual_1 = ops.tt_sparse_flat_inner(tt_1, sparse_2)
-      res_actual_2 = ops.sparse_tt_flat_inner(sparse_2, tt_1)
-      dense_2 = tf.sparse_tensor_to_dense(sparse_2)
-      res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
-      res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
-      dense_2_batch = np.repeat(dense_2_val, 2)
-      res_desired_val = tt_1_val.flatten().dot(dense_2_batch.flatten())
-      self.assertAllClose(res_actual_1_val, res_desired_val)
-      self.assertAllClose(res_actual_2_val, res_desired_val)
-
-      # The batch_sizes are different.
-      sparse_2 = _random_sparse((4, 3, 4, 5))
-      with self.assertRaises(ValueError):
-        ops.tt_sparse_flat_inner(tt_1, sparse_2)
-
   def testAddSameBatchSize(self):
     # Sum two TT-tensors with the same batch size.
     tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=3)
