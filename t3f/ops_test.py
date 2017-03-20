@@ -53,7 +53,8 @@ class TTTensorTest(tf.test.TestCase):
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
           res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5)
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired_val),
+                              rtol=1e-5)
 
   def testFlatInnerTTTensbySparseTens(self):
     # Inner product between a TT-tensor and a sparse tensor.
@@ -250,9 +251,9 @@ class TTMatrixTest(tf.test.TestCase):
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
-          res_actual_val, res_desired_val = sess.run(
-            [res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val, rtol=1e-5, atol=1e-5)
+          res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired_val),
+                              rtol=1e-5, atol=1e-5)
 
   def testFlatInnerTTMatbySparseMat(self):
     # Inner product between a TT-matrix and a sparse matrix.
@@ -326,7 +327,7 @@ class TTMatrixTest(tf.test.TestCase):
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = b_val.T.dot(A_val).dot(c_val)
-          self.assertAllClose(res_desired, res_actual_val)
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired))
 
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
@@ -430,7 +431,7 @@ class TTTensorBatchTest(tf.test.TestCase):
           tt_2_full = tf.reshape(ops.full(tt_2), (2, -1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
           res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
-          self.assertAllClose(res_actual_val, res_desired_val)
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired_val))
 
   def testFlatInnerTTTensbyTTTensBroadcasting(self):
     # Inner product between two batch TT-tensors with broadcasting.
@@ -468,6 +469,7 @@ class TTTensorBatchTest(tf.test.TestCase):
           res = sess.run([res_actual_1, res_actual_2, ops.full(tt_1), dense_2])
           res_actual_1_val, res_actual_2_val, tt_1_val, dense_2_val = res
           res_desired_val = tt_1_val.flatten().dot(dense_2_val.flatten())
+          res_desired_val = np.squeeze(res_desired_val)
           self.assertAllClose(res_actual_1_val, res_desired_val)
           self.assertAllClose(res_actual_2_val, res_desired_val)
 
