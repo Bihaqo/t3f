@@ -48,7 +48,7 @@ class TTTensorTest(tf.test.TestCase):
         for rank in rank_list:
           tt_1 = initializers.random_tensor(shape, tt_rank=rank)
           tt_2 = initializers.random_tensor(shape, tt_rank=rank)
-          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
+          res_actual = ops.flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
@@ -74,7 +74,7 @@ class TTTensorTest(tf.test.TestCase):
             values = np.random.randn(num_elements).astype(np.float32)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
                                        dense_shape=shape)
-            res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+            res_actual = ops.flat_inner(tt_1, sparse_2)
             res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
             self.assertAllClose(res_actual_val, res_desired_val)
@@ -190,16 +190,12 @@ class TTMatrixTest(tf.test.TestCase):
     with self.test_session() as sess:
       tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3)
       tt_mat_2 = initializers.random_matrix((sum_shape, right_shape))
-      res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
+      res_actual = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
-      res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
-      res_actual2 = ops.full(res_actual2)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
-      to_run = [res_actual, res_actual2, res_desired]
-      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
       # TODO: why so bad accuracy?
       self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
-      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testTTMatTimesDenseVec(self):
     # Multiply a TT-matrix by a dense vector.
@@ -211,13 +207,10 @@ class TTMatrixTest(tf.test.TestCase):
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
       tt_mat = initializers.random_matrix((out_shape, inp_shape))
-      res_actual = ops.tt_dense_matmul(tt_mat, tf_vec)
-      res_actual2 = ops.matmul(tt_mat, tf_vec)
+      res_actual = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
-      to_run = [res_actual, res_actual2, res_desired]
-      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
       self.assertAllClose(res_actual_val, res_desired_val)
-      self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testDenseMatTimesTTVec(self):
     # Multiply a TT-matrix by a dense vector.
@@ -229,13 +222,10 @@ class TTMatrixTest(tf.test.TestCase):
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
       tt_vec = initializers.random_matrix((inp_shape, None))
-      res_actual = ops.dense_tt_matmul(tf_mat, tt_vec)
-      res_actual2 = ops.matmul(tf_mat, tt_vec)
+      res_actual = ops.matmul(tf_mat, tt_vec)
       res_desired = tf.matmul(tf_mat, ops.full(tt_vec))
-      vars = [res_actual, res_actual2, res_desired]
-      res_actual_val, res_actual2_val, res_desired_val = sess.run(vars)
+      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
       self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
-      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
@@ -247,7 +237,7 @@ class TTMatrixTest(tf.test.TestCase):
         for rank in rank_list:
           tt_1 = initializers.random_matrix(shape, tt_rank=rank)
           tt_2 = initializers.random_matrix(shape, tt_rank=rank)
-          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
+          res_actual = ops.flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
@@ -274,7 +264,7 @@ class TTMatrixTest(tf.test.TestCase):
             values = np.random.randn(num_elements).astype(np.float32)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
                                        dense_shape=matrix_shape)
-            res_actual = ops.tt_sparse_flat_inner(tt_1, sparse_2)
+            res_actual = ops.flat_inner(tt_1, sparse_2)
             res_actual_val, tt_1_val = sess.run([res_actual, ops.full(tt_1)])
             res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
             self.assertAllClose(res_actual_val, res_desired_val)
@@ -356,7 +346,7 @@ class TTMatrixTest(tf.test.TestCase):
     K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
     K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
     tt_mat = TensorTrain([K_1, K_2])
-    res_actual = ops.full(ops.tt_tt_matmul(tt_mat, tt_mat))
+    res_actual = ops.full(ops.matmul(tt_mat, tt_mat))
     res_desired = tf.matmul(ops.full(tt_mat), ops.full(tt_mat))
     np.random.seed(1)
     K_1_val = np.random.rand(1, 2, 2, 2)
@@ -375,7 +365,7 @@ class TTMatrixTest(tf.test.TestCase):
     K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
     tt_mat_known_ranks = TensorTrain([K_1, K_2], tt_ranks=[1, 3, 1])
     tt_mat = TensorTrain([K_1, K_2])
-    res_actual = ops.full(ops.tt_tt_matmul(tt_mat_known_ranks, tt_mat))
+    res_actual = ops.full(ops.matmul(tt_mat_known_ranks, tt_mat))
     res_desired = tf.matmul(ops.full(tt_mat_known_ranks), ops.full(tt_mat))
     np.random.seed(1)
     K_1_val = np.random.rand(1, 2, 2, 3)
@@ -426,7 +416,7 @@ class TTTensorBatchTest(tf.test.TestCase):
                                                   batch_size=2)
           tt_2 = initializers.random_tensor_batch(shape, tt_rank=rank,
                                                   batch_size=2)
-          res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
+          res_actual = ops.flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (2, 1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (2, -1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
@@ -437,8 +427,8 @@ class TTTensorBatchTest(tf.test.TestCase):
     # Inner product between two batch TT-tensors with broadcasting.
     tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=1)
     tt_2 = initializers.random_tensor_batch((2, 3, 4), batch_size=3)
-    res_actual_1 = ops.tt_tt_flat_inner(tt_1, tt_2)
-    res_actual_2 = ops.tt_tt_flat_inner(tt_2, tt_1)
+    res_actual_1 = ops.flat_inner(tt_1, tt_2)
+    res_actual_2 = ops.flat_inner(tt_2, tt_1)
     res_desired = tf.einsum('ijk,oijk->o', ops.full(tt_1[0]), ops.full(tt_2))
     with self.test_session() as sess:
       res = sess.run([res_actual_1, res_actual_2, res_desired])
@@ -449,7 +439,7 @@ class TTTensorBatchTest(tf.test.TestCase):
     tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=2)
     with self.assertRaises(ValueError):
       # The batch_sizes are different.
-      ops.tt_tt_flat_inner(tt_1, tt_2)
+      ops.flat_inner(tt_1, tt_2)
 
   def testAddSameBatchSize(self):
     # Sum two TT-tensors with the same batch size.
@@ -542,16 +532,12 @@ class TTMatrixTestBatch(tf.test.TestCase):
                                                   tt_rank=3, batch_size=3)
       tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape),
                                                   batch_size=3)
-      res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
+      res_actual = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
-      res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
-      res_actual2 = ops.full(res_actual2)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
-      to_run = [res_actual, res_actual2, res_desired]
-      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
       # TODO: why so bad accuracy?
       self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5, rtol=1e-5)
-      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-5, rtol=1e-5)
 
   def testTTMatTimesTTMatBroadcasting(self):
     # Multiply a batch of TT-matrices by another batch of TT-matrices with
@@ -564,7 +550,7 @@ class TTMatrixTestBatch(tf.test.TestCase):
                                                   tt_rank=3, batch_size=3)
       tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape))
       # TT-batch by one element TT-batch
-      res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
+      res_actual = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       # TT by TT-batch.
       res_actual2 = ops.matmul(ops.transpose(tt_mat_2[0]), ops.transpose(tt_mat_1))
