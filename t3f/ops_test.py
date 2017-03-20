@@ -632,6 +632,14 @@ class TTMatrixTestBatch(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
+  def testTranspose(self):
+    # Transpose a batch of TT-matrices.
+    with self.test_session() as sess:
+      tt = initializers.random_matrix_batch(((2, 3, 4), (2, 2, 2)), batch_size=2)
+      res_actual = ops.full(ops.transpose(tt))
+      res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
+      self.assertAllClose(tt_val.transpose((0, 2, 1)), res_actual_val)
+
 
 def _random_sparse(shape, non_zeros):
   sparse_flat_indices = np.random.choice(np.prod(shape), non_zeros).astype(int)
