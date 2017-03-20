@@ -306,11 +306,11 @@ def tt_tt_flat_inner(tt_a, tt_b):
   The shapes of tt_a and tt_b should coincide.
 
   Args:
-    tt_a: `TensorTrain` object
-    tt_b: `TensorTrain` object
+    tt_a: `TensorTrain` or `TensorTrainBatch` object
+    tt_b: `TensorTrain` or `TensorTrainBatch` object
 
   Returns
-    a number
+    a number or a Tensor with numbers for each element in the batch.
     sum of products of all the elements of tt_a and tt_b
 
   Raises:
@@ -374,7 +374,7 @@ def tt_tt_flat_inner(tt_a, tt_b):
     # if both arguments are TT-tensors, then it is
     # res = tf.einsum('ac,aib,cid->bd', res, a_core, b_core)
     res = tf.einsum(einsum_str, res, a_core, b_core)
-  return res
+  return tf.squeeze(res)
 
 
 def tt_dense_flat_inner(tt_a, dense_b):
