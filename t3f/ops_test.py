@@ -299,7 +299,7 @@ class TTMatrixTest(tf.test.TestCase):
                               rtol=1e-5)
 
   def testTranspose(self):
-    # Frobenius norm of a TT-matrix.
+    # Transpose a TT-matrix.
     shape_list = (((2, 2), (3, 4)),
                   ((2, 3, 4), (2, 2, 2)))
     rank_list = (1, 2)
@@ -426,8 +426,8 @@ class TTTensorBatchTest(tf.test.TestCase):
           tt_2 = initializers.random_tensor_batch(shape, tt_rank=rank,
                                                   batch_size=2)
           res_actual = ops.tt_tt_flat_inner(tt_1, tt_2)
-          tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
-          tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
+          tt_1_full = tf.reshape(ops.full(tt_1), (2, 1, -1))
+          tt_2_full = tf.reshape(ops.full(tt_2), (2, -1, 1))
           res_desired = tf.matmul(tt_1_full, tt_2_full)
           res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
           self.assertAllClose(res_actual_val, res_desired_val)
