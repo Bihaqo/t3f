@@ -235,62 +235,11 @@ def round(tt, max_tt_rank=None, epsilon=None):
   elif max_tt_rank.size != ndims + 1:
     raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
                      'where d is the number of dimensions (rank) of the tensor.')
-  # Its better to use get_shape() than get_raw_shape()[0] since for matrices
-  # get_shape().is_fully_defined() will check that all dimensions are defined.
-  if tt.get_shape().is_fully_defined():
-    raw_shape = [s.as_list() for s in tt.get_raw_shape()]
-  else:
-    raw_shape = shapes.raw_shape(tt)
-  static_tt_ranks = tt.get_tt_ranks()
-  if static_tt_ranks.is_fully_defined():
-    tt_ranks = static_tt_ranks.as_list()
-  else:
-    tt_ranks = shapes.tt_ranks(tt)
+  raw_shape = shapes.lazy_raw_shape(tt)
+
+  tt_cores = orthogonalize_tt_cores(tt).tt_cores
   # Copy cores references so we can change the cores.
-  tt_cores = list(tt.tt_cores)
-
-  next_rank = tt_ranks[0]
-
-  # Left to right orthogonalization.
-  for core_idx in range(ndims - 1):
-    curr_core = tt_cores[core_idx]
-    # TT-ranks could have changed on the previous iteration, so `tt_ranks` can
-    # be outdated for the current TT-rank, but should be valid for the next
-    # TT-rank.
-    curr_rank = next_rank
-    next_rank = tt_ranks[core_idx + 1]
-    if tt.is_tt_matrix():
-      curr_mode_left = raw_shape[0][core_idx]
-      curr_mode_right = raw_shape[1][core_idx]
-      curr_mode = curr_mode_left * curr_mode_right
-    else:
-      curr_mode = raw_shape[0][core_idx]
-
-    qr_shape = (curr_rank * curr_mode, next_rank)
-    curr_core = tf.reshape(curr_core, qr_shape)
-    curr_core, triang = tf.qr(curr_core)
-    if triang.get_shape().is_fully_defined():
-      triang_shape = triang.get_shape().as_list()
-    else:
-      triang_shape = tf.shape(triang)
-    # The TT-rank could have changed: if qr_shape is e.g. 4 x 10, than q would
-    # be of size 4 x 4 and r would be 4 x 10, which means that the next rank
-    # should be changed to 4.
-    next_rank = triang_shape[0]
-    if tt.is_tt_matrix():
-      new_core_shape = (curr_rank, curr_mode_left, curr_mode_right, next_rank)
-    else:
-      new_core_shape = (curr_rank, curr_mode, next_rank)
-    tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
-
-    next_core = tf.reshape(tt_cores[core_idx + 1], (triang_shape[1], -1))
-    tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
-
-  if tt.is_tt_matrix():
-    last_core_shape = (next_rank, raw_shape[0][-1], raw_shape[1][-1], 1)
-  else:
-    last_core_shape = (next_rank, raw_shape[0][-1], 1)
-  tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
+  tt_cores = list(tt_cores)
 
   ranks = [1] * (ndims + 1)
   are_tt_ranks_defined = True
@@ -343,3 +292,78 @@ def round(tt, max_tt_rank=None, epsilon=None):
   if not are_tt_ranks_defined:
     ranks = None
   return TensorTrain(tt_cores, tt.get_raw_shape(), ranks)
+
+
+def orthogonalize_tt_cores(tt, left_to_right=True):
+  """Orthogonalize TT-cores of a TT-object.
+
+  Args:
+    tt: TenosorTrain or a TensorTrainBatch.
+    left_to_right: bool, the direction of orthogonalization.
+
+  Returns:
+    The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
+  """
+  if left_to_right:
+    return _orthogonalize_tt_cores_left_to_right(tt)
+  else:
+    raise NotImplementedError
+
+
+def _orthogonalize_tt_cores_left_to_right(tt):
+  """Orthogonalize TT-cores of a TT-object in the left to right order.
+
+  Args:
+    tt: TenosorTrain or a TensorTrainBatch.
+
+  Returns:
+    The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
+  """
+  # Left to right orthogonalization.
+  ndims = tt.ndims()
+  raw_shape = shapes.lazy_raw_shape(tt)
+  tt_ranks = shapes.lazy_tt_ranks(tt)
+  next_rank = tt_ranks[0]
+  # Copy cores references so we can change the cores.
+  tt_cores = list(tt.tt_cores)
+  for core_idx in range(ndims - 1):
+    curr_core = tt_cores[core_idx]
+    # TT-ranks could have changed on the previous iteration, so `tt_ranks` can
+    # be outdated for the current TT-rank, but should be valid for the next
+    # TT-rank.
+    curr_rank = next_rank
+    next_rank = tt_ranks[core_idx + 1]
+    if tt.is_tt_matrix():
+      curr_mode_left = raw_shape[0][core_idx]
+      curr_mode_right = raw_shape[1][core_idx]
+      curr_mode = curr_mode_left * curr_mode_right
+    else:
+      curr_mode = raw_shape[0][core_idx]
+
+    qr_shape = (curr_rank * curr_mode, next_rank)
+    curr_core = tf.reshape(curr_core, qr_shape)
+    curr_core, triang = tf.qr(curr_core)
+    if triang.get_shape().is_fully_defined():
+      triang_shape = triang.get_shape().as_list()
+    else:
+      triang_shape = tf.shape(triang)
+    # The TT-rank could have changed: if qr_shape is e.g. 4 x 10, than q would
+    # be of size 4 x 4 and r would be 4 x 10, which means that the next rank
+    # should be changed to 4.
+    next_rank = triang_shape[0]
+    if tt.is_tt_matrix():
+      new_core_shape = (curr_rank, curr_mode_left, curr_mode_right, next_rank)
+    else:
+      new_core_shape = (curr_rank, curr_mode, next_rank)
+    tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
+
+    next_core = tf.reshape(tt_cores[core_idx + 1], (triang_shape[1], -1))
+    tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
+
+  if tt.is_tt_matrix():
+    last_core_shape = (next_rank, raw_shape[0][-1], raw_shape[1][-1], 1)
+  else:
+    last_core_shape = (next_rank, raw_shape[0][-1], 1)
+  tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
+  # TODO: infer the tt_ranks.
+  return TensorTrain(tt_cores, tt.get_raw_shape())
