@@ -520,6 +520,64 @@ def flat_inner(a, b):
                      (a, b))
 
 
+def _add_tensor_cores(tt_a, tt_b):
+  """Internal function to be called from add for two TT-tensors.
+
+  Does the actual assembling of the TT-cores to add two TT-tensors.
+  """
+  ndims = tt_a.ndims()
+  shape = shapes.lazy_raw_shape(tt_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
+  tt_cores = []
+  for core_idx in range(ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    b_core = tt_b.tt_cores[core_idx]
+    if core_idx == 0:
+      curr_core = tf.concat((a_core, b_core), axis=2)
+    elif core_idx == ndims - 1:
+      curr_core = tf.concat((a_core, b_core), axis=0)
+    else:
+      upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
+                              b_ranks[core_idx + 1]))
+      lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
+                              a_ranks[core_idx + 1]))
+      upper = tf.concat((a_core, upper_zeros), axis=2)
+      lower = tf.concat((lower_zeros, b_core), axis=2)
+      curr_core = tf.concat((upper, lower), axis=0)
+    tt_cores.append(curr_core)
+  return tt_cores
+
+
+def _add_matrix_cores(tt_a, tt_b):
+  """Internal function to be called from add for two TT-tensors.
+
+  Does the actual assembling of the TT-cores to add two TT-tensors.
+  """
+  ndims = tt_a.ndims()
+  shape = shapes.lazy_raw_shape(tt_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
+  tt_cores = []
+  for core_idx in range(ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    b_core = tt_b.tt_cores[core_idx]
+    if core_idx == 0:
+      curr_core = tf.concat((a_core, b_core), axis=3)
+    elif core_idx == ndims - 1:
+      curr_core = tf.concat((a_core, b_core), axis=0)
+    else:
+      upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
+                              shape[1][core_idx], b_ranks[core_idx + 1]))
+      lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
+                              shape[1][core_idx], a_ranks[core_idx + 1]))
+      upper = tf.concat((a_core, upper_zeros), axis=3)
+      lower = tf.concat((lower_zeros, b_core), axis=3)
+      curr_core = tf.concat((upper, lower), axis=0)
+    tt_cores.append(curr_core)
+  return tt_cores
+
+
 def add(tt_a, tt_b):
   """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
 
@@ -543,41 +601,10 @@ def add(tt_a, tt_b):
   if tt_a.get_shape() != tt_b.get_shape():
     raise ValueError('The arguments should have the same shape.')
 
-  a_ranks = shapes.lazy_tt_ranks(tt_a)
-  b_ranks = shapes.lazy_tt_ranks(tt_b)
-
-  # If tt_a.get_shape() is fully defined, it means that even in the TT-matrix
-  # case all dimensions are defined.
-  if tt_a.get_shape().is_fully_defined:
-    shape = [s.as_list() for s in tt_a.get_raw_shape()]
+  if tt_a.is_tt_matrix():
+    tt_cores = _add_matrix_cores(tt_a, tt_b)
   else:
-    shape = shapes.raw_shape(tt_a)
-
-  is_matrix = tt_a.is_tt_matrix()
-  last_axis = 3 if is_matrix else 2
-  tt_cores = []
-  for core_idx in range(ndims):
-    a_core = tt_a.tt_cores[core_idx]
-    b_core = tt_b.tt_cores[core_idx]
-    if core_idx == 0:
-      curr_core = tf.concat((a_core, b_core), axis=last_axis)
-    elif core_idx == ndims - 1:
-      curr_core = tf.concat((a_core, b_core), axis=0)
-    else:
-      if is_matrix:
-        upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
-                                shape[1][core_idx], b_ranks[core_idx + 1]))
-        lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
-                                shape[1][core_idx], a_ranks[core_idx + 1]))
-      else:
-        upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
-                                b_ranks[core_idx + 1]))
-        lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
-                                a_ranks[core_idx + 1]))
-      upper = tf.concat((a_core, upper_zeros), axis=last_axis)
-      lower = tf.concat((lower_zeros, b_core), axis=last_axis)
-      curr_core = tf.concat((upper, lower), axis=0)
-    tt_cores.append(curr_core)
+    tt_cores = _add_tensor_cores(tt_a, tt_b)
 
   out_ranks = [1]
   static_a_ranks = tt_a.get_tt_ranks()
