@@ -619,17 +619,18 @@ class TTMatrixTestBatch(tf.test.TestCase):
       tt_mat_1 = initializers.random_matrix_batch((left_shape, sum_shape),
                                                   tt_rank=3, batch_size=3)
       tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape))
+      # TT-batch by one element TT-batch
       res_actual = ops.tt_tt_matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
-      res_actual2 = ops.matmul(tt_mat_1, tt_mat_2)
+      # TT by TT-batch.
+      res_actual2 = ops.matmul(tt_mat_2[0], tt_mat_1)
       res_actual2 = ops.full(res_actual2)
       res_desired = tf.einsum('oij,jk->oik', ops.full(tt_mat_1),
                               ops.full(tt_mat_2[0]))
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
-      # TODO: why so bad accuracy?
-      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
-      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-4, rtol=1e-4)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
 
 
 def _random_sparse(shape, non_zeros):
