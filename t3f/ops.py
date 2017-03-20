@@ -120,13 +120,25 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
       not tt_matrix_b.is_tt_matrix():
     raise ValueError('Arguments should be TT-matrices')
 
+  if not shapes.is_batch_broadcasting_possible(tt_matrix_a, tt_matrix_b):
+    raise ValueError('The batch sizes are different and not 1, broadcasting is '
+                     'not available.')
+
   ndims = tt_matrix_a.ndims()
   if tt_matrix_b.ndims() != ndims:
     raise ValueError('Arguments should have the same number of dimensions, '
                      'got %d and %d instead.' % (ndims, tt_matrix_b.ndims()))
 
   is_a_batch = isinstance(tt_matrix_a, TensorTrainBatch)
+  if is_a_batch and tt_matrix_a.batch_size == 1:
+    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
+    tt_matrix_a = tt_matrix_a[0]
+    is_a_batch = False
   is_b_batch = isinstance(tt_matrix_b, TensorTrainBatch)
+  if is_b_batch and tt_matrix_b.batch_size == 1:
+    # Convert BatchSize 1 batch into TT object to simplify broadcasting.
+    tt_matrix_b = tt_matrix_b[0]
+    is_b_batch = False
   is_res_batch = is_a_batch or is_b_batch
   a_batch_str = 'o' if is_a_batch else ''
   b_batch_str = 'o' if is_b_batch else ''
@@ -142,7 +154,7 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   if is_res_batch:
     if is_a_batch:
       batch_size = shapes.lazy_batch_size(tt_matrix_a)
-    if is_a_batch:
+    if is_b_batch:
       batch_size = shapes.lazy_batch_size(tt_matrix_b)
   for core_idx in range(ndims):
     a_core = tt_matrix_a.tt_cores[core_idx]
