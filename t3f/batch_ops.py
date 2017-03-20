@@ -36,3 +36,22 @@ def concat_along_batch_dim(tt_list):
 
   return TensorTrainBatch(res_cores, tt_list[0].get_raw_shape(),
                           tt_list[0].get_tt_ranks(), batch_size)
+
+
+def gram_matrix(tt_vectors, matrix=None):
+  """Computes Gramian matrix of a batch of TT-vecors.
+
+  If matrix is None, computes
+    res[i, j] = t3f.flat_inner(tt_vectors[i], tt_vectors[j]).
+  If matrix is present, computes
+      res[i, j] = t3f.flat_inner(tt_vectors[i], t3f.matmul(matrix, tt_vectors[j]))
+    or more shorly
+      res[i, j] = tt_vectors[i]^T * matrix * tt_vectors[j]
+
+  Args:
+    tt_vectors: TensorTrainBatch.
+    matrix: None, or TensorTrain matrix.
+
+  Returns:
+    tf.tensor with the gram matrix.
+  """
