@@ -338,8 +338,6 @@ def tt_tt_flat_inner(tt_a, tt_b):
     raise ValueError('Arguments should have the same number of dimensions, '
                      'got %d and %d instead.' % (ndims, tt_b.ndims()))
 
-  a_core = tt_a.tt_cores[0]
-  b_core = tt_b.tt_cores[0]
   axes_str = 'ij' if are_both_matrices else 'i'
   is_a_batch = isinstance(tt_a, TensorTrainBatch)
   if is_a_batch and tt_a.batch_size == 1:
@@ -358,6 +356,8 @@ def tt_tt_flat_inner(tt_a, tt_b):
   init_einsum_str = '{1}a{0}b,{2}c{0}d->{3}bd'.format(axes_str, a_batch_str,
                                                       b_batch_str,
                                                       res_batch_str)
+  a_core = tt_a.tt_cores[0]
+  b_core = tt_b.tt_cores[0]
   # Simplest example of this operation:
   # if both arguments are TT-tensors, then it is
   # res = tf.einsum('aib,cid->bd', a_core, b_core)
