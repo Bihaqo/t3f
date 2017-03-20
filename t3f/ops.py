@@ -549,10 +549,51 @@ def _add_tensor_cores(tt_a, tt_b):
   return tt_cores
 
 
-def _add_matrix_cores(tt_a, tt_b):
-  """Internal function to be called from add for two TT-tensors.
+def _add_batch_tensor_cores(tt_a, tt_b):
+  """Internal function to be called from add for two batches of TT-tensors.
 
-  Does the actual assembling of the TT-cores to add two TT-tensors.
+  Does the actual assembling of the TT-cores to add two batches of TT-tensors.
+  """
+  ndims = tt_a.ndims()
+  shape = shapes.lazy_raw_shape(tt_a)
+  a_ranks = shapes.lazy_tt_ranks(tt_a)
+  b_ranks = shapes.lazy_tt_ranks(tt_b)
+  if isinstance(tt_a, TensorTrainBatch) and tt_a.batch_size == 1:
+    # We add 1 element batch tt_a to a batch_size element batch tt_b to get
+    # the answer TensorTrainBatch of batch_size == tt_b.batch_size.
+    batch_size = shapes.lazy_batch_size(tt_b)
+  else:
+    batch_size = shapes.lazy_batch_size(tt_a)
+  tt_a = shapes.expand_batch_dim(tt_a)
+  tt_b = shapes.expand_batch_dim(tt_b)
+  tt_cores = []
+  for core_idx in range(ndims):
+    a_core = tt_a.tt_cores[core_idx]
+    if tt_a.batch_size == 1:
+      a_core = tf.tile(a_core, (batch_size, 1, 1, 1))
+    b_core = tt_b.tt_cores[core_idx]
+    if tt_b.batch_size == 1:
+      b_core = tf.tile(b_core, (batch_size, 1, 1, 1))
+    if core_idx == 0:
+      curr_core = tf.concat((a_core, b_core), axis=3)
+    elif core_idx == ndims - 1:
+      curr_core = tf.concat((a_core, b_core), axis=1)
+    else:
+      upper_zeros = tf.zeros((batch_size, a_ranks[core_idx], shape[0][core_idx],
+                              b_ranks[core_idx + 1]))
+      lower_zeros = tf.zeros((batch_size, b_ranks[core_idx], shape[0][core_idx],
+                              a_ranks[core_idx + 1]))
+      upper = tf.concat((a_core, upper_zeros), axis=3)
+      lower = tf.concat((lower_zeros, b_core), axis=3)
+      curr_core = tf.concat((upper, lower), axis=1)
+    tt_cores.append(curr_core)
+  return tt_cores, batch_size
+
+
+def _add_matrix_cores(tt_a, tt_b):
+  """Internal function to be called from add for two TT-matrices.
+
+  Does the actual assembling of the TT-cores to add two TT-matrices.
   """
   ndims = tt_a.ndims()
   shape = shapes.lazy_raw_shape(tt_a)
@@ -598,13 +639,24 @@ def add(tt_a, tt_b):
     raise ValueError('The arguments should be both TT-tensors or both '
                      'TT-matrices')
 
-  if tt_a.get_shape() != tt_b.get_shape():
+  if tt_a.get_raw_shape() != tt_b.get_raw_shape():
     raise ValueError('The arguments should have the same shape.')
 
-  if tt_a.is_tt_matrix():
-    tt_cores = _add_matrix_cores(tt_a, tt_b)
+  if not shapes.is_batch_broadcasting_possible(tt_a, tt_b):
+    raise ValueError('The batch sizes are different and not 1, broadcasting is '
+                     'not available.')
+
+  is_batch_case = isinstance(tt_a, TensorTrainBatch) or isinstance(tt_b, TensorTrainBatch)
+  if is_batch_case:
+    if tt_a.is_tt_matrix():
+      tt_cores = _add_batch_matrix_cores(tt_a, tt_b)
+    else:
+      tt_cores, batch_size = _add_batch_tensor_cores(tt_a, tt_b)
   else:
-    tt_cores = _add_tensor_cores(tt_a, tt_b)
+    if tt_a.is_tt_matrix():
+      tt_cores = _add_matrix_cores(tt_a, tt_b)
+    else:
+      tt_cores = _add_tensor_cores(tt_a, tt_b)
 
   out_ranks = [1]
   static_a_ranks = tt_a.get_tt_ranks()
@@ -612,7 +664,11 @@ def add(tt_a, tt_b):
   for core_idx in range(1, ndims):
     out_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
   out_ranks.append(1)
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
+  if is_batch_case:
+    return TensorTrainBatch(tt_cores, tt_a.get_raw_shape(), out_ranks,
+                            batch_size)
+  else:
+    return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
 def multiply(tt_a, tt_b):
