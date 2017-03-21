@@ -78,12 +78,12 @@ def project(tangent_space_tens, tensor, coef=None):
       new_lhs = tf.einsum('oab,aic,obid->ocd', lhs, left_tang_core, tens_core)
 
       proj_core = tf.einsum('oab,obic->oaic', lhs, tens_core)
-      proj_core -= tf.einsum('aib,obc->oaic', right_tang_core, new_lhs)
-      # TODO: add coef here.
+      proj_core -= tf.einsum('aib,obc->oaic', left_tang_core, new_lhs)
       proj_core = tf.einsum('oaib,obc->aic', proj_core, rhs[core_idx + 1])
       lhs = new_lhs
 
     if core_idx == ndims - 1:
+      # TODO: add coef here.
       proj_core = tf.einsum('oab,obic->aic', lhs, tens_core)
 
     if core_idx == 0:
