@@ -67,6 +67,21 @@ def gram_matrix(tt_vectors, matrix=None):
     for core_idx in range(1, ndims):
       curr_core = tt_vectors.tt_cores[core_idx]
       res = tf.einsum('pqac,paijb,qcijd->pqbd', res, curr_core, curr_core)
-    # Squeeze to make the result of size batch_size x batch_size instead of
-    # batch_size x batch_size x 1 x 1.
-    return tf.squeeze(res)
+  else:
+    # res[i, j] = tt_vectors[i] ^ T * matrix * tt_vectors[j]
+    # We enumerate the dummy dimension (that takes 1 value) with `k`.
+    # TODO: make sure that tt_vectors are row vectors, not column and not
+    # matrices.
+    curr_core = tt_vectors.tt_cores[0]
+    curr_matrix_core = matrix.tt_cores[0]
+    res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core, curr_matrix_core,
+                    curr_core)
+    for core_idx in range(1, ndims):
+      curr_core = tt_vectors.tt_cores[core_idx]
+      curr_matrix_core = matrix.tt_cores[core_idx]
+      res = tf.einsum('pqace,pakib,cijd,qekjf->pqbdf', res, curr_core,
+                      curr_matrix_core, curr_core)
+
+  # Squeeze to make the result of size batch_size x batch_size instead of
+  # batch_size x batch_size x 1 x 1.
+  return tf.squeeze(res)
