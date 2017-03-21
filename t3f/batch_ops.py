@@ -2,6 +2,7 @@ import tensorflow as tf
 
 from tensor_train_base import TensorTrainBase
 from tensor_train_batch import TensorTrainBatch
+import ops
 
 
 def concat_along_batch_dim(tt_list):
@@ -70,8 +71,16 @@ def gram_matrix(tt_vectors, matrix=None):
   else:
     # res[i, j] = tt_vectors[i] ^ T * matrix * tt_vectors[j]
     # We enumerate the dummy dimension (that takes 1 value) with `k`.
-    # TODO: make sure that tt_vectors are row vectors, not column and not
-    # matrices.
+    vectors_shape = tt_vectors.get_shape()
+    if vectors_shape[2] == 1 and vectors_shape[1] != 1:
+      # TODO: not very efficient, better to put different order into einsum.
+      tt_vectors = ops.transpose(tt_vectors)
+    vectors_shape = tt_vectors.get_shape()
+    if vectors_shape[1] != 1:
+      # TODO: do something so that in case the shape is undefined on compilation
+      # it still works.
+      raise ValueError('The tt_vectors argument should be vectors (not '
+                       'matrices) with shape defined on compilation.')
     curr_core = tt_vectors.tt_cores[0]
     curr_matrix_core = matrix.tt_cores[0]
     res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core, curr_matrix_core,
