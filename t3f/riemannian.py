@@ -66,7 +66,11 @@ def project(tangent_space_tens, tensor, coef=None):
 
   # lhs[core_idx] is of size
   #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
-  lhs = tf.ones((batch_size, 1, 1))
+  if coef is None:
+    lhs = tf.ones((batch_size, 1, 1))
+  else:
+    lhs = tf.reshape(coef, (batch_size, 1, 1))
+
   # Left to right sweep.
   res_cores_list = []
   for core_idx in range(ndims):
@@ -83,7 +87,6 @@ def project(tangent_space_tens, tensor, coef=None):
       lhs = new_lhs
 
     if core_idx == ndims - 1:
-      # TODO: add coef here.
       proj_core = tf.einsum('oab,obic->aic', lhs, tens_core)
 
     if core_idx == 0:
