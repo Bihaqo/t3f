@@ -157,3 +157,5 @@ class TensorTrainBase(object):
     # We can't import ops in the beginning since it creates cyclic dependencies.
     import ops
     return ops.multiply(self, other)
+
+  __rmul__ = __mul__
