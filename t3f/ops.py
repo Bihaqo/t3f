@@ -516,6 +516,7 @@ def _add_tensor_cores(tt_a, tt_b):
   Does the actual assembling of the TT-cores to add two TT-tensors.
   """
   ndims = tt_a.ndims()
+  dtype = tt_a.dtype
   shape = shapes.lazy_raw_shape(tt_a)
   a_ranks = shapes.lazy_tt_ranks(tt_a)
   b_ranks = shapes.lazy_tt_ranks(tt_b)
@@ -529,9 +530,9 @@ def _add_tensor_cores(tt_a, tt_b):
       curr_core = tf.concat((a_core, b_core), axis=0)
     else:
       upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
-                              b_ranks[core_idx + 1]))
+                              b_ranks[core_idx + 1]), dtype)
       lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
-                              a_ranks[core_idx + 1]))
+                              a_ranks[core_idx + 1]), dtype)
       upper = tf.concat((a_core, upper_zeros), axis=2)
       lower = tf.concat((lower_zeros, b_core), axis=2)
       curr_core = tf.concat((upper, lower), axis=0)
@@ -545,6 +546,7 @@ def _add_batch_tensor_cores(tt_a, tt_b):
   Does the actual assembling of the TT-cores to add two batches of TT-tensors.
   """
   ndims = tt_a.ndims()
+  dtype = tt_a.dtype
   shape = shapes.lazy_raw_shape(tt_a)
   a_ranks = shapes.lazy_tt_ranks(tt_a)
   b_ranks = shapes.lazy_tt_ranks(tt_b)
@@ -570,9 +572,9 @@ def _add_batch_tensor_cores(tt_a, tt_b):
       curr_core = tf.concat((a_core, b_core), axis=1)
     else:
       upper_zeros = tf.zeros((batch_size, a_ranks[core_idx], shape[0][core_idx],
-                              b_ranks[core_idx + 1]))
+                              b_ranks[core_idx + 1]), dtype)
       lower_zeros = tf.zeros((batch_size, b_ranks[core_idx], shape[0][core_idx],
-                              a_ranks[core_idx + 1]))
+                              a_ranks[core_idx + 1]), dtype)
       upper = tf.concat((a_core, upper_zeros), axis=3)
       lower = tf.concat((lower_zeros, b_core), axis=3)
       curr_core = tf.concat((upper, lower), axis=1)
@@ -586,6 +588,7 @@ def _add_matrix_cores(tt_a, tt_b):
   Does the actual assembling of the TT-cores to add two TT-matrices.
   """
   ndims = tt_a.ndims()
+  dtype = tt_a.dtype
   shape = shapes.lazy_raw_shape(tt_a)
   a_ranks = shapes.lazy_tt_ranks(tt_a)
   b_ranks = shapes.lazy_tt_ranks(tt_b)
@@ -599,9 +602,9 @@ def _add_matrix_cores(tt_a, tt_b):
       curr_core = tf.concat((a_core, b_core), axis=0)
     else:
       upper_zeros = tf.zeros((a_ranks[core_idx], shape[0][core_idx],
-                              shape[1][core_idx], b_ranks[core_idx + 1]))
+                              shape[1][core_idx], b_ranks[core_idx + 1]), dtype)
       lower_zeros = tf.zeros((b_ranks[core_idx], shape[0][core_idx],
-                              shape[1][core_idx], a_ranks[core_idx + 1]))
+                              shape[1][core_idx], a_ranks[core_idx + 1]), dtype)
       upper = tf.concat((a_core, upper_zeros), axis=3)
       lower = tf.concat((lower_zeros, b_core), axis=3)
       curr_core = tf.concat((upper, lower), axis=0)
@@ -615,6 +618,7 @@ def _add_batch_matrix_cores(tt_a, tt_b):
   Does the actual assembling of the TT-cores to add two batches of TT-matrices.
   """
   ndims = tt_a.ndims()
+  dtype = tt_a.dtype
   shape = shapes.lazy_raw_shape(tt_a)
   a_ranks = shapes.lazy_tt_ranks(tt_a)
   b_ranks = shapes.lazy_tt_ranks(tt_b)
@@ -640,9 +644,9 @@ def _add_batch_matrix_cores(tt_a, tt_b):
       curr_core = tf.concat((a_core, b_core), axis=1)
     else:
       upper_zeros = tf.zeros((batch_size, a_ranks[core_idx], shape[0][core_idx],
-                              shape[1][core_idx], b_ranks[core_idx + 1]))
+                              shape[1][core_idx], b_ranks[core_idx + 1]), dtype)
       lower_zeros = tf.zeros((batch_size, b_ranks[core_idx], shape[0][core_idx],
-                              shape[1][core_idx], a_ranks[core_idx + 1]))
+                              shape[1][core_idx], a_ranks[core_idx + 1]), dtype)
       upper = tf.concat((a_core, upper_zeros), axis=4)
       lower = tf.concat((lower_zeros, b_core), axis=4)
       curr_core = tf.concat((upper, lower), axis=1)
