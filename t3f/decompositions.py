@@ -307,7 +307,7 @@ def orthogonalize_tt_cores(tt, left_to_right=True):
   if left_to_right:
     return _orthogonalize_tt_cores_left_to_right(tt)
   else:
-    raise NotImplementedError
+    return _orthogonalize_tt_cores_right_to_left(tt)
 
 
 def _orthogonalize_tt_cores_left_to_right(tt):
@@ -365,5 +365,66 @@ def _orthogonalize_tt_cores_left_to_right(tt):
   else:
     last_core_shape = (next_rank, raw_shape[0][-1], 1)
   tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
+  # TODO: infer the tt_ranks.
+  return TensorTrain(tt_cores, tt.get_raw_shape())
+
+
+def _orthogonalize_tt_cores_right_to_left(tt):
+  """Orthogonalize TT-cores of a TT-object in the right to left order.
+
+  Args:
+    tt: TenosorTrain or a TensorTrainBatch.
+
+  Returns:
+    The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
+  """
+  # Left to right orthogonalization.
+  ndims = tt.ndims()
+  raw_shape = shapes.lazy_raw_shape(tt)
+  tt_ranks = shapes.lazy_tt_ranks(tt)
+  prev_rank = tt_ranks[ndims]
+  # Copy cores references so we can change the cores.
+  tt_cores = list(tt.tt_cores)
+  for core_idx in range(ndims - 1, 0, -1):
+    curr_core = tt_cores[core_idx]
+    # TT-ranks could have changed on the previous iteration, so `tt_ranks` can
+    # be outdated for the current TT-rank, but should be valid for the next
+    # TT-rank.
+    curr_rank = prev_rank
+    prev_rank = tt_ranks[core_idx]
+    if tt.is_tt_matrix():
+      curr_mode_left = raw_shape[0][core_idx]
+      curr_mode_right = raw_shape[1][core_idx]
+      curr_mode = curr_mode_left * curr_mode_right
+    else:
+      curr_mode = raw_shape[0][core_idx]
+
+    qr_shape = (prev_rank, curr_mode * curr_rank)
+    curr_core = tf.reshape(curr_core, qr_shape)
+    curr_core, triang = tf.qr(tf.transpose(curr_core))
+    curr_core = tf.transpose(curr_core)
+    triang = tf.transpose(triang)
+    if triang.get_shape().is_fully_defined():
+      triang_shape = triang.get_shape().as_list()
+    else:
+      triang_shape = tf.shape(triang)
+    # The TT-rank could have changed: if qr_shape is e.g. 4 x 10, than q would
+    # be of size 4 x 4 and r would be 4 x 10, which means that the next rank
+    # should be changed to 4.
+    prev_rank = triang_shape[1]
+    if tt.is_tt_matrix():
+      new_core_shape = (prev_rank, curr_mode_left, curr_mode_right, curr_rank)
+    else:
+      new_core_shape = (prev_rank, curr_mode, curr_rank)
+    tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
+
+    prev_core = tf.reshape(tt_cores[core_idx - 1], (-1, triang_shape[0]))
+    tt_cores[core_idx - 1] = tf.matmul(prev_core, triang)
+
+  if tt.is_tt_matrix():
+    first_core_shape = (1, raw_shape[0][0], raw_shape[1][0], prev_rank)
+  else:
+    first_core_shape = (1, raw_shape[0][0], prev_rank)
+  tt_cores[0] = tf.reshape(tt_cores[0], first_core_shape)
   # TODO: infer the tt_ranks.
   return TensorTrain(tt_cores, tt.get_raw_shape())
