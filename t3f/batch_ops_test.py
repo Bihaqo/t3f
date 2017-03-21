@@ -45,7 +45,7 @@ class BatchOpsTest(tf.test.TestCase):
       self.assertAllClose(first_second_third_res_val, first_second_third_desired_val)
 
   def testGramMatrix(self):
-    # Test constructing Gram Matrix of a batch of TT vectors.
+    # Test Gram Matrix of a batch of TT vectors.
     tt_vectors = initializers.random_matrix_batch(((2, 3), None), batch_size=5)
     res_actual = batch_ops.gram_matrix(tt_vectors)
     full_vectors = tf.reshape(ops.full(tt_vectors), (5, 6))
@@ -54,6 +54,25 @@ class BatchOpsTest(tf.test.TestCase):
     with self.test_session() as sess:
       res_actual_val, res_desired_val = sess.run((res_actual, res_desired))
       self.assertAllClose(res_desired_val, res_actual_val)
+
+  def testGramMatrixWithMatrix(self):
+    # Test Gram Matrix of a batch of TT vectors with providing a matrix, so we
+    # should compute
+    # res[i, j] = tt_vectors[i] ^ T * matrix * tt_vectors[j]
+    tt_vectors = initializers.random_matrix_batch((None, (2, 3)), batch_size=4)
+    matrix = initializers.random_matrix(((2, 3), (2, 3)))
+    res_actual = batch_ops.gram_matrix(tt_vectors, matrix)
+    full_vectors = tf.reshape(ops.full(tt_vectors), (4, 6))
+    with self.test_session() as sess:
+      res = sess.run((res_actual, full_vectors, ops.full(matrix)))
+      res_actual_val, vectors_val, matrix_val = res
+      res_desired_val = np.zeros((4, 4))
+      for i in range(4):
+        for j in range(4):
+          curr_val = np.dot(vectors_val[i], matrix_val)
+          curr_val = np.dot(curr_val, vectors_val[j])
+          res_desired_val[i, j] = curr_val
+      self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
 if __name__ == "__main__":
   tf.test.main()
