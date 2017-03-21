@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from tensor_train_base import TensorTrainBase
 from tensor_train_batch import TensorTrainBatch
 
 
@@ -13,10 +14,14 @@ def concat_along_batch_dim(tt_list):
     TensorTrainBatch
   """
   ndims = tt_list[0].ndims()
+  if isinstance(tt_list, TensorTrainBase):
+    # Not a list but just one element, nothing to concat.
+    return tt_list
+
   for core_idx in range(ndims):
     if not isinstance(tt_list[core_idx], TensorTrainBatch):
       raise ValueError('All objects in the list should be TTBatch objects, got '
-                       '%s' % (tt_list[core_idx]))
+                       '%s' % tt_list[core_idx])
   for core_idx in range(1, ndims):
     if tt_list[core_idx].get_raw_shape() != tt_list[0].get_raw_shape():
       raise ValueError('Shapes of all TT-batch objects should coincide, got %s '
