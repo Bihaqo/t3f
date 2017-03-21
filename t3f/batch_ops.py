@@ -53,5 +53,15 @@ def gram_matrix(tt_vectors, matrix=None):
     matrix: None, or TensorTrain matrix.
 
   Returns:
-    tf.tensor with the gram matrix.
+    tf.tensor with the Gram matrix.
   """
+  ndims = tt_vectors.ndims()
+  if matrix is None:
+    curr_core = tt_vectors.tt_cores[0]
+    res = tf.einsum('paijb,qcijd->pqbd', curr_core, curr_core)
+    for core_idx in range(1, ndims):
+      curr_core = tt_vectors.tt_cores[core_idx]
+      res = tf.einsum('pqac,paijb,qcijd->pqbd', res, curr_core, curr_core)
+    # Squeeze to make the result of size batch_size x batch_size instead of
+    # batch_size x batch_size x 1 x 1.
+    return tf.squeeze(res)
