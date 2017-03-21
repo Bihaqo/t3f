@@ -197,3 +197,73 @@ def clean_raw_shape(shape):
       shape.append(tf.TensorShape(np_shape[i]))
     shape = tuple(shape)
   return shape
+
+
+def is_batch_broadcasting_possible(tt_a, tt_b):
+  """Check that the batch broadcasting possible for the given batch sizes.
+
+  Returns true if the batch sizes are the same or if one of them is 1.
+
+  Args:
+    tt_a: TensorTrain or TensorTrainBatch
+    tt_b: TensorTrain or TensorTrainBatch
+
+  Returns:
+    Bool
+  """
+  try:
+    if tt_a.batch_size is None or tt_b.batch_size is None:
+      # If one of the batch sizes is not available on the compilation stage,
+      # we cannot say if broadcasting is possible.
+      return True
+    if tt_a.batch_size == tt_b.batch_size:
+      return True
+    if tt_a.batch_size == 1 or tt_b.batch_size == 1:
+      return True
+    return False
+  except AttributeError:
+    # One or both of the arguments are not batch tensor, but single TT tensors.
+    # In this case broadcasting is always possible.
+    return True
+
+
+def squeeze_batch_dim(tt):
+  """Converts batch size 1 TensorTrainBatch into TensorTrain.
+
+  Args:
+    tt: TensorTrain or TensorTrainBatch.
+
+  Returns:
+    TensorTrain if the input is a TensorTrainBatch with batch_size == 1 (known
+      at compilation stage) or a TensorTrain.
+    TensorTrainBatch otherwise.
+    """
+  try:
+    if tt.batch_size == 1:
+      return tt[0]
+    else:
+      return tt
+  except AttributeError:
+    # tt object does not have attribute batch_size, probably already
+    # a TensorTrain.
+    return tt
+
+
+def expand_batch_dim(tt):
+  """Creates a 1-element TensorTrainBatch from a TensorTrain.
+
+  Args:
+    tt: TensorTrain or TensorTrainBatch.
+
+  Returns:
+    TensorTrainBatch
+  """
+  if hasattr(tt, 'batch_size'):
+    return tt
+  else:
+    from tensor_train_batch import TensorTrainBatch
+    tt_cores = []
+    for core_idx in range(tt.ndims()):
+      tt_cores.append(tf.expand_dims(tt.tt_cores[core_idx], 0))
+    return TensorTrainBatch(tt_cores, tt.get_raw_shape(), tt.get_tt_ranks(),
+                            batch_size=1)
