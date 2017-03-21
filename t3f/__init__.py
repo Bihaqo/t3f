@@ -1,4 +1,6 @@
-from tensor_train import *
+from tensor_train_base import TensorTrainBase
+from tensor_train import TensorTrain
+from tensor_train_batch import TensorTrainBatch
 from variables import *
 from ops import *
 from initializers import *
