@@ -55,12 +55,24 @@ class RiemannianTest(tf.test.TestCase):
       self.assertAllClose(desired_projection, ops.full(proj).eval())
 
   def testProjectSum(self):
+    # Test projecting a batch of TT-tensors.
+    tens = initializers.random_tensor_batch((2, 3, 4), batch_size=3)
+    tangent_tens = initializers.random_tensor((2, 3, 4), 3)
+    weighted_sum = tens[0] + tens[1] + tens[2]
+    direct_proj = riemannian.project(tangent_tens, weighted_sum)
+    actual_proj = riemannian.project(tangent_tens, tens)
+    with self.test_session() as sess:
+      res = sess.run((ops.full(direct_proj), ops.full(actual_proj)))
+      desired_val, actual_val = res
+      self.assertAllClose(desired_val, actual_val)
+
+  def testProjectSumCoef(self):
     # Test projecting a batch of TT-tensors with providing coefs.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4)
     coef = [0.1, -2, 0, 0.4]
     tangent_tens = initializers.random_tensor((2, 3, 4), 4)
     weighted_sum = coef[0] * tens[0] + coef[1] * tens[1] + coef[2] * tens[2]
-    weighted_sum += coef[4] * tens[3]
+    weighted_sum += coef[3] * tens[3]
     direct_proj = riemannian.project(tangent_tens, weighted_sum)
     actual_proj = riemannian.project(tangent_tens, tens, coef)
     with self.test_session() as sess:
