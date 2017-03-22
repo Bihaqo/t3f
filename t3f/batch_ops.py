@@ -71,10 +71,9 @@ def gram_matrix(tt_vectors, matrix=None):
       res = tf.einsum('pqac,paijb,qcijd->pqbd', res, curr_core, curr_core)
   else:
     # res[i, j] = tt_vectors[i] ^ T * matrix * tt_vectors[j]
-    # We enumerate the dummy dimension (that takes 1 value) with `k`.
     vectors_shape = tt_vectors.get_shape()
     if vectors_shape[2] == 1 and vectors_shape[1] != 1:
-      # TODO: not very efficient, better to put different order into einsum.
+      # TODO: not very efficient, better to use different order in einsum.
       tt_vectors = ops.transpose(tt_vectors)
     vectors_shape = tt_vectors.get_shape()
     if vectors_shape[1] != 1:
@@ -84,6 +83,7 @@ def gram_matrix(tt_vectors, matrix=None):
                        'matrices) with shape defined on compilation.')
     curr_core = tt_vectors.tt_cores[0]
     curr_matrix_core = matrix.tt_cores[0]
+    # We enumerate the dummy dimension (that takes 1 value) with `k`.
     res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core, curr_matrix_core,
                     curr_core)
     for core_idx in range(1, ndims):
