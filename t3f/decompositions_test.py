@@ -161,7 +161,7 @@ class DecompositionsBatchTest(tf.test.TestCase):
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     tens = initializers.random_tensor_batch(shape, tt_rank=15, batch_size=3)
-    rounded_tens = decompositions.round(0.5 * (tens + tens), max_tt_rank=9)
+    rounded_tens = decompositions.round(tens, max_tt_rank=9)
     with self.test_session() as sess:
       vars = [ops.full(tens), ops.full(rounded_tens)]
       tens_value, rounded_tens_value = sess.run(vars)
