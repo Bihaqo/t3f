@@ -754,7 +754,8 @@ def multiply(tt_left, right):
                                            right_rank))
       tt_cores.append(curr_core)
 
-    out_ranks = [a * b for a, b in zip(tt_left.get_tt_ranks(), right.get_tt_ranks())]
+    combined_ranks = zip(tt_left.get_tt_ranks(), right.get_tt_ranks())
+    out_ranks = [a * b for a, b in combined_ranks]
   return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
 
 
