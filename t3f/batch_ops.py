@@ -15,23 +15,24 @@ def concat_along_batch_dim(tt_list):
     TensorTrainBatch
   """
   ndims = tt_list[0].ndims()
+
   if isinstance(tt_list, TensorTrainBase):
     # Not a list but just one element, nothing to concat.
     return tt_list
 
-  for core_idx in range(ndims):
-    if not isinstance(tt_list[core_idx], TensorTrainBatch):
+  for batch_idx in range(len(tt_list)):
+    if not isinstance(tt_list[batch_idx], TensorTrainBatch):
       raise ValueError('All objects in the list should be TTBatch objects, got '
-                       '%s' % tt_list[core_idx])
-  for core_idx in range(1, ndims):
-    if tt_list[core_idx].get_raw_shape() != tt_list[0].get_raw_shape():
+                       '%s' % tt_list[batch_idx])
+  for batch_idx in range(1, len(tt_list)):
+    if tt_list[batch_idx].get_raw_shape() != tt_list[0].get_raw_shape():
       raise ValueError('Shapes of all TT-batch objects should coincide, got %s '
                        'and %s' % (tt_list[0].get_raw_shape(),
-                                   tt_list[core_idx].get_raw_shape()))
-    if tt_list[core_idx].get_tt_ranks() != tt_list[0].get_tt_ranks():
+                                   tt_list[batch_idx].get_raw_shape()))
+    if tt_list[batch_idx].get_tt_ranks() != tt_list[0].get_tt_ranks():
       raise ValueError('TT-ranks of all TT-batch objects should coincide, got '
                        '%s and %s' % (tt_list[0].get_tt_ranks(),
-                                      tt_list[core_idx].get_tt_ranks()))
+                                      tt_list[batch_idx].get_tt_ranks()))
 
   res_cores = []
   for core_idx in range(ndims):
