@@ -47,6 +47,7 @@ def project(tangent_space_tens, tensor, coef=None):
 
 
   ndims = tangent_space_tens.ndims()
+  dtype = tangent_space_tens.dtype
   # TODO: use raw shape to support TT-matrices.
   shape = shapes.lazy_shape(tangent_space_tens)
   batch_size = shapes.lazy_batch_size(tensor)
@@ -97,7 +98,7 @@ def project(tangent_space_tens, tensor, coef=None):
       mode_size = shape[core_idx]
       rank_1 = right_tangent_tt_ranks[core_idx]
       rank_2 = left_tangent_tt_ranks[core_idx + 1]
-      zeros = tf.zeros((rank_1, mode_size, rank_2))
+      zeros = tf.zeros((rank_1, mode_size, rank_2), dtype)
       upper = tf.concat((right_tang_core, zeros), axis=2)
       lower = tf.concat((proj_core, left_tang_core), axis=2)
       res_core = tf.concat((upper, lower), axis=0)
