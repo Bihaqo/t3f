@@ -158,6 +158,20 @@ class DecompositionsBatchTest(tf.test.TestCase):
           self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
                               should_be_eye_val)
 
+    def testRoundTensor(self):
+      shape = (2, 1, 4, 3, 3)
+      np.random.seed(1)
+      tens = initializers.random_tensor_batch(shape, tt_rank=15, batch_size=3)
+      rounded_tens = decompositions.round(tens, max_tt_rank=9)
+      with self.test_session() as sess:
+        vars = [ops.full(tens), ops.full(rounded_tens)]
+        tens_value, rounded_tens_value = sess.run(vars)
+        # TODO: why so bad accuracy?
+        self.assertAllClose(tens_value, rounded_tens_value, atol=1e-4,
+                            rtol=1e-4)
+        dynamic_tt_ranks = shapes.tt_ranks(rounded_tens).eval()
+        self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
+
 
 if __name__ == "__main__":
   tf.test.main()
