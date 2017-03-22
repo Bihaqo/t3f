@@ -34,7 +34,7 @@ def shape(tt):
   the tensor shape.
 
   Args:
-    tt: `TensorTrain` object.
+    tt: `TensorTrain` or `TensorTrainBatch` object.
 
   Returns:
     A `Tensor`
@@ -56,7 +56,7 @@ def raw_shape(tt):
   representing the underlying tensor shape of the matrix.
 
   Args:
-    tt: `TensorTrain` object.
+    tt: `TensorTrain` or `TensorTrainBatch` object.
 
   Returns:
     A 2-D `Tensor` of size 1 x ndims() or 2 x ndims()
