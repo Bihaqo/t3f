@@ -409,7 +409,6 @@ def _orthogonalize_batch_tt_cores_left_to_right(tt):
     qr_shape = (batch_size, curr_rank * curr_mode, next_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
     curr_core, triang = tf.qr(curr_core)
-    print(qr_shape, curr_core.get_shape(), triang.get_shape)
     if triang.get_shape().is_fully_defined():
       triang_shape = triang.get_shape().as_list()
     else:
@@ -435,8 +434,6 @@ def _orthogonalize_batch_tt_cores_left_to_right(tt):
   else:
     last_core_shape = (batch_size, next_rank, raw_shape[0][-1], 1)
   tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
-  for i in range(ndims):
-    print(tt_cores[i].get_shape())
   # TODO: infer the tt_ranks.
   return TensorTrainBatch(tt_cores, tt.get_raw_shape(), batch_size=batch_size)
 
