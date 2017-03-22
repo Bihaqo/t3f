@@ -6,24 +6,25 @@ from tensor_train import TensorTrain
 
 
 def project(tangent_space_tens, tensor, coef=None):
-  """Project TT tensor on the tangent space of the TT tensor tangent_space_tens.
+  """Project (TT) tensor on the tangent space of (TT) tangent_space_tens.
 
   project(x, tens) = P_x(tens)
   project(x, batch) = P_x(\sum_i batch[i])
   project(x, tens, coef) = P_x(\sum_i coef[i] * batch[i])
 
-  This function implements an algorithm from the paper [1], theorem 3.1.
+  This function implements the algorithm from the paper [1], theorem 3.1.
 
   [1] C. Lubich, I. Oseledets and B. Vandereycken, Time integration of
-    Tensor Trains
+    Tensor Trains.
 
   Args:
     tangent_space_tens: TensorTrain.
     tensor: TensorTrain or TensorTrainBatch. In the case of batch returns
-    projection of the sum of elements in the batch.
+      projection of the sum of elements in the batch.
+    coef: python list or tf.Tensor of numbers or None
 
   Returns:
-     a TensorTrain with the TT-ranks equal 2 * rank(tangent_space_tens).
+     a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
   """
   # Always work with batch of TT for simplicity.
   tensor = shapes.expand_batch_dim(tensor)
@@ -65,12 +66,19 @@ def project(tangent_space_tens, tensor, coef=None):
     rhs[core_idx] = tf.einsum('oaib,cid,obd->oac', tens_core, right_tang_core,
                               rhs[core_idx + 1])
 
+  # Prepare lhs vectors.
   # lhs[core_idx] is of size
   #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
+  lhs = [None] * (ndims + 1)
   if coef is None:
-    lhs = tf.ones((batch_size, 1, 1))
+    lhs[0] = tf.ones((batch_size, 1, 1))
   else:
-    lhs = tf.reshape(coef, (batch_size, 1, 1))
+    lhs[0] = tf.reshape(coef, (batch_size, 1, 1))
+  for core_idx in range(ndims - 1):
+    tens_core = tensor.tt_cores[core_idx]
+    left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
+    lhs[core_idx + 1] = tf.einsum('oab,aic,obid->ocd', lhs[core_idx],
+                              left_tang_core, tens_core)
 
   # Left to right sweep.
   res_cores_list = []
@@ -80,15 +88,12 @@ def project(tangent_space_tens, tensor, coef=None):
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
     if core_idx < ndims - 1:
-      new_lhs = tf.einsum('oab,aic,obid->ocd', lhs, left_tang_core, tens_core)
-
-      proj_core = tf.einsum('oab,obic->oaic', lhs, tens_core)
-      proj_core -= tf.einsum('aib,obc->oaic', left_tang_core, new_lhs)
+      proj_core = tf.einsum('oab,obic->oaic', lhs[core_idx], tens_core)
+      proj_core -= tf.einsum('aib,obc->oaic', left_tang_core, lhs[core_idx + 1])
       proj_core = tf.einsum('oaib,obc->aic', proj_core, rhs[core_idx + 1])
-      lhs = new_lhs
 
     if core_idx == ndims - 1:
-      proj_core = tf.einsum('oab,obic->aic', lhs, tens_core)
+      proj_core = tf.einsum('oab,obic->aic', lhs[core_idx], tens_core)
 
     if core_idx == 0:
       res_core = tf.concat((proj_core, left_tang_core), axis=2)
