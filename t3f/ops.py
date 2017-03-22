@@ -103,11 +103,15 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   """Multiplies two TT-matrices and returns the TT-matrix of the result.
 
   Args:
-    tt_matrix_a: `TensorTrain` object containing a TT-matrix of size M x N
-    tt_matrix_b: `TensorTrain` object containing a TT-matrix of size N x P
+    tt_matrix_a: `TensorTrain` or `TensorTrainBatch` object containing
+      a TT-matrix (a batch of TT-matrices) of size M x N
+    tt_matrix_b: `TensorTrain` or `TensorTrainBatch` object containing
+      a TT-matrix (a batch of TT-matrices) of size N x P
 
   Returns
-    `TensorTrain` object containing a TT-matrix of size M x P
+    `TensorTrain` object containing a TT-matrix of size M x P if both arguments
+      are `TensorTrain`s
+    `TensorTrainBatch` if any of the arguments is a `TensorTrainBatch`
 
   Raises:
     ValueError is the arguments are not TT matrices or if their sizes are not
@@ -272,15 +276,22 @@ def matmul(a, b):
 
   Note that multiplication of two TT-matrices returns a TT-matrix with much
   larger ranks.
+  Also works for multiplying two batches of TT-matrices or a product between a
+  TT-matrix and a batch of TT-matrices (with broadcasting).
 
   Args:
-    a: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size M x N
-    b: `TensorTrain`, tf.Tensor, or tf.SparseTensor of size N x P
+    a: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor of
+      size M x N
+    b: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor of
+      size N x P
 
   Returns
     If both arguments are `TensorTrain` objects, returns a `TensorTrain`
-      object containing a TT-matrix of size M x P
-    If not, returns tf.Tensor of size M x P
+      object containing a TT-matrix of size M x P.
+    If at least one of the arguments is a `TensorTrainBatch` object, returns
+      a `TensorTrainBatch` object containing a batch of TT-matrices of size
+      M x P.
+    Otherwise, returns tf.Tensor of size M x P.
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
@@ -455,8 +466,8 @@ def dense_tt_flat_inner(dense_a, tt_b):
   The shapes of dense_a and tt_b should coincide.
 
   Args:
-    dense_a: `TensorTrain` object
-    tt_b: tf.SparseTensor
+    dense_a: tf.Tensor
+    tt_b: `TensorTrain` object
 
   Returns
     a number
@@ -471,8 +482,8 @@ def sparse_tt_flat_inner(sparse_a, tt_b):
   The shapes of sparse_a and tt_b should coincide.
 
   Args:
-    sparse_a: `TensorTrain` object
-    tt_b: tf.SparseTensor
+    sparse_a: tf.SparseTensor
+    tt_b: `TensorTrain` object
 
   Returns
     a number
@@ -487,12 +498,15 @@ def flat_inner(a, b):
   The shapes of a and b should coincide.
 
   Args:
-    a: `TensorTrain`, tf.Tensor, or tf.SparseTensor
-    b: `TensorTrain`, tf.Tensor, or tf.SparseTensor
+    a: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor
+    b: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor
 
   Returns
     a number
-    sum of products of all the elements of a and b
+      sum of products of all the elements of a and b
+    OR or a tf.Tensor of size batch_size
+      sum of products of all the elements of a and b for each element in the
+      batch.
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
@@ -658,13 +672,19 @@ def add(tt_a, tt_b):
   """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
 
   The shapes of tt_a and tt_b should coincide.
+  Supports broadcasting:
+    add(TensorTrainBatch, TensorTrain)
+  adds TensorTrain to each element in the batch of TTs in TensorTrainBatch.
 
   Args:
-    tt_a: `TensorTrain`, TT-tensor or TT-matrix
-    tt_b: `TensorTrain`, TT-tensor or TT-matrix
+    tt_a: `TensorTrain`, `TensorTrainBatch`, TT-tensor, or TT-matrix
+    tt_b: `TensorTrain`, `TensorTrainBatch`, TT-tensor, or TT-matrix
 
   Returns
-    a `TensorTrain` object corresponding to the element-wise sum of arguments.
+    a `TensorTrain` object corresponding to the element-wise sum of arguments if
+      both arguments are `TensorTrain`s.
+    OR a `TensorTrainBatch` if at least one of the arguments is
+      `TensorTrainBatch`
 
   Raises
     ValueError if the arguments shapes do not coincide
@@ -798,13 +818,15 @@ def frobenius_norm(tt, epsilon=1e-5):
 
 
 def transpose(tt_matrix):
-  """Transpose a TT-matrix.
+  """Transpose a TT-matrix or a batch of TT-matrices.
 
   Args:
-    tt_matrix: `TensorTrain` object containing a TT-matrix.
+    tt_matrix: `TensorTrain` or `TensorTrainBatch` object containing a TT-matrix
+      (or a batch of TT-matrices).
 
   Returns:
-    `TensorTrain` object containing a transposed TT-matrix.
+    `TensorTrain` or `TensorTrainBatch` object containing a transposed TT-matrix
+      (or a batch of TT-matrices).
 
   Raises:
     ValueError if the argument is not a TT-matrix.
@@ -833,31 +855,37 @@ def transpose(tt_matrix):
 
 
 def quadratic_form(A, b, c):
-  """Computes the quadratic form b^t A c where A is a TT-matrix.
+  """Computes the quadratic form b^t A c where A is a TT-matrix (or a batch).
 
   Args:
-    A: `TensorTrain` object containing a TT-matrix.
-    b: `TensorTrain` object containing a TT-vector.
-    c: `TensorTrain` object containing a TT-vector.
+    A: `TensorTrain` object containing a TT-matrix or `TensorTrainBatch`
+      with a batch of TT-matrices.
+    b: `TensorTrain` object containing a TT-vector or `TensorTrainBatch`
+      with a batch of TT-vectors.
+    c: `TensorTrain` object containing a TT-vector or `TensorTrainBatch`
+      with a batch of TT-vectors.
 
   Returns:
-    A number, the value of the quadratic form.
+    A number, the value of the quadratic form if all the arguments are
+      `TensorTrain`s.
+    OR tf.tensor of size batch_size if at least one of the arguments is
+      `TensorTrainBatch`
 
   Raises:
     ValueError if the argument is not a TT-matrix or if the shapes are
       not consistent.
   """
-  if not isinstance(A, TensorTrain) or not A.is_tt_matrix():
+  if not isinstance(A, TensorTrainBase) or not A.is_tt_matrix():
     raise ValueError('The arguments should be a TT-matrix.')
 
   # TODO: support tf.Tensor as b and c.
-  if not isinstance(b, TensorTrain) or not b.is_tt_matrix():
+  if not isinstance(b, TensorTrainBase) or not b.is_tt_matrix():
     raise ValueError('The arguments should be a TT-matrix.')
-  if not isinstance(c, TensorTrain) or not c.is_tt_matrix():
+  if not isinstance(c, TensorTrainBase) or not c.is_tt_matrix():
     raise ValueError('The arguments should be a TT-matrix.')
 
   # TODO: make a more efficient implementation taylored for this case.
-  return tt_tt_flat_inner(A, tt_tt_matmul(b, transpose(c)))
+  return flat_inner(A, tt_tt_matmul(b, transpose(c)))
 
 
 def cast(tt_a, dtype):
