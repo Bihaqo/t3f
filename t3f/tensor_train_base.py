@@ -158,4 +158,5 @@ class TensorTrainBase(object):
     import ops
     return ops.multiply(self, other)
 
+  # To support 'TT * 4' as well as '4 * TT'.
   __rmul__ = __mul__
