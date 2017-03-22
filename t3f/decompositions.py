@@ -225,6 +225,17 @@ def round(tt, max_tt_rank=None, epsilon=None):
       not a vector of length d + 1 where d is the number of dimensions (rank) of
       the input tensor, if epsilon is less than 0.
   """
+  if isinstance(tt, TensorTrainBatch):
+    return _round_batch_tt(tt, max_tt_rank, epsilon)
+  else:
+    return _round_tt(tt, max_tt_rank, epsilon)
+
+
+def _round_tt(tt, max_tt_rank, epsilon):
+  """Internal function that rounds a TensorTrain (not batch).
+
+  See t3f.round for details.
+  """
   ndims = tt.ndims()
   max_tt_rank = np.array(max_tt_rank).astype(np.int32)
   if max_tt_rank < 1:
@@ -293,6 +304,83 @@ def round(tt, max_tt_rank=None, epsilon=None):
   if not are_tt_ranks_defined:
     ranks = None
   return TensorTrain(tt_cores, tt.get_raw_shape(), ranks)
+
+
+# TODO: rename round so not to shadow python.round?
+def _round_batch_tt(tt, max_tt_rank, epsilon):
+  """Internal function that rounds a TensorTrainBatch.
+
+  See t3f.round for details.
+  """
+  ndims = tt.ndims()
+  max_tt_rank = np.array(max_tt_rank).astype(np.int32)
+  if max_tt_rank < 1:
+    raise ValueError('Maximum TT-rank should be greater or equal to 1.')
+  if epsilon is not None and epsilon < 0:
+    raise ValueError('Epsilon should be non-negative.')
+  if max_tt_rank.size == 1:
+    max_tt_rank = (max_tt_rank * np.ones(ndims + 1)).astype(np.int32)
+  elif max_tt_rank.size != ndims + 1:
+    raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
+                     'where d is the number of dimensions (rank) of the tensor.')
+  raw_shape = shapes.lazy_raw_shape(tt)
+  batch_size = shapes.lazy_batch_size(tt)
+
+  tt_cores = orthogonalize_tt_cores(tt).tt_cores
+  # Copy cores references so we can change the cores.
+  tt_cores = list(tt_cores)
+
+  ranks = [1] * (ndims + 1)
+  are_tt_ranks_defined = True
+  # Right to left SVD compression.
+  for core_idx in range(ndims - 1, 0, -1):
+    curr_core = tt_cores[core_idx]
+    if tt.is_tt_matrix():
+      curr_mode_left = raw_shape[0][core_idx]
+      curr_mode_right = raw_shape[1][core_idx]
+      curr_mode = curr_mode_left * curr_mode_right
+    else:
+      curr_mode = raw_shape[0][core_idx]
+
+    columns = curr_mode * ranks[core_idx + 1]
+    curr_core = tf.reshape(curr_core, (batch_size, -1, columns))
+    rows = curr_core.get_shape()[1].value
+    if rows is None:
+      rows = tf.shape(curr_core)[1]
+    if max_tt_rank[core_idx] == 1:
+      ranks[core_idx] = 1
+    else:
+      try:
+        ranks[core_idx] = min(max_tt_rank[core_idx], rows, columns)
+      except TypeError:
+        # Some of the values are undefined on the compilation stage and thus
+        # they are tf.tensors instead of values.
+        min_dim = tf.minimum(rows, columns)
+        ranks[core_idx] = tf.minimum(max_tt_rank[core_idx], min_dim)
+        are_tt_ranks_defined = False
+    s, u, v = tf.svd(curr_core, full_matrices=False)
+    u = u[:, :, 0:ranks[core_idx]]
+    s = s[:, 0:ranks[core_idx]]
+    v = v[:, :, 0:ranks[core_idx]]
+    if tt.is_tt_matrix():
+      core_shape = (batch_size, ranks[core_idx], curr_mode_left, curr_mode_right,
+                    ranks[core_idx + 1])
+    else:
+      core_shape = (batch_size, ranks[core_idx], curr_mode, ranks[core_idx + 1])
+    tt_cores[core_idx] = tf.reshape(tf.transpose(v, (0, 2, 1)), core_shape)
+    prev_core_shape = (batch_size, -1, rows)
+    tt_cores[core_idx - 1] = tf.reshape(tt_cores[core_idx - 1], prev_core_shape)
+    tt_cores[core_idx - 1] = tf.matmul(tt_cores[core_idx - 1], u)
+    tt_cores[core_idx - 1] = tf.matmul(tt_cores[core_idx - 1], tf.matrix_diag(s))
+
+  if tt.is_tt_matrix():
+    core_shape = (batch_size, ranks[0], raw_shape[0][0], raw_shape[1][0], ranks[1])
+  else:
+    core_shape = (batch_size, ranks[0], raw_shape[0][0], ranks[1])
+  tt_cores[0] = tf.reshape(tt_cores[0], core_shape)
+  if not are_tt_ranks_defined:
+    ranks = None
+  return TensorTrainBatch(tt_cores, tt.get_raw_shape(), ranks, batch_size=tt.batch_size)
 
 
 def orthogonalize_tt_cores(tt, left_to_right=True):
