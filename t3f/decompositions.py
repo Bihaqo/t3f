@@ -397,7 +397,8 @@ def orthogonalize_tt_cores(tt, left_to_right=True):
     if left_to_right:
       return _orthogonalize_batch_tt_cores_left_to_right(tt)
     else:
-      return _orthogonalize_batch_tt_cores_right_to_left(tt)
+      raise NotImplementedError('Batch right to left orthogonalization is not '
+                                'supported yet.')
   else:
     if left_to_right:
       return _orthogonalize_tt_cores_left_to_right(tt)
