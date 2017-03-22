@@ -3,6 +3,7 @@ from tensor_train import TensorTrain
 from tensor_train_batch import TensorTrainBatch
 from variables import *
 from ops import *
+from batch_ops import *
 from initializers import *
 from regularizers import *
 from shapes import *
