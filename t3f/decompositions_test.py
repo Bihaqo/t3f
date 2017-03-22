@@ -94,7 +94,6 @@ class DecompositionsTest(tf.test.TestCase):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
     updated_tt_ranks = (1, 2, 2, 6, 1)
-    np.random.seed(1)
     tens = initializers.random_tensor(shape, tt_rank=tt_ranks)
     orthogonal = decompositions.orthogonalize_tt_cores(tens)
     with self.test_session() as sess:
@@ -116,7 +115,6 @@ class DecompositionsTest(tf.test.TestCase):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
     updated_tt_ranks = (1, 5, 2, 3, 1)
-    np.random.seed(1)
     tens = initializers.random_tensor(shape, tt_rank=tt_ranks)
     orthogonal = decompositions.orthogonalize_tt_cores(tens, left_to_right=False)
     with self.test_session() as sess:
