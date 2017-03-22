@@ -727,14 +727,14 @@ def add(tt_a, tt_b):
     return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
-def multiply(tt_a, tt_b):
-  """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
+def multiply(tt_left, right):
+  """Returns a TensorTrain corresponding to element-wise product tt_left * right.
 
-  The shapes of tt_a and tt_b should coincide.
+  The shapes of tt_left and right should coincide.
 
   Args:
-    tt_a: `TensorTrain`, TT-tensor or TT-matrix
-    tt_b: `TensorTrain`, TT-tensor or TT-matrix
+    tt_left: `TensorTrain`, TT-tensor or TT-matrix
+    right: `TensorTrain`, TT-tensor or TT-matrix, OR a number.
 
   Returns
     a `TensorTrain` object corresponding to the element-wise product of the
@@ -743,37 +743,44 @@ def multiply(tt_a, tt_b):
   Raises
     ValueError if the arguments shapes do not coincide.
   """
-  ndims = tt_a.ndims()
-  if tt_a.is_tt_matrix() != tt_b.is_tt_matrix():
-    raise ValueError('The arguments should be both TT-tensors or both '
-                     'TT-matrices')
+  if not isinstance(right, TensorTrainBase):
+    # Assume right is a number, not TensorTrain.
+    tt_cores = list(tt_left.tt_cores)
+    tt_cores[0] = right * tt_cores[0]
+    out_ranks = tt_left.get_tt_ranks()
+  else:
+    ndims = tt_left.ndims()
+    if tt_left.is_tt_matrix() != right.is_tt_matrix():
+      raise ValueError('The arguments should be both TT-tensors or both '
+                       'TT-matrices')
 
-  if tt_a.get_shape() != tt_b.get_shape():
-    raise ValueError('The arguments should have the same shape.')
+    if tt_left.get_shape() != right.get_shape():
+      raise ValueError('The arguments should have the same shape.')
 
-  a_ranks = shapes.lazy_tt_ranks(tt_a)
-  b_ranks = shapes.lazy_tt_ranks(tt_b)
-  shape = shapes.lazy_raw_shape(tt_a)
+    a_ranks = shapes.lazy_tt_ranks(tt_left)
+    b_ranks = shapes.lazy_tt_ranks(right)
+    shape = shapes.lazy_raw_shape(tt_left)
 
-  is_matrix = tt_a.is_tt_matrix()
-  tt_cores = []
-  for core_idx in range(ndims):
-    a_core = tt_a.tt_cores[core_idx]
-    b_core = tt_b.tt_cores[core_idx]
-    left_rank = a_ranks[core_idx] * b_ranks[core_idx]
-    right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
-    if is_matrix:
-      curr_core = tf.einsum('aijb,cijd->acijbd', a_core, b_core)
-      curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
-                                         shape[1][core_idx], right_rank))
-    else:
-      curr_core = tf.einsum('aib,cid->acibd', a_core, b_core)
-      curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
-                                         right_rank))
-    tt_cores.append(curr_core)
+    is_matrix = tt_left.is_tt_matrix()
+    tt_cores = []
+    for core_idx in range(ndims):
+      a_core = tt_left.tt_cores[core_idx]
+      b_core = right.tt_cores[core_idx]
+      left_rank = a_ranks[core_idx] * b_ranks[core_idx]
+      right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
+      if is_matrix:
+        curr_core = tf.einsum('aijb,cijd->acijbd', a_core, b_core)
+        curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
+                                           shape[1][core_idx], right_rank))
+      else:
+        curr_core = tf.einsum('aib,cid->acibd', a_core, b_core)
+        curr_core = tf.reshape(curr_core, (left_rank, shape[0][core_idx],
+                                           right_rank))
+      tt_cores.append(curr_core)
 
-  out_ranks = [a * b for a, b in zip(tt_a.get_tt_ranks(), tt_b.get_tt_ranks())]
-  return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
+    combined_ranks = zip(tt_left.get_tt_ranks(), right.get_tt_ranks())
+    out_ranks = [a * b for a, b in combined_ranks]
+  return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
 
 
 def frobenius_norm_squared(tt):
