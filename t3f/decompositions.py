@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from tensor_train import TensorTrain
+from tensor_train_batch import TensorTrainBatch
 import shapes
 
 
@@ -304,18 +305,22 @@ def orthogonalize_tt_cores(tt, left_to_right=True):
   Returns:
     The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
   """
-  if left_to_right:
-    return _orthogonalize_tt_cores_left_to_right(tt)
+  if isinstance(tt, TensorTrainBatch):
+    if left_to_right:
+      return _orthogonalize_batch_tt_cores_left_to_right(tt)
+    else:
+      return _orthogonalize_batch_tt_cores_right_to_left(tt)
   else:
-    return _orthogonalize_tt_cores_right_to_left(tt)
+    if left_to_right:
+      return _orthogonalize_tt_cores_left_to_right(tt)
+    else:
+      return _orthogonalize_tt_cores_right_to_left(tt)
 
 
 def _orthogonalize_tt_cores_left_to_right(tt):
   """Orthogonalize TT-cores of a TT-object in the left to right order.
-
   Args:
     tt: TenosorTrain or a TensorTrainBatch.
-
   Returns:
     The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
   """
@@ -367,6 +372,73 @@ def _orthogonalize_tt_cores_left_to_right(tt):
   tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
   # TODO: infer the tt_ranks.
   return TensorTrain(tt_cores, tt.get_raw_shape())
+
+
+def _orthogonalize_batch_tt_cores_left_to_right(tt):
+  """Orthogonalize TT-cores of a batch TT-object in the left to right order.
+
+  Args:
+    tt: TensorTrainBatch.
+
+  Returns:
+    TensorTrainBatch
+  """
+  # Left to right orthogonalization.
+  ndims = tt.ndims()
+  raw_shape = shapes.lazy_raw_shape(tt)
+  tt_ranks = shapes.lazy_tt_ranks(tt)
+  next_rank = tt_ranks[0]
+  batch_size = shapes.lazy_batch_size(tt)
+
+  # Copy cores references so we can change the cores.
+  tt_cores = list(tt.tt_cores)
+  for core_idx in range(ndims - 1):
+    curr_core = tt_cores[core_idx]
+    # TT-ranks could have changed on the previous iteration, so `tt_ranks` can
+    # be outdated for the current TT-rank, but should be valid for the next
+    # TT-rank.
+    curr_rank = next_rank
+    next_rank = tt_ranks[core_idx + 1]
+    if tt.is_tt_matrix():
+      curr_mode_left = raw_shape[0][core_idx]
+      curr_mode_right = raw_shape[1][core_idx]
+      curr_mode = curr_mode_left * curr_mode_right
+    else:
+      curr_mode = raw_shape[0][core_idx]
+
+    qr_shape = (batch_size, curr_rank * curr_mode, next_rank)
+    curr_core = tf.reshape(curr_core, qr_shape)
+    curr_core, triang = tf.qr(curr_core)
+    print(qr_shape, curr_core.get_shape(), triang.get_shape)
+    if triang.get_shape().is_fully_defined():
+      triang_shape = triang.get_shape().as_list()
+    else:
+      triang_shape = tf.shape(triang)
+    # The TT-rank could have changed: if qr_shape is e.g. 4 x 10, than q would
+    # be of size 4 x 4 and r would be 4 x 10, which means that the next rank
+    # should be changed to 4.
+    next_rank = triang_shape[1]
+    if tt.is_tt_matrix():
+      new_core_shape = (batch_size, curr_rank, curr_mode_left, curr_mode_right,
+                        next_rank)
+    else:
+      new_core_shape = (batch_size, curr_rank, curr_mode, next_rank)
+
+    tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
+
+    next_core = tf.reshape(tt_cores[core_idx + 1], (batch_size, triang_shape[2], -1))
+    tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
+
+  if tt.is_tt_matrix():
+    last_core_shape = (batch_size, next_rank, raw_shape[0][-1],
+                       raw_shape[1][-1], 1)
+  else:
+    last_core_shape = (batch_size, next_rank, raw_shape[0][-1], 1)
+  tt_cores[-1] = tf.reshape(tt_cores[-1], last_core_shape)
+  for i in range(ndims):
+    print(tt_cores[i].get_shape())
+  # TODO: infer the tt_ranks.
+  return TensorTrainBatch(tt_cores, tt.get_raw_shape(), batch_size=batch_size)
 
 
 def _orthogonalize_tt_cores_right_to_left(tt):
