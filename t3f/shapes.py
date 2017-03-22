@@ -10,15 +10,18 @@ def tt_ranks(tt):
   the input.
 
   Args:
-    tt: `TensorTrain` object.
+    tt: `TensorTrain` or `TensorTrainBatch` object.
 
   Returns:
     A `Tensor`
   """
   num_dims = tt.ndims()
   ranks = []
+  # TODO: ugly.
+  from tensor_train_batch import TensorTrainBatch
+  left_rank_dim = 1 if isinstance(tt, TensorTrainBatch) else 0
   for i in range(num_dims):
-    ranks.append(tf.shape(tt.tt_cores[i])[0])
+    ranks.append(tf.shape(tt.tt_cores[i])[left_rank_dim])
   ranks.append(tf.shape(tt.tt_cores[-1])[-1])
   return tf.stack(ranks, axis=0)
 
