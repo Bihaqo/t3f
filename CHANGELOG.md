@@ -31,3 +31,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 [Unreleased]: https://github.com/Bihaqo/t3f/compare/master...develop
 [0.2.0]: https://github.com/Bihaqo/t3f/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/Bihaqo/t3f/compare/f24409508...0.1.0
