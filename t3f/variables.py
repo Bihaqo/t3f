@@ -82,9 +82,14 @@ def get_variable(name,
                                         collections=collections,
                                         caching_device=caching_device)
         variable_cores.append(curr_core_var)
-    v = TensorTrain(variable_cores, initializer.get_raw_shape(),
-                                 initializer.get_tt_ranks(),
-                                 convert_to_tensors=False)
+    if isinstance(initializer, TensorTrain):
+      v = TensorTrain(variable_cores, initializer.get_raw_shape(),
+                                   initializer.get_tt_ranks(),
+                                   convert_to_tensors=False)
+    else:
+      v = TensorTrainBatch(variable_cores, initializer.get_raw_shape(),
+                           initializer.get_tt_ranks(), initializer.batch_size,
+                           convert_to_tensors=False)
 
     # Add the create TensorTrain object into a collection so that we can
     # retrieve it in the future by get_tt_variable('name').
