@@ -108,6 +108,11 @@ class TensorTrainBase(object):
     """True if the TensorTrain object is a variable (e.g. is trainable)."""
     return isinstance(self.tt_cores[0], tf.Variable)
 
+  @property
+  def op(self):
+    """The `Operation` that evaluates all the cores."""
+    return tf.group(*[c.op for c in self.tt_cores])
+
   def eval(self, feed_dict=None, session=None):
     """Evaluates this sparse tensor in a `Session`.
 
