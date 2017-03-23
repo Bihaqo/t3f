@@ -306,7 +306,6 @@ def _round_tt(tt, max_tt_rank, epsilon):
   return TensorTrain(tt_cores, tt.get_raw_shape(), ranks)
 
 
-# TODO: rename round so not to shadow python.round?
 def _round_batch_tt(tt, max_tt_rank, epsilon):
   """Internal function that rounds a TensorTrainBatch.
 
