@@ -84,8 +84,8 @@ def get_variable(name,
         variable_cores.append(curr_core_var)
     if isinstance(initializer, TensorTrain):
       v = TensorTrain(variable_cores, initializer.get_raw_shape(),
-                                   initializer.get_tt_ranks(),
-                                   convert_to_tensors=False)
+                      initializer.get_tt_ranks(),
+                      convert_to_tensors=False)
     else:
       v = TensorTrainBatch(variable_cores, initializer.get_raw_shape(),
                            initializer.get_tt_ranks(), initializer.batch_size,
