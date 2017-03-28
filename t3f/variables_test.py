@@ -21,8 +21,15 @@ class VariablesTest(tf.test.TestCase):
         with tf.variable_scope('', reuse=True):
           # The variable doesn't exist.
           variables.get_variable('tt_3')
+
       with tf.variable_scope('', reuse=True):
         tt_1_copy = variables.get_variable('tt_1')
+        self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
+
+      with tf.variable_scope('', reuse=True):
+        # Again try to retrieve an existing variable, but pass an initializer
+        # and check that it still works.
+        tt_1_copy = variables.get_variable('tt_1', initializer=0 * init)
         self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
 
       with self.assertRaises(ValueError):
