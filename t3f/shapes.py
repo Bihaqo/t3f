@@ -270,3 +270,28 @@ def expand_batch_dim(tt):
       tt_cores.append(tf.expand_dims(tt.tt_cores[core_idx], 0))
     return TensorTrainBatch(tt_cores, tt.get_raw_shape(), tt.get_tt_ranks(),
                             batch_size=1)
+
+
+def is_compatible_with(tt_a, tt_b):
+  """Compare compatibility of dtype, shape, and TT-ranks of 2 TT-objects."""
+
+  a_shape = tt_a.get_raw_shape()
+  b_shape = tt_b.get_raw_shape()
+  if len(a_shape) == len(b_shape):
+    return False
+  for i in range(len(a_shape)):
+    if not a_shape[i].is_compatible_with(b_shape[i]):
+      return False
+
+  if not tt_a.get_tt_ranks().is_compatible_with(tt_b.get_tt_ranks()):
+    return False
+
+  if tt_a.dtype != tt_b.dtype:
+    return False
+
+  return True
+
+
+def is_fully_defined(raw_shape):
+  """Check that a raw shape (a list of TensorShapes) is fully defined."""
+  return all([s.is_fully_defined() for s in raw_shape])
