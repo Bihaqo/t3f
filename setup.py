@@ -9,7 +9,6 @@ setup(name='t3f',
       license='MIT',
       packages=['t3f'],
       install_requires=[
-            'tensorflow>=1,<2',
             'numpy',
       ],
       zip_safe=False)

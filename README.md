@@ -1,7 +1,9 @@
 TensorFlow implementation of the Tensor Train (TT) -Toolbox.
 
 # Installation
-First, [install TensorFlow](https://www.tensorflow.org/install/) v1 or higher. Then simply run
+T3f assumes you have a working [TensorFlow installation](https://www.tensorflow.org/install/) v1 or higher.
+We don't include it into pip requirements since the installation of TensorFlow varies depending on your setup.
+Then simply run
 ```bash
 pip install t3f
 ```
