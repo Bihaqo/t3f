@@ -40,11 +40,15 @@ def project(tangent_space_tens, tensor, coef=None):
                      (tangent_space_tens.get_raw_shape(),
                       tensor.get_raw_shape()))
 
+  if tangent_space_tens.dtype != tensor.dtype:
+    raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
+                     (tangent_space_tens.dtype,
+                      tensor.dtype))
+
   left_tangent_space_tens = decompositions.orthogonalize_tt_cores(
     tangent_space_tens)
   right_tangent_space_tens = decompositions.orthogonalize_tt_cores(
     left_tangent_space_tens, left_to_right=False)
-
 
   ndims = tangent_space_tens.ndims()
   dtype = tangent_space_tens.dtype
@@ -61,7 +65,7 @@ def project(tangent_space_tens, tensor, coef=None):
   # rhs[core_idx] is of size
   #   batch_size x tensor_tt_ranks[core_idx] x tangent_tt_ranks[core_idx]
   rhs = [None] * (ndims + 1)
-  rhs[ndims] = tf.ones((batch_size, 1, 1))
+  rhs[ndims] = tf.ones((batch_size, 1, 1), dtype=dtype)
   for core_idx in range(ndims - 1, 0, -1):
     tens_core = tensor.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
@@ -74,9 +78,10 @@ def project(tangent_space_tens, tensor, coef=None):
   #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
   lhs = [None] * (ndims + 1)
   if coef is None:
-    lhs[0] = tf.ones((batch_size, 1, 1))
+    lhs[0] = tf.ones((batch_size, 1, 1), dtype=dtype)
   else:
     lhs[0] = tf.reshape(coef, (batch_size, 1, 1))
+    lhs[0] = tf.cast(lhs[0], dtype=dtype)
   for core_idx in range(ndims - 1):
     tens_core = tensor.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
