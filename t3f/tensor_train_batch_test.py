@@ -61,5 +61,11 @@ class TensorTrainBatchTest(tf.test.TestCase):
       desired, actual = sess.run([desired, actual], {start: 1})
       self.assertAllClose(desired, actual)
 
+      desired = ops.full(tens)[1, 1:3, 1, :3]
+      actual = ops.full(tens[start, start:end, start, :end])
+      desired, actual = sess.run([desired, actual], {start: 1, end: 3})
+      self.assertAllClose(desired, actual)
+
+
 if __name__ == "__main__":
   tf.test.main()
