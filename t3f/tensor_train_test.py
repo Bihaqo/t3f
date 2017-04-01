@@ -118,13 +118,19 @@ class TensorTrainTest(tf.test.TestCase):
       desired, actual = sess.run([desired, actual])
       self.assertAllClose(desired, actual)
 
+      # Wrong number of dims.
+      with self.assertRaises(ValueError):
+        tens[1, :, 3, :]
+      with self.assertRaises(ValueError):
+        tens[1, 1]
+
   def testPlaceholderTensorIndexing(self):
     tens = initializers.random_tensor((3, 3, 4))
     with self.test_session() as sess:
       start = tf.placeholder(tf.int32)
       end = tf.placeholder(tf.int32)
       desired = ops.full(tens)[1:3, 1, :3]
-      actual = ops.full(tens[start, start:end, start, :end])
+      actual = ops.full(tens[start:end, start, :end])
       desired, actual = sess.run([desired, actual], {start: 1, end: 3})
       self.assertAllClose(desired, actual)
 

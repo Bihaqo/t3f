@@ -40,6 +40,14 @@ class TensorTrainBatchTest(tf.test.TestCase):
       desired, actual = sess.run([desired, actual])
       self.assertAllClose(desired, actual)
 
+      # Wrong number of dims.
+      with self.assertRaises(ValueError):
+        tens[1, :, 3]
+      with self.assertRaises(ValueError):
+        tens[1, :, 3, 1:2, 1:3]
+      with self.assertRaises(ValueError):
+        tens[1, 1]
+
   def testPlaceholderTensorIndexing(self):
     tens = initializers.random_tensor_batch((3, 3, 4), batch_size=3)
     with self.test_session() as sess:
