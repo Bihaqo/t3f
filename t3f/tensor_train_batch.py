@@ -1,4 +1,3 @@
-import numbers
 import numpy as np
 import tensorflow as tf
 
@@ -127,6 +126,15 @@ class TensorTrainBatch(TensorTrainBase):
       return "A %d element batch of %s of shape %s, TT-ranks: %s" % \
              (self.batch_size, type_str, shape, tt_ranks)
 
+  @staticmethod
+  def _do_collapse_dim(slice_spec):
+    # Returns true if slice_spec is specified exactly and we want to collapse
+    # the corresponding axis, i.e. return an object with less dims. To be used
+    # in indexing functions.
+    # If its a actual slice, nothing to collapse. Otherwise (a number or
+    # a tf.Tensor) want to collapse.
+    return not isinstance(slice_spec, slice)
+
   def _batch_dim_getitem(self, element_spec):
     """__getitem__ when provided only one (batch) index.
 
@@ -137,9 +145,7 @@ class TensorTrainBatch(TensorTrainBase):
 
     # This object index is specified exactly and we want to collapse the
     # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
-    do_collapse_batch_dim = isinstance(element_spec, numbers.Number)
-    if not isinstance(element_spec, slice) and not do_collapse_batch_dim:
-      raise ValueError('Expected just 1 index, got %s' % element_spec)
+    do_collapse_batch_dim = self._do_collapse_dim(element_spec)
 
     new_tt_cores = []
     for core_idx in range(self.ndims()):
@@ -170,7 +176,7 @@ class TensorTrainBatch(TensorTrainBase):
                                                         len(slice_spec)))
     # This object index is specified exactly and we want to collapse the
     # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
-    do_collapse_batch_dim = isinstance(slice_spec[0], numbers.Number)
+    do_collapse_batch_dim = self._do_collapse_dim(slice_spec[0])
     remainder = None
     new_tt_cores = []
     for core_idx in range(self.ndims()):
@@ -179,8 +185,7 @@ class TensorTrainBatch(TensorTrainBase):
         raise NotImplementedError
       else:
         sliced_core = curr_core[slice_spec[0], :, slice_spec[core_idx + 1], :]
-        do_collapse_curr_dim = isinstance(slice_spec[core_idx + 1],
-                                          numbers.Number)
+        do_collapse_curr_dim = self._do_collapse_dim(slice_spec[core_idx + 1])
         if do_collapse_curr_dim:
           # This index is specified exactly and we want to collapse this axis.
           if remainder is None:
@@ -240,9 +245,12 @@ class TensorTrainBatch(TensorTrainBase):
       `TensorTrainBatch` or `TensorTrain` depending on whether the first
       (batch) dim was specified as a range or as a number.
     """
-    new_tt_cores = []
-    slice_only_batch_dim = isinstance(slice_spec, slice) or \
-                           isinstance(slice_spec, numbers.Number)
+    try:
+      slice_only_batch_dim = len(slice_spec) == 1
+    except TypeError:
+      # The argument is not iterable, so it's a single slice, or a number, or a
+      # tf.Tensor with a number.
+      slice_only_batch_dim = True
 
     if slice_only_batch_dim:
       # Indexing only for the batch_size axis, e.g. a[1:3].
