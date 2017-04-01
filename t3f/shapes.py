@@ -30,8 +30,10 @@ def shape(tt):
   """Returns the shape of a TensorTrain.
 
   This operation returns a 1-D integer tensor representing the shape of
-  the input. For TT-matrices the shape would have two values, see raw_shape for
-  the tensor shape.
+    the input. For TT-matrices the shape would have two values, see raw_shape for
+    the tensor shape.
+  If the input is a TensorTrainBatch, the first dimension of the output is the
+    batch_size.
 
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object.
@@ -41,9 +43,16 @@ def shape(tt):
   """
   tt_raw_shape = raw_shape(tt)
   if tt.is_tt_matrix():
-    return tf.reduce_prod(raw_shape, axis=1)
+    res = tf.reduce_prod(raw_shape, axis=1)
   else:
-    return tt_raw_shape[0]
+    res = tt_raw_shape[0]
+
+  # TODO: ugly.
+  from tensor_train_batch import TensorTrainBatch
+  if isinstance(tt, TensorTrainBatch):
+    res = tf.concat((tf.expand_dims(batch_size(tt), 0), res), axis=0)
+
+  return res
 
 
 def raw_shape(tt):
