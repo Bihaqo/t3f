@@ -40,5 +40,26 @@ class TensorTrainBatchTest(tf.test.TestCase):
       desired, actual = sess.run([desired, actual])
       self.assertAllClose(desired, actual)
 
+  def testPlaceholderTensorIndexing(self):
+    tens = initializers.random_tensor_batch((3, 3, 4), batch_size=3)
+    with self.test_session() as sess:
+      start = tf.placeholder(tf.int32)
+      end = tf.placeholder(tf.int32)
+
+      desired = ops.full(tens)[0:-1]
+      actual = ops.full(tens[start:end])
+      desired, actual = sess.run([desired, actual], {start: 0, end: -1})
+      self.assertAllClose(desired, actual)
+
+      desired = ops.full(tens)[0:1]
+      actual = ops.full(tens[start:end])
+      desired, actual = sess.run([desired, actual], {start: 0, end: 1})
+      self.assertAllClose(desired, actual)
+
+      desired = ops.full(tens)[1]
+      actual = ops.full(tens[start])
+      desired, actual = sess.run([desired, actual], {start: 1})
+      self.assertAllClose(desired, actual)
+
 if __name__ == "__main__":
   tf.test.main()
