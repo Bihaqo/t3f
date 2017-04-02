@@ -780,7 +780,12 @@ def multiply(tt_left, right):
 
     combined_ranks = zip(tt_left.get_tt_ranks(), right.get_tt_ranks())
     out_ranks = [a * b for a, b in combined_ranks]
-  return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
+
+  if isinstance(tt_left, TensorTrain):
+    return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
+  else:
+    return TensorTrainBatch(tt_cores, tt_left.get_raw_shape(), out_ranks,
+                            tt_left.batch_size)
 
 
 def frobenius_norm_squared(tt):

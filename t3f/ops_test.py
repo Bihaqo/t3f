@@ -105,6 +105,18 @@ class TTTensorTest(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
+  def testMultiplyByNumber(self):
+    # Multiply a tensor by a number.
+    tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1))
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt, 4))
+      res_actual2 = ops.full(4.0 * tt)
+      res_desired = 4.0 * ops.full(tt)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
   def testFrobeniusNormTens(self):
     # Frobenius norm of a TT-tensor.
     shape_list = ((2, 2),
@@ -464,6 +476,19 @@ class TTTensorBatchTest(tf.test.TestCase):
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_b + tt_a)
       res_desired = ops.full(tt_a) + ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyByNumber(self):
+    # Multiply batch of tensors by a number.
+    tt = initializers.random_tensor_batch((1, 2, 3), tt_rank=(1, 2, 3, 1),
+                                          batch_size=3)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt, 4))
+      res_actual2 = ops.full(4.0 * tt)
+      res_desired = 4.0 * ops.full(tt)
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
