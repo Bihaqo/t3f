@@ -482,7 +482,7 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testMultiplyByNumber(self):
-    # Multiply a tensor by a number.
+    # Multiply batch of tensors by a number.
     tt = initializers.random_tensor_batch((1, 2, 3), tt_rank=(1, 2, 3, 1),
                                           batch_size=3)
     with self.test_session() as sess:
