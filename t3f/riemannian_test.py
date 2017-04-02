@@ -6,6 +6,7 @@ import ops
 import initializers
 import riemannian
 import shapes
+import batch_ops
 
 
 class RiemannianTest(tf.test.TestCase):
@@ -86,7 +87,7 @@ class RiemannianTest(tf.test.TestCase):
     # several TT objects with different weights.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4)
     np.random.seed(0)
-    weights = np.random.randn(4, 2)
+    weights = np.random.randn(4, 2).astype(np.float32)
     tangent_tens = initializers.random_tensor((2, 3, 4), 4)
     weighted_sum_1 = weights[0, 0] * tens[0] + weights[1, 0] * tens[1] +\
                      weights[2, 0] * tens[2] + weights[3, 0] * tens[3]
@@ -96,7 +97,7 @@ class RiemannianTest(tf.test.TestCase):
     direct_proj_2 = riemannian.project(weighted_sum_2, tangent_tens)
     direct_proj_1 = shapes.expand_batch_dim(direct_proj_1)
     direct_proj_2 = shapes.expand_batch_dim(direct_proj_2)
-    direct_projs = shapes.concat((direct_proj_1, direct_proj_2))
+    direct_projs = batch_ops.concat_along_batch_dim((direct_proj_1, direct_proj_2))
     actual_proj = riemannian.project(tens, tangent_tens, weights)
     with self.test_session() as sess:
       res = sess.run((ops.full(direct_projs), ops.full(actual_proj)))
