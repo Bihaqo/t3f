@@ -29,6 +29,9 @@ def project(what, where, weights=None):
   # Always work with batch of TT objects for simplicity.
   what = shapes.expand_batch_dim(what)
 
+  if weights is not None:
+    weights = tf.convert_to_tensor(weights)
+
   if not isinstance(where, TensorTrain):
     raise ValueError('The first argument should be a TensorTrain object, got '
                      '"%s".' % where)
@@ -77,11 +80,7 @@ def project(what, where, weights=None):
   # lhs[core_idx] is of size
   #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
   lhs = [None] * (ndims + 1)
-  if weights is None:
-    lhs[0] = tf.ones((batch_size, 1, 1), dtype=dtype)
-  else:
-    lhs[0] = tf.reshape(weights, (batch_size, 1, 1))
-    lhs[0] = tf.cast(lhs[0], dtype=dtype)
+  lhs[0] = tf.ones((batch_size, 1, 1), dtype=dtype)
   for core_idx in range(ndims - 1):
     tens_core = what.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
@@ -101,12 +100,20 @@ def project(what, where, weights=None):
       proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
       einsum_str = 'a{0}b,obc->oa{0}c'.format(mode_str)
       proj_core -= tf.einsum(einsum_str, left_tang_core, lhs[core_idx + 1])
-      einsum_str = 'oa{0}b,obc->a{0}c'.format(mode_str)
-      proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+      if weights is None:
+        einsum_str = 'oa{0}b,obc->a{0}c'.format(mode_str)
+        proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+      else:
+        einsum_str = 'oa{0}b,obc,o->a{0}c'.format(mode_str)
+        proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1], weights)
 
     if core_idx == ndims - 1:
-      einsum_str = 'oab,ob{0}c->a{0}c'.format(mode_str)
-      proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
+      if weights is None:
+        einsum_str = 'oab,ob{0}c->a{0}c'.format(mode_str)
+        proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
+      else:
+        einsum_str = 'oab,ob{0}c,o->a{0}c'.format(mode_str)
+        proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core, weights)
 
     if core_idx == 0:
       res_core = tf.concat((proj_core, left_tang_core), axis=right_rank_dim)
