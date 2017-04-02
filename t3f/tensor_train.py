@@ -104,6 +104,9 @@ class TensorTrain(TensorTrainBase):
       >>> a[1:2, :, :]
       is a 3D TensorTrain 1 x 3 x 4
     """
+    if len(slice_spec) != self.ndims():
+      raise ValueError('Expected %d indices, got %d' % (self.ndims(),
+                                                        len(slice_spec)))
     new_tt_cores = []
     remainder = None
     for i in range(self.ndims()):
