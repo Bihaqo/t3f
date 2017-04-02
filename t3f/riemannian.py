@@ -5,12 +5,12 @@ import decompositions
 from tensor_train import TensorTrain
 
 
-def project(where, what, weights=None):
+def project(what, where, weights=None):
   """Project (TT) `what` on the tangent space of (TT) `where`.
 
-  project(x, what) = P_x(what)
-  project(x, batch_what) = P_x(\sum_i batch_what[i])
-  project(x, batch_what, weights) = P_x(\sum_j weights[j] * batch_what[j])
+  project(what, x) = P_x(what)
+  project(batch_what, x) = P_x(\sum_i batch_what[i])
+  project(batch_what, x, weights) = P_x(\sum_j weights[j] * batch_what[j])
 
   This function implements the algorithm from the paper [1], theorem 3.1.
 
@@ -18,10 +18,10 @@ def project(where, what, weights=None):
     Tensor Trains.
 
   Args:
-    where: TensorTrain.
     what: TensorTrain or TensorTrainBatch. In the case of batch returns
       projection of the sum of elements in the batch.
-    weights: python list or tf.Tensor of numbers or None
+    where: TensorTrain, TT-tensor or TT-matrix on which tangent space to project
+    weights: python list or tf.Tensor of numbers or None, weights of the sum
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
