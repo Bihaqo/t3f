@@ -50,7 +50,7 @@ class RiemannianTest(tf.test.TestCase):
        [-1.66479093, -0.99003251,  2.46629195],
        [-0.04847773, -0.72908174,  0.20142675],
        [ 0.34431125, -0.20935516, -1.15864246]]
-    proj = riemannian.project(tangent_tens, tens)
+    proj = riemannian.project(tens, tangent_tens)
     with self.test_session() as sess:
       self.assertAllClose(desired_projection, ops.full(proj).eval())
 
@@ -59,8 +59,8 @@ class RiemannianTest(tf.test.TestCase):
     tens = initializers.random_tensor_batch((2, 3, 4), batch_size=3)
     tangent_tens = initializers.random_tensor((2, 3, 4), 3)
     weighted_sum = tens[0] + tens[1] + tens[2]
-    direct_proj = riemannian.project(tangent_tens, weighted_sum)
-    actual_proj = riemannian.project(tangent_tens, tens)
+    direct_proj = riemannian.project(weighted_sum, tangent_tens)
+    actual_proj = riemannian.project(tens, tangent_tens)
     with self.test_session() as sess:
       res = sess.run((ops.full(direct_proj), ops.full(actual_proj)))
       desired_val, actual_val = res
@@ -73,8 +73,8 @@ class RiemannianTest(tf.test.TestCase):
     tangent_tens = initializers.random_tensor((2, 3, 4), 4)
     weighted_sum = coef[0] * tens[0] + coef[1] * tens[1] + coef[2] * tens[2]
     weighted_sum += coef[3] * tens[3]
-    direct_proj = riemannian.project(tangent_tens, weighted_sum)
-    actual_proj = riemannian.project(tangent_tens, tens, coef)
+    direct_proj = riemannian.project(weighted_sum, tangent_tens)
+    actual_proj = riemannian.project(tens, tangent_tens, coef)
     with self.test_session() as sess:
       res = sess.run((ops.full(direct_proj), ops.full(actual_proj)))
       desired_val, actual_val = res
