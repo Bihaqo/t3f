@@ -5,6 +5,7 @@ from tensor_train import TensorTrain
 import ops
 import initializers
 import riemannian
+import shapes
 
 
 class RiemannianTest(tf.test.TestCase):
@@ -66,7 +67,7 @@ class RiemannianTest(tf.test.TestCase):
       desired_val, actual_val = res
       self.assertAllClose(desired_val, actual_val)
 
-  def testProjectSumCoef(self):
+  def testProjectWeightedSum(self):
     # Test projecting a batch of TT-tensors with providing coefs.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4)
     coef = [0.1, -2, 0, 0.4]
@@ -77,6 +78,28 @@ class RiemannianTest(tf.test.TestCase):
     actual_proj = riemannian.project(tens, tangent_tens, coef)
     with self.test_session() as sess:
       res = sess.run((ops.full(direct_proj), ops.full(actual_proj)))
+      desired_val, actual_val = res
+      self.assertAllClose(desired_val, actual_val)
+
+  def testProjectWeightedSumMultipleOutputs(self):
+    # Test projecting a batch of TT-tensors with providing weights and outputing
+    # several TT objects with different weights.
+    tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4)
+    np.random.seed(0)
+    weights = np.random.randn(4, 2)
+    tangent_tens = initializers.random_tensor((2, 3, 4), 4)
+    weighted_sum_1 = weights[0, 0] * tens[0] + weights[1, 0] * tens[1] +\
+                     weights[2, 0] * tens[2] + weights[3, 0] * tens[3]
+    weighted_sum_2 = weights[0, 1] * tens[0] + weights[1, 1] * tens[1] +\
+                     weights[2, 1] * tens[2] + weights[3, 1] * tens[3]
+    direct_proj_1 = riemannian.project(weighted_sum_1, tangent_tens)
+    direct_proj_2 = riemannian.project(weighted_sum_2, tangent_tens)
+    direct_proj_1 = shapes.expand_batch_dim(direct_proj_1)
+    direct_proj_2 = shapes.expand_batch_dim(direct_proj_2)
+    direct_projs = shapes.concat((direct_proj_1, direct_proj_2))
+    actual_proj = riemannian.project(tens, tangent_tens, weights)
+    with self.test_session() as sess:
+      res = sess.run((ops.full(direct_projs), ops.full(actual_proj)))
       desired_val, actual_val = res
       self.assertAllClose(desired_val, actual_val)
 
