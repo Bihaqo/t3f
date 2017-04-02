@@ -5,12 +5,12 @@ import decompositions
 from tensor_train import TensorTrain
 
 
-def project(tangent_space_tens, tensor, coef=None):
-  """Project (TT) tensor on the tangent space of (TT) tangent_space_tens.
+def project(where, what, weights=None):
+  """Project (TT) `what` on the tangent space of (TT) `where`.
 
-  project(x, tens) = P_x(tens)
-  project(x, batch) = P_x(\sum_i batch[i])
-  project(x, tens, coef) = P_x(\sum_i coef[i] * batch[i])
+  project(x, what) = P_x(what)
+  project(x, batch_what) = P_x(\sum_i batch_what[i])
+  project(x, batch_what, weights) = P_x(\sum_j weights[j] * batch_what[j])
 
   This function implements the algorithm from the paper [1], theorem 3.1.
 
@@ -18,48 +18,48 @@ def project(tangent_space_tens, tensor, coef=None):
     Tensor Trains.
 
   Args:
-    tangent_space_tens: TensorTrain.
-    tensor: TensorTrain or TensorTrainBatch. In the case of batch returns
+    where: TensorTrain.
+    what: TensorTrain or TensorTrainBatch. In the case of batch returns
       projection of the sum of elements in the batch.
-    coef: python list or tf.Tensor of numbers or None
+    weights: python list or tf.Tensor of numbers or None
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
   """
-  # Always work with batch of TT for simplicity.
-  tensor = shapes.expand_batch_dim(tensor)
+  # Always work with batch of TT objects for simplicity.
+  what = shapes.expand_batch_dim(what)
 
-  if not isinstance(tangent_space_tens, TensorTrain):
+  if not isinstance(where, TensorTrain):
     raise ValueError('The first argument should be a TensorTrain object, got '
-                     '"%s".' % tangent_space_tens)
+                     '"%s".' % where)
 
-  if tangent_space_tens.get_raw_shape() != tensor.get_raw_shape():
+  if where.get_raw_shape() != what.get_raw_shape():
     raise ValueError('The shapes of the tensor we want to project and of the '
                      'tensor on which tangent space we want to project should '
                      'match, got %s and %s.' %
-                     (tangent_space_tens.get_raw_shape(),
-                      tensor.get_raw_shape()))
+                     (where.get_raw_shape(),
+                      what.get_raw_shape()))
 
-  if tangent_space_tens.dtype != tensor.dtype:
+  if where.dtype != what.dtype:
     raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
-                     (tangent_space_tens.dtype,
-                      tensor.dtype))
+                     (where.dtype,
+                      what.dtype))
 
   left_tangent_space_tens = decompositions.orthogonalize_tt_cores(
-    tangent_space_tens)
+    where)
   right_tangent_space_tens = decompositions.orthogonalize_tt_cores(
     left_tangent_space_tens, left_to_right=False)
 
-  ndims = tangent_space_tens.ndims()
-  dtype = tangent_space_tens.dtype
-  raw_shape = shapes.lazy_raw_shape(tangent_space_tens)
-  batch_size = shapes.lazy_batch_size(tensor)
+  ndims = where.ndims()
+  dtype = where.dtype
+  raw_shape = shapes.lazy_raw_shape(where)
+  batch_size = shapes.lazy_batch_size(what)
   right_tangent_tt_ranks = shapes.lazy_tt_ranks(right_tangent_space_tens)
   left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
 
   # For einsum notation.
-  mode_str = 'ij' if tangent_space_tens.is_tt_matrix() else 'i'
-  right_rank_dim = 3 if tangent_space_tens.is_tt_matrix() else 2
+  mode_str = 'ij' if where.is_tt_matrix() else 'i'
+  right_rank_dim = 3 if where.is_tt_matrix() else 2
 
   # Prepare rhs vectors.
   # rhs[core_idx] is of size
@@ -67,7 +67,7 @@ def project(tangent_space_tens, tensor, coef=None):
   rhs = [None] * (ndims + 1)
   rhs[ndims] = tf.ones((batch_size, 1, 1), dtype=dtype)
   for core_idx in range(ndims - 1, 0, -1):
-    tens_core = tensor.tt_cores[core_idx]
+    tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
     einsum_str = 'oa{0}b,c{0}d,obd->oac'.format(mode_str)
     rhs[core_idx] = tf.einsum(einsum_str, tens_core, right_tang_core,
@@ -77,13 +77,13 @@ def project(tangent_space_tens, tensor, coef=None):
   # lhs[core_idx] is of size
   #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
   lhs = [None] * (ndims + 1)
-  if coef is None:
+  if weights is None:
     lhs[0] = tf.ones((batch_size, 1, 1), dtype=dtype)
   else:
-    lhs[0] = tf.reshape(coef, (batch_size, 1, 1))
+    lhs[0] = tf.reshape(weights, (batch_size, 1, 1))
     lhs[0] = tf.cast(lhs[0], dtype=dtype)
   for core_idx in range(ndims - 1):
-    tens_core = tensor.tt_cores[core_idx]
+    tens_core = what.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
     einsum_str = 'oab,a{0}c,ob{0}d->ocd'.format(mode_str)
     lhs[core_idx + 1] = tf.einsum(einsum_str, lhs[core_idx], left_tang_core,
@@ -92,7 +92,7 @@ def project(tangent_space_tens, tensor, coef=None):
   # Left to right sweep.
   res_cores_list = []
   for core_idx in range(ndims):
-    tens_core = tensor.tt_cores[core_idx]
+    tens_core = what.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
@@ -115,7 +115,7 @@ def project(tangent_space_tens, tensor, coef=None):
     else:
       rank_1 = right_tangent_tt_ranks[core_idx]
       rank_2 = left_tangent_tt_ranks[core_idx + 1]
-      if tangent_space_tens.is_tt_matrix():
+      if where.is_tt_matrix():
         mode_size_n = raw_shape[0][core_idx]
         mode_size_m = raw_shape[1][core_idx]
         zeros = tf.zeros((rank_1, mode_size_n, mode_size_m, rank_2), dtype)
@@ -127,4 +127,4 @@ def project(tangent_space_tens, tensor, coef=None):
       res_core = tf.concat((upper, lower), axis=0)
     res_cores_list.append(res_core)
   # TODO: TT-ranks.
-  return TensorTrain(res_cores_list, tangent_space_tens.get_raw_shape())
+  return TensorTrain(res_cores_list, where.get_raw_shape())
