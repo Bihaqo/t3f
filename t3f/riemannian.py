@@ -72,7 +72,7 @@ def project(what, where, weights=None):
   for core_idx in range(ndims - 1, 0, -1):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
-    einsum_str = 'oa{0}b,c{0}d,obd->oac'.format(mode_str)
+    einsum_str = 'sa{0}b,c{0}d,sbd->sac'.format(mode_str)
     rhs[core_idx] = tf.einsum(einsum_str, tens_core, right_tang_core,
                               rhs[core_idx + 1])
 
@@ -84,7 +84,7 @@ def project(what, where, weights=None):
   for core_idx in range(ndims - 1):
     tens_core = what.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
-    einsum_str = 'oab,a{0}c,ob{0}d->ocd'.format(mode_str)
+    einsum_str = 'sab,a{0}c,sb{0}d->scd'.format(mode_str)
     lhs[core_idx + 1] = tf.einsum(einsum_str, lhs[core_idx], left_tang_core,
                                   tens_core)
 
@@ -96,23 +96,23 @@ def project(what, where, weights=None):
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
     if core_idx < ndims - 1:
-      einsum_str = 'oab,ob{0}c->oa{0}c'.format(mode_str)
+      einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
       proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
-      einsum_str = 'a{0}b,obc->oa{0}c'.format(mode_str)
+      einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
       proj_core -= tf.einsum(einsum_str, left_tang_core, lhs[core_idx + 1])
       if weights is None:
-        einsum_str = 'oa{0}b,obc->a{0}c'.format(mode_str)
+        einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
       else:
-        einsum_str = 'oa{0}b,obc,o->a{0}c'.format(mode_str)
+        einsum_str = 'sa{0}b,sbc,s->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1], weights)
 
     if core_idx == ndims - 1:
       if weights is None:
-        einsum_str = 'oab,ob{0}c->a{0}c'.format(mode_str)
+        einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
       else:
-        einsum_str = 'oab,ob{0}c,o->a{0}c'.format(mode_str)
+        einsum_str = 'sab,sb{0}c,s->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core, weights)
 
     if core_idx == 0:
