@@ -909,16 +909,18 @@ def cast(tt_a, dtype):
 
   Raises:
     TypeError: If `tt_a` cannot be cast to the `dtype`.
-    ValueError: If `tt_a` is not a `TensorTrain`
+    ValueError: If `tt_a` is not a `TensorTrain` or `TensorTrainBatch`.
   """
-
-  if not isinstance(tt_a, TensorTrain):
-    raise ValueError('Argument should be a TensorTrain')
-
   res_cores = []
   cores = tt_a.tt_cores
   for core_idx in range(tt_a.ndims()):
     res_cores.append(tf.cast(cores[core_idx], dtype))
   res_shape = tt_a.get_raw_shape()
   res_ranks = tt_a.get_tt_ranks()
-  return TensorTrain(res_cores, res_shape, res_ranks)
+  if isinstance(tt_a, TensorTrain):
+    return TensorTrain(res_cores, res_shape, res_ranks)
+  elif isinstance(tt_a, TensorTrainBatch):
+    return TensorTrainBatch(res_cores, res_shape, res_ranks, tt_a.batch_size)
+  else:
+    raise ValueError('Unsupported type of input "%s", should be TensorTrain or '
+                     'TensorTrainBatch.' % tt_a)
