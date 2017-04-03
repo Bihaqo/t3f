@@ -102,7 +102,7 @@ class RiemannianTest(tf.test.TestCase):
     with self.test_session() as sess:
       res = sess.run((ops.full(direct_projs), ops.full(actual_proj)))
       desired_val, actual_val = res
-      self.assertAllClose(desired_val, actual_val)
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
   def testProjectMatrixOnItself(self):
     # Project a TT-matrix on itself.
