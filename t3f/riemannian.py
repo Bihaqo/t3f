@@ -3,6 +3,7 @@ import tensorflow as tf
 import shapes
 import decompositions
 from tensor_train import TensorTrain
+from tensor_train_batch import TensorTrainBatch
 
 
 def project(what, where, weights=None):
@@ -63,6 +64,17 @@ def project(what, where, weights=None):
   # For einsum notation.
   mode_str = 'ij' if where.is_tt_matrix() else 'i'
   right_rank_dim = 3 if where.is_tt_matrix() else 2
+  left_rank_dim = 0
+  if weights is not None:
+    weights_shape = weights.get_shape()
+    output_is_batch = len(weights_shape) > 1 and weights_shape[1] > 1
+  else:
+    output_is_batch = False
+  output_batch_str = 'o' if output_is_batch else ''
+  if output_is_batch:
+    right_rank_dim += 1
+    left_rank_dim = 1
+    output_batch_size = weights.get_shape()[1].value
 
   # Prepare rhs vectors.
   # rhs[core_idx] is of size
@@ -104,7 +116,7 @@ def project(what, where, weights=None):
         einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
       else:
-        einsum_str = 'sa{0}b,sbc,s->a{0}c'.format(mode_str)
+        einsum_str = 'sa{0}b,sbc,s{1}->{1}a{0}c'.format(mode_str, output_batch_str)
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1], weights)
 
     if core_idx == ndims - 1:
@@ -112,26 +124,54 @@ def project(what, where, weights=None):
         einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
       else:
-        einsum_str = 'sab,sb{0}c,s->a{0}c'.format(mode_str)
+        einsum_str = 'sab,sb{0}c,s{1}->{1}a{0}c'.format(mode_str, output_batch_str)
         proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core, weights)
 
+    if output_is_batch:
+      # Add batch dimension of size output_batch_size to left_tang_core and
+      # right_tang_core
+      extended_left_tang_core = tf.expand_dims(left_tang_core, 0)
+      extended_right_tang_core = tf.expand_dims(right_tang_core, 0)
+      if where.is_tt_matrix():
+        extended_left_tang_core = tf.tile(extended_left_tang_core,
+                                          [output_batch_size, 1, 1, 1, 1])
+        extended_right_tang_core = tf.tile(extended_right_tang_core,
+                                           [output_batch_size, 1, 1, 1, 1])
+      else:
+        extended_left_tang_core = tf.tile(extended_left_tang_core,
+                                          [output_batch_size, 1, 1, 1])
+        extended_right_tang_core = tf.tile(extended_right_tang_core,
+                                           [output_batch_size, 1, 1, 1])
+    else:
+      extended_left_tang_core = left_tang_core
+      extended_right_tang_core = right_tang_core
+
     if core_idx == 0:
-      res_core = tf.concat((proj_core, left_tang_core), axis=right_rank_dim)
+      res_core = tf.concat((proj_core, extended_left_tang_core),
+                           axis=right_rank_dim)
     elif core_idx == ndims - 1:
-      res_core = tf.concat((right_tang_core, proj_core), axis=0)
+      res_core = tf.concat((extended_right_tang_core, proj_core), axis=left_rank_dim)
     else:
       rank_1 = right_tangent_tt_ranks[core_idx]
       rank_2 = left_tangent_tt_ranks[core_idx + 1]
       if where.is_tt_matrix():
         mode_size_n = raw_shape[0][core_idx]
         mode_size_m = raw_shape[1][core_idx]
-        zeros = tf.zeros((rank_1, mode_size_n, mode_size_m, rank_2), dtype)
+        shape = [rank_1, mode_size_n, mode_size_m, rank_2]
       else:
         mode_size = raw_shape[0][core_idx]
-        zeros = tf.zeros((rank_1, mode_size, rank_2), dtype)
-      upper = tf.concat((right_tang_core, zeros), axis=right_rank_dim)
-      lower = tf.concat((proj_core, left_tang_core), axis=right_rank_dim)
-      res_core = tf.concat((upper, lower), axis=0)
+        shape = [rank_1, mode_size, rank_2]
+      if output_is_batch:
+        shape = [output_batch_size] + shape
+      zeros = tf.zeros(shape, dtype)
+      upper = tf.concat((extended_right_tang_core, zeros), axis=right_rank_dim)
+      lower = tf.concat((proj_core, extended_left_tang_core),
+                        axis=right_rank_dim)
+      res_core = tf.concat((upper, lower), axis=left_rank_dim)
     res_cores_list.append(res_core)
   # TODO: TT-ranks.
-  return TensorTrain(res_cores_list, where.get_raw_shape())
+  if output_is_batch:
+    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+                            batch_size=output_batch_size)
+  else:
+    return TensorTrain(res_cores_list, where.get_raw_shape())
