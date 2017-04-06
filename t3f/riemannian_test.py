@@ -113,6 +113,17 @@ class RiemannianTest(tf.test.TestCase):
       actual_val, desired_val = sess.run((ops.full(proj), ops.full(tt_mat)))
       self.assertAllClose(desired_val, actual_val)
 
+  def testCompareProjectSumAndProject(self):
+    # Compare results of project_sum and project.
+    tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4)
+    tangent_tens = initializers.random_tensor((2, 3, 4), 4)
+    project_sum = riemannian.project_sum(tens, tangent_tens, tf.eye(4))
+    project = riemannian.project(tens, tangent_tens)
+    with self.test_session() as sess:
+      res = sess.run((ops.full(project_sum), ops.full(project)))
+      project_sum_val, project_val = res
+      self.assertAllClose(project_sum_val, project_val)
+
 
 if __name__ == "__main__":
   tf.test.main()
