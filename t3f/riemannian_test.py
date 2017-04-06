@@ -124,6 +124,18 @@ class RiemannianTest(tf.test.TestCase):
       project_sum_val, project_val = res
       self.assertAllClose(project_sum_val, project_val)
 
+  def testProjectMatmul(self):
+    # Project a TT-matrix times TT-vector on a TT-vector.
+    tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)))
+    tt_vec_what = initializers.random_matrix_batch(((2, 3, 4), None), 3)
+    tt_vec_where = initializers.random_matrix(((2, 3, 4), None))
+    proj = riemannian.project_matvec(tt_vec_what, tt_mat, tt_vec_where)
+    matvec = ops.matmul(tt_vec_what, tt_mat)
+    proj_desired = riemannian.project(tt_vec_where, matvec)
+    with self.test_session() as sess:
+      actual_val, desired_val = sess.run((ops.full(proj), ops.full(proj_desired)))
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+
 
 if __name__ == "__main__":
   tf.test.main()
