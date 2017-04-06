@@ -127,9 +127,10 @@ class RiemannianTest(tf.test.TestCase):
   def testProjectMatmul(self):
     # Project a TT-matrix times TT-vector on a TT-vector.
     tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)))
-    tt_vec_what = initializers.random_matrix_batch(((2, 3, 4), None), 3)
+    tt_vec_what = initializers.random_matrix_batch(((2, 3, 4), None),
+                                                   batch_size=3)
     tt_vec_where = initializers.random_matrix(((2, 3, 4), None))
-    proj = riemannian.project_matvec(tt_vec_what, tt_mat, tt_vec_where)
+    proj = riemannian.project_matmul(tt_vec_what, tt_vec_where, tt_mat)
     matvec = ops.matmul(tt_vec_what, tt_mat)
     proj_desired = riemannian.project(tt_vec_where, matvec)
     with self.test_session() as sess:
