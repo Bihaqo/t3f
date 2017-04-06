@@ -410,7 +410,6 @@ def project_matmul(what, where, matrix):
     rhs[core_idx] = tf.einsum('bije,sajkd,sdef,cikf->sabc', matrix_core,
                               tens_core, rhs[core_idx + 1],
                               right_tang_core)
-
   # Prepare lhs vectors.
   # lhs[core_idx] is of size
   #   batch_size x tangent_tt_ranks[core_idx] x matrix_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
@@ -437,7 +436,7 @@ def project_matmul(what, where, matrix):
                             matrix_core, tens_core)
       proj_core -= tf.einsum('aikb,sbcd->saikcd', left_tang_core,
                              lhs[core_idx + 1])
-      proj_core = tf.einsum('saikbc,sbcd->saikd', proj_core, rhs[core_idx + 1])
+      proj_core = tf.einsum('saikcb,sbcd->saikd', proj_core, rhs[core_idx + 1])
 
     if core_idx == ndims - 1:
       # d and e dimensions take 1 value, since its the last rank.
