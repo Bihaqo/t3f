@@ -433,17 +433,17 @@ def project_matmul(what, where, matrix):
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
     if core_idx < ndims - 1:
-      proj_core = tf.einsum('oabc,bijd,ocjke->oaikde', lhs[core_idx],
+      proj_core = tf.einsum('sabc,bijd,scjke->saikde', lhs[core_idx],
                             matrix_core, tens_core)
-      proj_core -= tf.einsum('aikb,obcd->oaikcd', left_tang_core,
+      proj_core -= tf.einsum('aikb,sbcd->saikcd', left_tang_core,
                              lhs[core_idx + 1])
-      proj_core = tf.einsum('oaikbc,obcd->oaikd', proj_core, rhs[core_idx + 1])
+      proj_core = tf.einsum('saikbc,sbcd->saikd', proj_core, rhs[core_idx + 1])
 
     if core_idx == ndims - 1:
       # d and e dimensions take 1 value, since its the last rank.
       # To make the result shape (?, ?, ?, 1), we are summing d and leaving e,
       # but we could have done the opposite -- sum e and leave d.
-      proj_core = tf.einsum('oabc,bijd,ocjke->oaike', lhs[core_idx], matrix_core,
+      proj_core = tf.einsum('sabc,bijd,scjke->saike', lhs[core_idx], matrix_core,
                             tens_core)
 
     if output_is_batch:
