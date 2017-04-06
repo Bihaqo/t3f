@@ -44,7 +44,7 @@ def project_sum(what, where, weights=None):
                      (where.get_raw_shape(),
                       what.get_raw_shape()))
 
-  if where.dtype != what.dtype:
+  if not where.dtype.is_compatible_with(what.dtype):
     raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
                      (where.dtype,
                       what.dtype))
