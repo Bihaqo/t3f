@@ -480,9 +480,10 @@ def project_matmul(what, where, matrix):
                         axis=right_rank_dim)
       res_core = tf.concat((upper, lower), axis=left_rank_dim)
     res_cores_list.append(res_core)
-    # TODO: TT-ranks.
-    if output_is_batch:
-      return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
-                              batch_size=output_batch_size)
-    else:
-      return TensorTrain(res_cores_list, where.get_raw_shape())
+
+  # TODO: TT-ranks.
+  if output_is_batch:
+    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+                            batch_size=output_batch_size)
+  else:
+    return TensorTrain(res_cores_list, where.get_raw_shape())
