@@ -407,9 +407,8 @@ def project_matmul(what, where, matrix):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
     matrix_core = matrix.tt_cores[core_idx]
-    rhs[core_idx] = tf.einsum('bije,sajkd,sdef,cikf->sabc', matrix_core,
-                              tens_core, rhs[core_idx + 1],
-                              right_tang_core)
+    rhs[core_idx] = tf.einsum('bije,cikf,sdef,sajkd->sabc', matrix_core,
+                              right_tang_core, rhs[core_idx + 1], tens_core)
   # Prepare lhs vectors.
   # lhs[core_idx] is of size
   #   batch_size x tangent_tt_ranks[core_idx] x matrix_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
