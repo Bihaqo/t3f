@@ -131,8 +131,8 @@ class RiemannianTest(tf.test.TestCase):
                                                    batch_size=3)
     tt_vec_where = initializers.random_matrix(((2, 3, 4), None))
     proj = riemannian.project_matmul(tt_vec_what, tt_vec_where, tt_mat)
-    matvec = ops.matmul(tt_vec_what, tt_mat)
-    proj_desired = riemannian.project(tt_vec_where, matvec)
+    matvec = ops.matmul(tt_mat, tt_vec_what)
+    proj_desired = riemannian.project(matvec, tt_vec_where)
     with self.test_session() as sess:
       actual_val, desired_val = sess.run((ops.full(proj), ops.full(proj_desired)))
       self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
