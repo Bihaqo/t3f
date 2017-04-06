@@ -84,9 +84,9 @@ def project_sum(what, where, weights=None):
   for core_idx in range(ndims - 1, 0, -1):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
-    einsum_str = 'sa{0}b,c{0}d,sbd->sac'.format(mode_str)
-    rhs[core_idx] = tf.einsum(einsum_str, tens_core, right_tang_core,
-                              rhs[core_idx + 1])
+    einsum_str = 'sa{0}b,sbd,c{0}d->sac'.format(mode_str)
+    rhs[core_idx] = tf.einsum(einsum_str, tens_core, rhs[core_idx + 1],
+                              right_tang_core)
 
   # Prepare lhs vectors.
   # lhs[core_idx] is of size
@@ -247,9 +247,9 @@ def project(what, where):
   for core_idx in range(ndims - 1, 0, -1):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
-    einsum_str = 'sa{0}b,c{0}d,sbd->sac'.format(mode_str)
-    rhs[core_idx] = tf.einsum(einsum_str, tens_core, right_tang_core,
-                              rhs[core_idx + 1])
+    einsum_str = 'sa{0}b,sbd,c{0}d->sac'.format(mode_str)
+    rhs[core_idx] = tf.einsum(einsum_str, tens_core, rhs[core_idx + 1],
+                              right_tang_core)
 
   # Prepare lhs vectors.
   # lhs[core_idx] is of size
