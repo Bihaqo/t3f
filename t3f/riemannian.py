@@ -6,12 +6,12 @@ from tensor_train import TensorTrain
 from tensor_train_batch import TensorTrainBatch
 
 
-def project(what, where, weights=None):
-  """Project (TT) `what` on the tangent space of (TT) `where`.
+def project_sum(what, where, weights=None):
+  """Project sum of `what` TTs on the tangent space of `where` TT.
 
-  project(what, x) = P_x(what)
-  project(batch_what, x) = P_x(\sum_i batch_what[i])
-  project(batch_what, x, weights) = P_x(\sum_j weights[j] * batch_what[j])
+  project_sum(what, x) = P_x(what)
+  project_sum(batch_what, x) = P_x(\sum_i batch_what[i])
+  project_sum(batch_what, x, weights) = P_x(\sum_j weights[j] * batch_what[j])
 
   This function implements the algorithm from the paper [1], theorem 3.1.
 
