@@ -44,6 +44,17 @@ class BatchOpsTest(tf.test.TestCase):
       self.assertAllClose(first_second_res_val, first_second_desired_val)
       self.assertAllClose(first_second_third_res_val, first_second_third_desired_val)
 
+  def testBatchMultiply(self):
+    # Test concating TTMatrix batches along batch dimension.
+    tt = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=3)
+    weights = [0.1, 0, -10]
+    actual = batch_ops.multiply_along_batch_dim(tt, weights)
+    individual_desired = [weights[i] * tt[i:i+1] for i in range(3)]
+    desired = batch_ops.concat_along_batch_dim(individual_desired)
+    with self.test_session() as sess:
+      desired_val, acutual_val = sess.run((ops.full(desired), ops.full(actual)))
+      self.assertAllClose(desired_val, acutual_val)
+
   def testGramMatrix(self):
     # Test Gram Matrix of a batch of TT vectors.
     tt_vectors = initializers.random_matrix_batch(((2, 3), None), batch_size=5)
