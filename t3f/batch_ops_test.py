@@ -1,8 +1,6 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
 import ops
 import batch_ops
 import initializers
