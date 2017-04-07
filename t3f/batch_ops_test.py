@@ -43,7 +43,7 @@ class BatchOpsTest(tf.test.TestCase):
       self.assertAllClose(first_second_third_res_val, first_second_third_desired_val)
 
   def testBatchMultiply(self):
-    # Test concating TTMatrix batches along batch dimension.
+    # Test multiplying batch of TTMatrices by individual numbers.
     tt = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=3)
     weights = [0.1, 0, -10]
     actual = batch_ops.multiply_along_batch_dim(tt, weights)
