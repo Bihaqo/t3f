@@ -431,8 +431,8 @@ def project_matmul(what, where, matrix):
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
     if core_idx < ndims - 1:
-      proj_core = tf.einsum('sabc,bijd,scjke->saikde', lhs[core_idx],
-                            matrix_core, tens_core)
+      proj_core = tf.einsum('scjke,sabc,bijd->saikde', tens_core,
+                            lhs[core_idx], matrix_core)
       proj_core -= tf.einsum('aikb,sbcd->saikcd', left_tang_core,
                              lhs[core_idx + 1])
       proj_core = tf.einsum('saikcb,sbcd->saikd', proj_core, rhs[core_idx + 1])
