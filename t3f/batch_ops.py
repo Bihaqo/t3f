@@ -88,6 +88,7 @@ def gram_matrix(tt_vectors, matrix=None):
   """
   return scalar_products_matrix(tt_vectors, tt_vectors, matrix)
 
+
 def scalar_products_matrix(tt_vectors_1, tt_vectors_2, matrix=None):
   """Computes all scalar products between two batches of TT-objects.
 
