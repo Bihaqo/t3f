@@ -144,7 +144,7 @@ class RiemannianTest(tf.test.TestCase):
     where = initializers.random_matrix(((2, 3, 4, 5), None), 3)
     projected = riemannian.project(what, where)
     desired = batch_ops.gram_matrix(projected)
-    actual = riemannian.projected_scalar_products_matrix(projected, projected)
+    actual = riemannian.already_projected_scalar_products_matrix(projected, projected)
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
       self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)

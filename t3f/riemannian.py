@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 import shapes
@@ -487,23 +488,65 @@ def project_matmul(what, where, matrix):
     return TensorTrain(res_cores_list, where.get_raw_shape())
 
 
-def projected_scalar_products_matrix(projected_tt_vectors_1, projected_tt_vectors_2):
-  """Computes all scalar products between two batches of TT-objects from the same tangent space.
+def project_scalar_products_matrix(tt_vectors_1, tt_vectors_2, where):
+  """Projects vectors on the tangent space of where and computes scalar products.
+  
+  Equvivalent to
+    scalar_product_matrix(project(tt_vectors_1[i], where), project(tt_vectors_2[j], where))
+  but faster.
+
+  Args:
+    tt_vectors_1: TensorTrainBatch.
+    tt_vectors_2: TensorTrainBatch.
+    where: TensorTrain on which tangent space to project.
+
+  Returns:
+    tf.tensor with the scalar product matrix.
+  """
+  projected_tt_vectors_1 = project(tt_vectors_1, where)
+  projected_tt_vectors_2 = project(tt_vectors_2, where)
+  return already_projected_scalar_products_matrix(projected_tt_vectors_1,
+                                                  projected_tt_vectors_2)
+
+
+def already_projected_scalar_products_matrix(projected_tt_vectors_1,
+                                             projected_tt_vectors_2):
+  """Scalar products between two batches of TTs from the same tangent space.
   
     res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
     
   Warning!
   The function cannot test that the arguments are indeed from the same tangent
-    space, so in case of different tangent spaces it will just return wrong
-    results!
+  space, so in case of different tangent spaces it will just return wrong
+  results!
+  If you are not sure whether your tensors are projected on the same tangent
+  space, use project_scalar_products_matrix.
   
   Args:
-    projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same tangent space as projected_tt_vectors_2.
+    projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same
+      tangent space as projected_tt_vectors_2.
     projected_tt_vectors_2: TensorTrainBatch.
     
   Returns:
     tf.tensor with the scalar product matrix.
   """
+  first_static_ranks = projected_tt_vectors_1.get_tt_ranks()
+  second_static_ranks = projected_tt_vectors_2.get_tt_ranks()
+  if not first_static_ranks.is_compatible_with(second_static_ranks):
+    raise ValueError('TT-ranks of the arguments are different, it seems like '
+                     'they are not projections on the same tangent space.\n'
+                     'Consider using project_scalar_products_matrix which is '
+                     'safer.')
+  actual_first_ranks = np.array(first_static_ranks.as_list())[1:-1]
+  actual_first_ranks = actual_first_ranks[~np.isnan(actual_first_ranks)]
+  actual_second_ranks = np.array(second_static_ranks.as_list())[1:-1]
+  actual_second_ranks = actual_second_ranks[~np.isnan(actual_second_ranks)]
+  if any(actual_first_ranks % 2 != 0) or any(actual_second_ranks % 2 != 0):
+    raise ValueError('The TT-ranks of the arguments are not dividable by 2, it '
+                     'seems like the arguments are not projections.\n'
+                     'Consider using scalar_products_matrix which doesn\' '
+                     'assume tangent space structure.')
+
   ndims = projected_tt_vectors_1.ndims()
   tt_ranks = shapes.lazy_tt_ranks(projected_tt_vectors_1)
 
@@ -528,5 +571,4 @@ def projected_scalar_products_matrix(projected_tt_vectors_1, projected_tt_vector
   curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
   curr_du_2 = curr_core_2[:, left_size:, :, :, :]
   res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
-
   return res
