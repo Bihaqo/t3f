@@ -232,6 +232,7 @@ def project(what, where):
 
   # For einsum notation.
   mode_str = 'ij' if where.is_tt_matrix() else 'i'
+  another_mode_str = 'rt' if where.is_tt_matrix() else 'r'
   right_rank_dim = 3 if where.is_tt_matrix() else 2
   left_rank_dim = 0
   output_is_batch = isinstance(what, TensorTrainBatch)
@@ -275,15 +276,29 @@ def project(what, where):
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
     if core_idx < ndims - 1:
-      einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
-      proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
-      einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
-      proj_core -= tf.einsum(einsum_str, left_tang_core, lhs[core_idx + 1])
+      # einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
+      # proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
+      # einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
+      # proj_core -= tf.einsum(einsum_str, left_tang_core, lhs[core_idx + 1])
+      # if output_is_batch:
+      #   einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str)
+      # else:
+      #   einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
+      # proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+
+      einsum_str = 'sad,sd{0}b,sbc->sa{0}c'.format(mode_str)
+      common_term = tf.einsum(einsum_str, lhs[core_idx], tens_core,
+                              rhs[core_idx + 1])
+      einsum_str = 'a{0}c,b{1}c->a{0}b{1}'.format(mode_str, another_mode_str)
+      u_proj = tf.einsum(einsum_str, left_tang_core, left_tang_core)
       if output_is_batch:
-        einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str)
+        proj_core = common_term
+        einsum_str = 'a{0}b{1},sa{0}d->sb{1}d'.format(mode_str, another_mode_str)
+        proj_core -= tf.einsum(einsum_str, u_proj, common_term)
       else:
-        einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
-      proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+        proj_core = tf.reduce_sum(common_term, axis=0)
+        einsum_str = 'a{0}b{1},sa{0}d->b{1}d'.format(mode_str, another_mode_str)
+        proj_core -= tf.einsum(einsum_str, u_proj, common_term)
 
     if core_idx == ndims - 1:
       if output_is_batch:
