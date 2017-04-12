@@ -485,3 +485,48 @@ def project_matmul(what, where, matrix):
                             batch_size=output_batch_size)
   else:
     return TensorTrain(res_cores_list, where.get_raw_shape())
+
+
+def projected_scalar_products_matrix(projected_tt_vectors_1, projected_tt_vectors_2):
+  """Computes all scalar products between two batches of TT-objects from the same tangent space.
+  
+    res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
+    
+  Warning!
+  The function cannot test that the arguments are indeed from the same tangent
+    space, so in case of different tangent spaces it will just return wrong
+    results!
+  
+  Args:
+    projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same tangent space as projected_tt_vectors_2.
+    projected_tt_vectors_2: TensorTrainBatch.
+    
+  Returns:
+    tf.tensor with the scalar product matrix.
+  """
+  ndims = projected_tt_vectors_1.ndims()
+  tt_ranks = shapes.lazy_tt_ranks(projected_tt_vectors_1)
+
+  right_size = tt_ranks[1] / 2
+  curr_core_1 = projected_tt_vectors_1.tt_cores[0]
+  curr_du_1 = curr_core_1[:, :, :, :, :right_size]
+  curr_core_2 = projected_tt_vectors_2.tt_cores[0]
+  curr_du_2 = curr_core_2[:, :, :, :, :right_size]
+  res = tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
+  for core_idx in range(1, ndims):
+    curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
+    left_size = tt_ranks[core_idx] / 2
+    right_size = tt_ranks[core_idx + 1] / 2
+    curr_du_1 = curr_core_1[:, left_size:, :, :, :right_size]
+    curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
+    curr_du_2 = curr_core_2[:, left_size:, :, :, :right_size]
+    res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
+
+  left_size = tt_ranks[-2] / 2
+  curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
+  curr_du_1 = curr_core_1[:, left_size:, :, :, :]
+  curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
+  curr_du_2 = curr_core_2[:, left_size:, :, :, :]
+  res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
+
+  return res
