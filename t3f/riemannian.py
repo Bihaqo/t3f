@@ -112,17 +112,17 @@ def project_sum(what, where, weights=None):
       einsum_str = 'sad,sd{0}b,sbc->sa{0}c'.format(mode_str)
       common_term = tf.einsum(einsum_str, lhs[core_idx], tens_core,
                               rhs[core_idx + 1])
-      import numpy as np
-      eye_size = np.prod(left_tang_core.get_shape().as_list()[:-1])
       einsum_str = 'a{0}c,b{1}c->a{0}b{1}'.format(mode_str, another_mode_str)
       u_proj = tf.einsum(einsum_str, left_tang_core, left_tang_core)
-      left = tf.reshape(tf.eye(eye_size, dtype=dtype), left.get_shape()) - u_proj
       if weights is None:
+        proj_core = tf.reduce_sum(common_term, axis=0)
         einsum_str = 'a{0}b{1},sa{0}d->b{1}d'.format(mode_str, another_mode_str)
-        proj_core = tf.einsum(einsum_str, left, common_term)
+        proj_core -= tf.einsum(einsum_str, u_proj, common_term)
       else:
+        einsum_str = 'sa{0}b,s{1}->{1}a{0}b'.format(mode_str, output_batch_str)
+        proj_core = tf.einsum(einsum_str, common_term, weights)
         einsum_str = 'a{0}b{1},sa{0}d,s{2}->{2}b{1}d'.format(mode_str, another_mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, left, common_term, weights)
+        proj_core -= tf.einsum(einsum_str, u_proj, common_term, weights)
 
     if core_idx == ndims - 1:
       if weights is None:
