@@ -148,7 +148,7 @@ class RiemannianTest(tf.test.TestCase):
     actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+      self.assertAllClose(desired_val, actual_val)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -170,7 +170,7 @@ class RiemannianTest(tf.test.TestCase):
     actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+      self.assertAllClose(desired_val, actual_val)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
