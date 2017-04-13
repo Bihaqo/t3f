@@ -172,10 +172,13 @@ def project_sum(what, where, weights=None):
     res_cores_list.append(res_core)
   # TODO: TT-ranks.
   if output_is_batch:
-    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+    res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
                             batch_size=output_batch_size)
   else:
-    return TensorTrain(res_cores_list, where.get_raw_shape())
+    res = TensorTrain(res_cores_list, where.get_raw_shape())
+
+  res.projection_on = where
+  return res
 
 
 def project(what, where):
@@ -332,10 +335,13 @@ def project(what, where):
     res_cores_list.append(res_core)
   # TODO: TT-ranks.
   if output_is_batch:
-    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+    res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
                             batch_size=output_batch_size)
   else:
-    return TensorTrain(res_cores_list, where.get_raw_shape())
+    res = TensorTrain(res_cores_list, where.get_raw_shape())
+
+  res.projection_on = where
+  return res
 
 
 def project_matmul(what, where, matrix):
@@ -482,10 +488,13 @@ def project_matmul(what, where, matrix):
 
   # TODO: TT-ranks.
   if output_is_batch:
-    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+    res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
                             batch_size=output_batch_size)
   else:
-    return TensorTrain(res_cores_list, where.get_raw_shape())
+    res = TensorTrain(res_cores_list, where.get_raw_shape())
+
+  res.projection_on = where
+  return res
 
 
 def project_scalar_products_matrix(tt_vectors_1, tt_vectors_2, where):
