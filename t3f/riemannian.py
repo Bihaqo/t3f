@@ -523,13 +523,6 @@ def already_projected_scalar_products_matrix(projected_tt_vectors_1,
   """Scalar products between two batches of TTs from the same tangent space.
   
     res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
-    
-  Warning!
-  The function cannot test that the arguments are indeed from the same tangent
-  space, so in case of different tangent spaces it will just return wrong
-  results!
-  If you are not sure whether your tensors are projected on the same tangent
-  space, use project_scalar_products_matrix.
   
   Args:
     projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same
@@ -539,22 +532,20 @@ def already_projected_scalar_products_matrix(projected_tt_vectors_1,
   Returns:
     tf.tensor with the scalar product matrix.
   """
-  first_static_ranks = projected_tt_vectors_1.get_tt_ranks()
-  second_static_ranks = projected_tt_vectors_2.get_tt_ranks()
-  if not first_static_ranks.is_compatible_with(second_static_ranks):
-    raise ValueError('TT-ranks of the arguments are different, it seems like '
-                     'they are not projections on the same tangent space.\n'
-                     'Consider using project_scalar_products_matrix which is '
-                     'safer.')
-  actual_first_ranks = np.array(first_static_ranks.as_list())[1:-1]
-  actual_first_ranks = actual_first_ranks[~np.isnan(actual_first_ranks)]
-  actual_second_ranks = np.array(second_static_ranks.as_list())[1:-1]
-  actual_second_ranks = actual_second_ranks[~np.isnan(actual_second_ranks)]
-  if any(actual_first_ranks % 2 != 0) or any(actual_second_ranks % 2 != 0):
-    raise ValueError('The TT-ranks of the arguments are not dividable by 2, it '
-                     'seems like the arguments are not projections.\n'
-                     'Consider using scalar_products_matrix which doesn\' '
-                     'assume tangent space structure.')
+  if not hasattr(projected_tt_vectors_1, 'projection_on') or \
+      not hasattr(projected_tt_vectors_2, 'projection_on'):
+    raise ValueError('Both arguments should be projections on the tangent '
+                     'space of some other TT-object. All projection* functions '
+                     'leave .projection_on field in the resulting TT-object '
+                     'which is not present in the arguments you\'ve provided')
+
+  if projected_tt_vectors_1.projection_on != projected_tt_vectors_2.projection_on:
+    raise ValueError('Both arguments should be projections on the tangent '
+                     'space of the same TT-object. The provided arguments are '
+                     'projections on different TT-objects (%s and %s). Or at '
+                     'least the pointers are different.' %
+                     (projected_tt_vectors_1.projection_on,
+                      projected_tt_vectors_2.projection_on))
 
   ndims = projected_tt_vectors_1.ndims()
   tt_ranks = shapes.lazy_tt_ranks(projected_tt_vectors_1)
