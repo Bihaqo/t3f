@@ -68,7 +68,7 @@ class BatchOpsTest(tf.test.TestCase):
     # Test Gram Matrix of a batch of TT vectors with providing a matrix, so we
     # should compute
     # res[i, j] = tt_vectors[i] ^ T * matrix * tt_vectors[j]
-    tt_vectors = initializers.random_matrix_batch((None, (2, 3)), batch_size=4)
+    tt_vectors = initializers.random_matrix_batch(((2, 3), None), batch_size=4)
     matrix = initializers.random_matrix(((2, 3), (2, 3)))
     res_actual = batch_ops.gram_matrix(tt_vectors, matrix)
     full_vectors = tf.reshape(ops.full(tt_vectors), (4, 6))
