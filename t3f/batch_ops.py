@@ -124,6 +124,25 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None):
       res = tf.einsum(einsum_str, res, curr_core_1, curr_core_2)
   else:
     # res[i, j] = tt_1[i] ^ T * matrix * tt_2[j]
+    if not tt_1.is_tt_matrix() or not tt_2.is_tt_matrix() or not matrix.is_tt_matrix():
+      raise ValueError('When passing three arguments to pairwise_flat_inner, '
+                       'the first 2 of them should be TT-vecors and the last '
+                       'should be a TT-matrix. Got %s, %s, and %s instead.' %
+                       (tt_1, tt_2, matrix))
+    matrix_shape = matrix.get_raw_shape()
+    if not tt_1.get_raw_shape()[0].is_compatible_with(matrix_shape[0]):
+      raise ValueError('The shape of the first argument should be compatible '
+                       'with the shape of the TT-matrix, that is it should be '
+                       'possible to do the following matmul: '
+                       'transpose(tt_1) * matrix. Got the first argument '
+                       '"%s" and matrix "%s"' % (tt_1, matrix))
+    if not tt_2.get_raw_shape()[0].is_compatible_with(matrix_shape[1]):
+      raise ValueError('The shape of the second argument should be compatible '
+                       'with the shape of the TT-matrix, that is it should be '
+                       'possible to do the following matmul: '
+                       'matrix * tt_2. Got the second argument '
+                       '"%s" and matrix "%s"' % (tt_2, matrix))
+
     vectors_1_shape = tt_1.get_shape()
     if vectors_1_shape[2] == 1 and vectors_1_shape[1] != 1:
       # TODO: not very efficient, better to use different order in einsum.
