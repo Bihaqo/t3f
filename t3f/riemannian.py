@@ -1,9 +1,9 @@
 import tensorflow as tf
 
-import shapes
-import decompositions
 from tensor_train import TensorTrain
 from tensor_train_batch import TensorTrainBatch
+import shapes
+import decompositions
 
 
 def project_sum(what, where, weights=None):
@@ -171,10 +171,13 @@ def project_sum(what, where, weights=None):
     res_cores_list.append(res_core)
   # TODO: TT-ranks.
   if output_is_batch:
-    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+    res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
                             batch_size=output_batch_size)
   else:
-    return TensorTrain(res_cores_list, where.get_raw_shape())
+    res = TensorTrain(res_cores_list, where.get_raw_shape())
+
+  res.projection_on = where
+  return res
 
 
 def project(what, where):
@@ -331,10 +334,13 @@ def project(what, where):
     res_cores_list.append(res_core)
   # TODO: TT-ranks.
   if output_is_batch:
-    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+    res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
                             batch_size=output_batch_size)
   else:
-    return TensorTrain(res_cores_list, where.get_raw_shape())
+    res = TensorTrain(res_cores_list, where.get_raw_shape())
+
+  res.projection_on = where
+  return res
 
 
 def project_matmul(what, where, matrix):
@@ -481,7 +487,100 @@ def project_matmul(what, where, matrix):
 
   # TODO: TT-ranks.
   if output_is_batch:
-    return TensorTrainBatch(res_cores_list, where.get_raw_shape(),
+    res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
                             batch_size=output_batch_size)
   else:
-    return TensorTrain(res_cores_list, where.get_raw_shape())
+    res = TensorTrain(res_cores_list, where.get_raw_shape())
+
+  res.projection_on = where
+  return res
+
+
+def pairwise_flat_inner_projected(projected_tt_vectors_1,
+                                  projected_tt_vectors_2):
+  """Scalar products between two batches of TTs from the same tangent space.
+  
+    res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
+  
+  pairwise_flat_inner_projected(projected_tt_vectors_1, projected_tt_vectors_2)
+  is equivalent to
+    pairwise_flat_inner(projected_tt_vectors_1, projected_tt_vectors_2)
+  , but works only on objects from the same tangent space and is much faster
+  than general pairwise_flat_inner. 
+  
+  Args:
+    projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same
+      tangent space as projected_tt_vectors_2.
+    projected_tt_vectors_2: TensorTrainBatch.
+    
+  Returns:
+    tf.tensor with the scalar product matrix.
+  """
+  if not hasattr(projected_tt_vectors_1, 'projection_on') or \
+      not hasattr(projected_tt_vectors_2, 'projection_on'):
+    raise ValueError('Both arguments should be projections on the tangent '
+                     'space of some other TT-object. All projection* functions '
+                     'leave .projection_on field in the resulting TT-object '
+                     'which is not present in the arguments you\'ve provided')
+
+  if projected_tt_vectors_1.projection_on != projected_tt_vectors_2.projection_on:
+    raise ValueError('Both arguments should be projections on the tangent '
+                     'space of the same TT-object. The provided arguments are '
+                     'projections on different TT-objects (%s and %s). Or at '
+                     'least the pointers are different.' %
+                     (projected_tt_vectors_1.projection_on,
+                      projected_tt_vectors_2.projection_on))
+
+  # Always work with batches of objects for simplicity.
+  projected_tt_vectors_1 = shapes.expand_batch_dim(projected_tt_vectors_1)
+  projected_tt_vectors_2 = shapes.expand_batch_dim(projected_tt_vectors_2)
+
+  ndims = projected_tt_vectors_1.ndims()
+  tt_ranks = shapes.lazy_tt_ranks(projected_tt_vectors_1)
+
+  if projected_tt_vectors_1.is_tt_matrix():
+    right_size = tt_ranks[1] / 2
+    curr_core_1 = projected_tt_vectors_1.tt_cores[0]
+    curr_core_2 = projected_tt_vectors_2.tt_cores[0]
+    curr_du_1 = curr_core_1[:, :, :, :, :right_size]
+    curr_du_2 = curr_core_2[:, :, :, :, :right_size]
+    res = tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
+    for core_idx in range(1, ndims):
+      left_size = tt_ranks[core_idx] / 2
+      right_size = tt_ranks[core_idx + 1] / 2
+      curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
+      curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
+      curr_du_1 = curr_core_1[:, left_size:, :, :, :right_size]
+      curr_du_2 = curr_core_2[:, left_size:, :, :, :right_size]
+      res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
+
+    left_size = tt_ranks[-2] / 2
+    curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
+    curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
+    curr_du_1 = curr_core_1[:, left_size:, :, :, :]
+    curr_du_2 = curr_core_2[:, left_size:, :, :, :]
+    res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
+  else:
+    # Working with TT-tensor, not TT-matrix.
+    right_size = tt_ranks[1] / 2
+    curr_core_1 = projected_tt_vectors_1.tt_cores[0]
+    curr_core_2 = projected_tt_vectors_2.tt_cores[0]
+    curr_du_1 = curr_core_1[:, :, :, :right_size]
+    curr_du_2 = curr_core_2[:, :, :, :right_size]
+    res = tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
+    for core_idx in range(1, ndims):
+      left_size = tt_ranks[core_idx] / 2
+      right_size = tt_ranks[core_idx + 1] / 2
+      curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
+      curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
+      curr_du_1 = curr_core_1[:, left_size:, :, :right_size]
+      curr_du_2 = curr_core_2[:, left_size:, :, :right_size]
+      res += tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
+
+    left_size = tt_ranks[-2] / 2
+    curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
+    curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
+    curr_du_1 = curr_core_1[:, left_size:, :, :]
+    curr_du_2 = curr_core_2[:, left_size:, :, :]
+    res += tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
+  return res
