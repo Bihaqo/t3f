@@ -152,5 +152,14 @@ class RiemannianTest(tf.test.TestCase):
       desired_val, actual_val = sess.run((desired, actual))
       self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
+    with self.assertRaises(ValueError):
+      # Second argument is not a projection on the tangent space.
+      riemannian.pairwise_flat_inner_projected(projected1, what2)
+    with self.assertRaises(ValueError):
+      # The arguments are projections on different tangent spaces.
+      where2 = initializers.random_matrix(((2, 3, 4, 5), None), 3)
+      another_projected2 = riemannian.project(what2, where2)
+      riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
+
 if __name__ == "__main__":
   tf.test.main()
