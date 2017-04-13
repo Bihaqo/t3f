@@ -83,7 +83,20 @@ class BatchOpsTest(tf.test.TestCase):
           res_desired_val[i, j] = curr_val
       self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
-  def testPairwiseFlatInner(self):
+  def testPairwiseFlatInnerTensor(self):
+    # Test pairwise_flat_inner of a batch of TT vectors.
+    tt_tensors_1 = initializers.random_tensor_batch((2, 3, 2), batch_size=5)
+    tt_tensors_2 = initializers.random_tensor_batch((2, 3, 2), batch_size=5)
+    res_actual = batch_ops.pairwise_flat_inner(tt_tensors_1, tt_tensors_2)
+    full_tensors_1 = tf.reshape(ops.full(tt_tensors_1), (5, 12))
+    full_tensors_2 = tf.reshape(ops.full(tt_tensors_2), (5, 12))
+    res_desired = tf.matmul(full_tensors_1, tf.transpose(full_tensors_2))
+    res_desired = tf.squeeze(res_desired)
+    with self.test_session() as sess:
+      res_actual_val, res_desired_val = sess.run((res_actual, res_desired))
+      self.assertAllClose(res_desired_val, res_actual_val)
+
+  def testPairwiseFlatInnerMatrix(self):
     # Test pairwise_flat_inner of a batch of TT vectors.
     tt_vectors_1 = initializers.random_matrix_batch(((2, 3), None),
                                                     batch_size=5)
