@@ -497,27 +497,6 @@ def project_matmul(what, where, matrix):
   return res
 
 
-def project_scalar_products_matrix(tt_vectors_1, tt_vectors_2, where):
-  """Projects vectors on the tangent space of where and computes scalar products.
-  
-  Equvivalent to
-    scalar_product_matrix(project(tt_vectors_1[i], where), project(tt_vectors_2[j], where))
-  but faster.
-
-  Args:
-    tt_vectors_1: TensorTrainBatch.
-    tt_vectors_2: TensorTrainBatch.
-    where: TensorTrain on which tangent space to project.
-
-  Returns:
-    tf.tensor with the scalar product matrix.
-  """
-  projected_tt_vectors_1 = project(tt_vectors_1, where)
-  projected_tt_vectors_2 = project(tt_vectors_2, where)
-  return already_projected_scalar_products_matrix(projected_tt_vectors_1,
-                                                  projected_tt_vectors_2)
-
-
 def already_projected_scalar_products_matrix(projected_tt_vectors_1,
                                              projected_tt_vectors_2):
   """Scalar products between two batches of TTs from the same tangent space.
