@@ -76,8 +76,9 @@ def gram_matrix(tt_vectors, matrix=None):
     res[i, j] = t3f.flat_inner(tt_vectors[i], tt_vectors[j]).
   If matrix is present, computes
       res[i, j] = t3f.flat_inner(tt_vectors[i], t3f.matmul(matrix, tt_vectors[j]))
-    or more shorly
+    or more shortly
       res[i, j] = tt_vectors[i]^T * matrix * tt_vectors[j]
+    but is more efficient.
 
   Args:
     tt_vectors: TensorTrainBatch.
@@ -86,18 +87,19 @@ def gram_matrix(tt_vectors, matrix=None):
   Returns:
     tf.tensor with the Gram matrix.
   """
-  return scalar_products_matrix(tt_vectors, tt_vectors, matrix)
+  return pairwise_flat_inner(tt_vectors, tt_vectors, matrix)
 
 
-def scalar_products_matrix(tt_vectors_1, tt_vectors_2, matrix=None):
+def pairwise_flat_inner(tt_vectors_1, tt_vectors_2, matrix=None):
   """Computes all scalar products between two batches of TT-objects.
 
   If matrix is None, computes
     res[i, j] = t3f.flat_inner(tt_vectors_1[i], tt_vectors_2[j]).
   If matrix is present, computes
       res[i, j] = t3f.flat_inner(tt_vectors_1[i], t3f.matmul(matrix, tt_vectors_2[j]))
-    or more shorly
+    or more shortly
       res[i, j] = tt_vectors_1[i]^T * matrix * tt_vectors_2[j]
+    but is more efficient.
 
   Args:
     tt_vectors_1: TensorTrainBatch.
@@ -105,7 +107,7 @@ def scalar_products_matrix(tt_vectors_1, tt_vectors_2, matrix=None):
     matrix: None, or TensorTrain matrix.
 
   Returns:
-    tf.tensor with the Gram matrix.
+    tf.tensor with the matrix of pairwise scalar products (flat inners).
   """
   ndims = tt_vectors_1.ndims()
   if matrix is None:
