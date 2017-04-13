@@ -497,8 +497,8 @@ def project_matmul(what, where, matrix):
   return res
 
 
-def already_projected_scalar_products_matrix(projected_tt_vectors_1,
-                                             projected_tt_vectors_2):
+def pairwise_flat_inner_projected(projected_tt_vectors_1,
+                                  projected_tt_vectors_2):
   """Scalar products between two batches of TTs from the same tangent space.
   
     res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
