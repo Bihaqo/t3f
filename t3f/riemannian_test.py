@@ -139,12 +139,15 @@ class RiemannianTest(tf.test.TestCase):
 
   def testPairwiseFlatInner(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
-    what = initializers.random_matrix_batch(((2, 3, 4, 5), None), 4,
-                                            batch_size=5)
+    what1 = initializers.random_matrix_batch(((2, 3, 4, 5), None), 4,
+                                             batch_size=3)
+    what2 = initializers.random_matrix_batch(((2, 3, 4, 5), None), 4,
+                                             batch_size=5)
     where = initializers.random_matrix(((2, 3, 4, 5), None), 3)
-    projected = riemannian.project(what, where)
-    desired = batch_ops.gram_matrix(projected)
-    actual = riemannian.pairwise_flat_inner_projected(projected, projected)
+    projected1 = riemannian.project(what1, where)
+    projected2 = riemannian.project(what2, where)
+    desired = batch_ops.pairwise_flat_inner(projected1, projected2)
+    actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
       self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
