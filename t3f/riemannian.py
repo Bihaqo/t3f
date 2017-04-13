@@ -503,6 +503,12 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
   
     res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
   
+  pairwise_flat_inner_projected(projected_tt_vectors_1, projected_tt_vectors_2)
+  is equivalent to
+    pairwise_flat_inner(projected_tt_vectors_1, projected_tt_vectors_2)
+  , but works only on objects from the same tangent space and is much faster
+  than general pairwise_flat_inner. 
+  
   Args:
     projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same
       tangent space as projected_tt_vectors_2.
