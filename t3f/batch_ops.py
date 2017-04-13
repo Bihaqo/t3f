@@ -90,46 +90,69 @@ def gram_matrix(tt_vectors, matrix=None):
   return pairwise_flat_inner(tt_vectors, tt_vectors, matrix)
 
 
-def pairwise_flat_inner(tt_vectors_1, tt_vectors_2, matrix=None):
+def pairwise_flat_inner(tt_1, tt_2, matrix=None):
   """Computes all scalar products between two batches of TT-objects.
 
   If matrix is None, computes
-    res[i, j] = t3f.flat_inner(tt_vectors_1[i], tt_vectors_2[j]).
+    res[i, j] = t3f.flat_inner(tt_1[i], tt_2[j]).
+    
   If matrix is present, computes
-      res[i, j] = t3f.flat_inner(tt_vectors_1[i], t3f.matmul(matrix, tt_vectors_2[j]))
+      res[i, j] = t3f.flat_inner(tt_1[i], t3f.matmul(matrix, tt_2[j]))
     or more shortly
-      res[i, j] = tt_vectors_1[i]^T * matrix * tt_vectors_2[j]
+      res[i, j] = tt_1[i]^T * matrix * tt_2[j]
     but is more efficient.
 
   Args:
-    tt_vectors_1: TensorTrainBatch.
-    tt_vectors_2: TensorTrainBatch.
+    tt_1: TensorTrainBatch.
+    tt_2: TensorTrainBatch.
     matrix: None, or TensorTrain matrix.
 
   Returns:
     tf.tensor with the matrix of pairwise scalar products (flat inners).
   """
-  ndims = tt_vectors_1.ndims()
+  ndims = tt_1.ndims()
   if matrix is None:
-    curr_core_1 = tt_vectors_1.tt_cores[0]
-    curr_core_2 = tt_vectors_2.tt_cores[0]
-    res = tf.einsum('paijb,qcijd->pqbd', curr_core_1, curr_core_2)
+    curr_core_1 = tt_1.tt_cores[0]
+    curr_core_2 = tt_2.tt_cores[0]
+    mode_string = 'ij' if tt_1.is_tt_matrix() else 'i'
+    einsum_str = 'pa{0}b,qc{0}d->pqbd'.format(mode_string)
+    res = tf.einsum(einsum_str, curr_core_1, curr_core_2)
     for core_idx in range(1, ndims):
-      curr_core_1 = tt_vectors_1.tt_cores[core_idx]
-      curr_core_2 = tt_vectors_2.tt_cores[core_idx]
-      res = tf.einsum('pqac,paijb,qcijd->pqbd', res, curr_core_1, curr_core_2)
+      curr_core_1 = tt_1.tt_cores[core_idx]
+      curr_core_2 = tt_2.tt_cores[core_idx]
+      einsum_str = 'pqac,pa{0}b,qc{0}d->pqbd'.format(mode_string)
+      res = tf.einsum(einsum_str, res, curr_core_1, curr_core_2)
   else:
-    # res[i, j] = tt_vectors_1[i] ^ T * matrix * tt_vectors_2[j]
-    vectors_1_shape = tt_vectors_1.get_shape()
+    # res[i, j] = tt_1[i] ^ T * matrix * tt_2[j]
+    if not tt_1.is_tt_matrix() or not tt_2.is_tt_matrix() or not matrix.is_tt_matrix():
+      raise ValueError('When passing three arguments to pairwise_flat_inner, '
+                       'the first 2 of them should be TT-vecors and the last '
+                       'should be a TT-matrix. Got %s, %s, and %s instead.' %
+                       (tt_1, tt_2, matrix))
+    matrix_shape = matrix.get_raw_shape()
+    if not tt_1.get_raw_shape()[0].is_compatible_with(matrix_shape[0]):
+      raise ValueError('The shape of the first argument should be compatible '
+                       'with the shape of the TT-matrix, that is it should be '
+                       'possible to do the following matmul: '
+                       'transpose(tt_1) * matrix. Got the first argument '
+                       '"%s" and matrix "%s"' % (tt_1, matrix))
+    if not tt_2.get_raw_shape()[0].is_compatible_with(matrix_shape[1]):
+      raise ValueError('The shape of the second argument should be compatible '
+                       'with the shape of the TT-matrix, that is it should be '
+                       'possible to do the following matmul: '
+                       'matrix * tt_2. Got the second argument '
+                       '"%s" and matrix "%s"' % (tt_2, matrix))
+
+    vectors_1_shape = tt_1.get_shape()
     if vectors_1_shape[2] == 1 and vectors_1_shape[1] != 1:
       # TODO: not very efficient, better to use different order in einsum.
-      tt_vectors_1 = ops.transpose(tt_vectors_1)
-    vectors_1_shape = tt_vectors_1.get_shape()
-    vectors_2_shape = tt_vectors_2.get_shape()
+      tt_1 = ops.transpose(tt_1)
+    vectors_1_shape = tt_1.get_shape()
+    vectors_2_shape = tt_2.get_shape()
     if vectors_2_shape[2] == 1 and vectors_2_shape[1] != 1:
       # TODO: not very efficient, better to use different order in einsum.
-      tt_vectors_2 = ops.transpose(tt_vectors_2)
-    vectors_2_shape = tt_vectors_2.get_shape()
+      tt_2 = ops.transpose(tt_2)
+    vectors_2_shape = tt_2.get_shape()
     if vectors_1_shape[1] != 1:
       # TODO: do something so that in case the shape is undefined on compilation
       # it still works.
@@ -140,15 +163,15 @@ def pairwise_flat_inner(tt_vectors_1, tt_vectors_2, matrix=None):
       # it still works.
       raise ValueError('The tt_vectors_2 argument should be vectors (not '
                        'matrices) with shape defined on compilation.')
-    curr_core_1 = tt_vectors_1.tt_cores[0]
-    curr_core_2 = tt_vectors_2.tt_cores[0]
+    curr_core_1 = tt_1.tt_cores[0]
+    curr_core_2 = tt_2.tt_cores[0]
     curr_matrix_core = matrix.tt_cores[0]
     # We enumerate the dummy dimension (that takes 1 value) with `k`.
     res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core_1, curr_matrix_core,
                     curr_core_2)
     for core_idx in range(1, ndims):
-      curr_core_1 = tt_vectors_1.tt_cores[core_idx]
-      curr_core_2 = tt_vectors_2.tt_cores[core_idx]
+      curr_core_1 = tt_1.tt_cores[core_idx]
+      curr_core_2 = tt_2.tt_cores[core_idx]
       curr_matrix_core = matrix.tt_cores[core_idx]
       res = tf.einsum('pqace,pakib,cijd,qekjf->pqbdf', res, curr_core_1,
                       curr_matrix_core, curr_core_2)
