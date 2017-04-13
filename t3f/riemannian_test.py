@@ -139,9 +139,9 @@ class RiemannianTest(tf.test.TestCase):
 
   def testPairwiseFlatInnerTensor(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
-    what1 = initializers.random_tensor_batch((2, 3, 4, 5), 4, batch_size=3)
-    what2 = initializers.random_tensor_batch((2, 3, 4, 5), 4, batch_size=5)
-    where = initializers.random_tensor((2, 3, 4, 5), 3)
+    what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3)
+    what2 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=4)
+    where = initializers.random_tensor((2, 3, 4), 3)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
     desired = batch_ops.pairwise_flat_inner(projected1, projected2)
@@ -153,19 +153,17 @@ class RiemannianTest(tf.test.TestCase):
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
       riemannian.pairwise_flat_inner_projected(projected1, what2)
+    where2 = initializers.random_tensor((2, 3, 4), 3)
+    another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
-      where2 = initializers.random_tensor((2, 3, 4, 5), 3)
-      another_projected2 = riemannian.project(what2, where2)
       riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
 
   def testPairwiseFlatInnerMatrix(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
-    what1 = initializers.random_matrix_batch(((2, 3, 4, 5), None), 4,
-                                             batch_size=3)
-    what2 = initializers.random_matrix_batch(((2, 3, 4, 5), None), 4,
-                                             batch_size=5)
-    where = initializers.random_matrix(((2, 3, 4, 5), None), 3)
+    what1 = initializers.random_matrix_batch(((2, 3, 4), None), 4, batch_size=3)
+    what2 = initializers.random_matrix_batch(((2, 3, 4), None), 4, batch_size=4)
+    where = initializers.random_matrix(((2, 3, 4), None), 3)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
     desired = batch_ops.pairwise_flat_inner(projected1, projected2)
@@ -177,10 +175,10 @@ class RiemannianTest(tf.test.TestCase):
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
       riemannian.pairwise_flat_inner_projected(projected1, what2)
+    where2 = initializers.random_matrix(((2, 3, 4), None), 3)
+    another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
-      where2 = initializers.random_matrix(((2, 3, 4, 5), None), 3)
-      another_projected2 = riemannian.project(what2, where2)
       riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
 
 if __name__ == "__main__":
