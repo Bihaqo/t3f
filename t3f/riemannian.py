@@ -584,3 +584,38 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     curr_du_2 = curr_core_2[:, left_size:, :, :]
     res += tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
   return res
+
+
+def add_projected(tt_objects, coef=None):
+  """Sum TT-objects that are projections on the same tangent space.
+
+    add_projected((a, b)) is equivalent add(a, b) for a and b that are from the
+    same tangent space, but doesn't increase the TT-ranks.
+
+  Args:
+    tt_objects: a list of TT-objects that are projections on the same tangent
+      space.
+    coef: a list of numbers or anything else convertable to tf.Tensor.
+      If provided, computes weighted sum. The size of this array should be
+        len(tt_objects) x tt_objects[0].batch_size
+
+  Returns:
+    TT-objects representing the some of the tt_objects (weighted some if coef is
+    provided). The TT-rank of the resuls equals to the TT-ranks of the arguments.
+  """
+  for tt in tt_objects:
+    if not hasattr(tt, 'projection_on'):
+      raise ValueError('Both arguments should be projections on the tangent '
+                       'space of some other TT-object. All projection* functions '
+                       'leave .projection_on field in the resulting TT-object '
+                       'which is not present in the argument you\'ve provided.')
+
+  projection_on = tt_objects[0].projection_on
+  for tt in tt_objects[1:]:
+    if tt.projection_on != projection_on:
+      raise ValueError('All tt_objects should be projections on the tangent '
+                       'space of the same TT-object. The provided arguments are '
+                       'projections on different TT-objects (%s and %s). Or at '
+                       'least the pointers are different.' % (tt.projection_on,
+                                                              projection_on))
+
