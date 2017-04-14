@@ -117,17 +117,19 @@ def project_sum(what, where, weights=None):
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
       else:
         einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+        proj_core_s = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
         einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, weights, proj_core)
+        proj_core = tf.einsum(einsum_str, weights, proj_core_s)
 
     if core_idx == ndims - 1:
       if weights is None:
         einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
       else:
-        einsum_str = 'sab,sb{0}c,s{1}->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core, weights)
+        einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str, output_batch_str)
+        proj_core_s = tf.einsum(einsum_str, lhs[core_idx], tens_core)
+        einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
+        proj_core = tf.einsum(einsum_str, weights, proj_core_s)
 
     if output_is_batch:
       # Add batch dimension of size output_batch_size to left_tang_core and
