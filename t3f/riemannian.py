@@ -116,8 +116,10 @@ def project_sum(what, where, weights=None):
         einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
       else:
-        einsum_str = 'sa{0}b,sbc,s{1}->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1], weights)
+        einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str, output_batch_str)
+        proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+        einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
+        proj_core = tf.einsum(einsum_str, weights, proj_core)
 
     if core_idx == ndims - 1:
       if weights is None:
