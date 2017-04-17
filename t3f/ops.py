@@ -794,8 +794,8 @@ def frobenius_norm_squared(tt, differentiable=False):
 
   Args:
     tt: `TensorTrain` object
-    differentiable: bool, whether to use a differentiable or a fast and stable
-      implementation based on QR decomposition.
+    differentiable: bool, whether to use a differentiable implementation
+      or a fast and stable implementation based on QR decomposition.
 
   Returns
     a number
@@ -820,22 +820,29 @@ def frobenius_norm_squared(tt, differentiable=False):
     orth_tt = decompositions.orthogonalize_tt_cores(tt)
     # All the cores of orth_tt except the last one are orthogonal, hence
     # the Frobenius norm of orth_tt equals to the norm of the last core.
-    return tf.norm(orth_tt.tt_cores[-1]) ** 2
+    if hasattr(tt, 'batch_size'):
+      batch_size = shapes.lazy_batch_size(tt)
+      last_core = tf.reshape(orth_tt.tt_cores[-1], (batch_size, -1))
+      return tf.norm(last_core, axis=1) ** 2
+    else:
+      return tf.norm(orth_tt.tt_cores[-1]) ** 2
 
 
-def frobenius_norm(tt, epsilon=1e-5):
+def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
   """Frobenius norm of a TensorTrain (sqrt of the sum of squares of all elements).
 
   Args:
     tt: `TensorTrain` object
     epsilon: the function actually computes sqrt(norm_squared + epsilon) for
       numerical stability (e.g. gradient of sqrt at zero is inf).
+    differentiable: bool, whether to use a differentiable implementation or
+      a fast and stable implementation based on QR decomposition.
 
   Returns
     a number
     sqrt of the sum of squares of all elements in `tt`
   """
-  return tf.sqrt(frobenius_norm_squared(tt) + epsilon)
+  return tf.sqrt(frobenius_norm_squared(tt, differentiable) + epsilon)
 
 
 def transpose(tt_matrix):
