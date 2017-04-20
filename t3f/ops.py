@@ -817,7 +817,7 @@ def frobenius_norm_squared(tt, differentiable=False):
                                  curr_core)
     return running_prod[0, 0]
   else:
-    orth_tt = decompositions.orthogonalize_tt_cores(tt)
+    orth_tt = decompositions.orthogonalize_tt_cores(tt, left_to_right=True)
     # All the cores of orth_tt except the last one are orthogonal, hence
     # the Frobenius norm of orth_tt equals to the norm of the last core.
     if hasattr(tt, 'batch_size'):
