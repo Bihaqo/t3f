@@ -2,6 +2,7 @@ import tensorflow as tf
 
 from tensor_train import TensorTrain
 from tensor_train_batch import TensorTrainBatch
+import shapes
 
 
 def get_variable(name,
@@ -11,7 +12,8 @@ def get_variable(name,
                  trainable=True,
                  collections=None,
                  caching_device=None,
-                 validate_shape=True):
+                 validate_shape=True,
+                 validate_tt_ranks=True):
   """Returns TensorTrain object with tf.Variables as the TT-cores.
 
   Args:
@@ -37,6 +39,9 @@ def get_variable(name,
     validate_shape: If False, allows the variable to be initialized with a value
       of unknown shape. If True, the default, the shape of initial_value must be
       known.
+    validate_tt_ranks: If False, allows the variable to be initialized with a
+      value of unknown TT-ranks. If True, the default, the TT-ranks of
+      initial_value must be known.
 
   Returns:
     The created or existing `TensorTrain` object with tf.Variables TT-cores.
@@ -46,13 +51,24 @@ def get_variable(name,
       violating reuse during variable creation, or when initializer dtype and
       dtype don't match. Reuse is set inside variable_scope.
   """
-  # TODO: support validate shape: check that the tensor dimensions are correct,
-  # but ignore the ranks.
-  # TODO: add validate ranks flag.
-
   reuse = tf.get_variable_scope().reuse
   if not reuse and initializer is None:
     raise ValueError('Scope reuse is False and initializer is not provided.')
+
+  if initializer is not None:
+    if validate_shape:
+      raw_shape = initializer.get_raw_shape()
+      if not shapes.is_fully_defined(raw_shape):
+        raise ValueError('The shape of the initializer (%s) is not fully '
+                         'defined. If you want to create a variable anyway, '
+                         'use validate_shape=False.' % raw_shape)
+
+    if validate_tt_ranks:
+      tt_ranks = initializer.get_tt_ranks()
+      if not tt_ranks.is_fully_defined():
+        raise ValueError('The TT-ranks of the initializer (%s) are not fully '
+                         'defined. If you want to create a variable anyway, '
+                         'use validate_tt_ranks=False.' % tt_ranks)
 
   variable_cores = []
   if reuse:
