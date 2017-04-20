@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-import ops
+from t3f.tensor_train import TensorTrain
+from t3f import ops
 
 def determinant(kron_a):
   """Computes the determinant of a given Kronecker-factorized matrix. 

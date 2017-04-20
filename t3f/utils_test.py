@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-import utils
+from t3f import utils
 
 
 class UtilsTest(tf.test.TestCase):

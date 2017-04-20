@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train_base import TensorTrainBase
-from tensor_train import TensorTrain
-import shapes
+from t3f.tensor_train_base import TensorTrainBase
+from t3f.tensor_train import TensorTrain
+from t3f import shapes
 
 
 class TensorTrainBatch(TensorTrainBase):

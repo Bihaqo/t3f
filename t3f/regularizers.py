@@ -2,7 +2,7 @@ import numbers
 
 import tensorflow as tf
 
-import ops
+from t3f import ops
 
 
 def l2_regularizer(scale, scope=None):

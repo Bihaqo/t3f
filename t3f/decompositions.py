@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
-import shapes
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import shapes
 
 
 def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):

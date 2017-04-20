@@ -1,12 +1,12 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-import ops
-import initializers
-import riemannian
-import shapes
-import batch_ops
+from t3f.tensor_train import TensorTrain
+from t3f import ops
+from t3f import initializers
+from t3f import riemannian
+from t3f import shapes
+from t3f import batch_ops
 
 
 class RiemannianTest(tf.test.TestCase):
