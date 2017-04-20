@@ -8,5 +8,9 @@ install:
   # Python 2.7 has very old pip by default that doesn't have tensorflow.
   - pip install --upgrade pip
   - pip install numpy tensorflow
+  - pip install coveralls
 # command to run tests
-script: "nosetests  --logging-level=WARNING"
+script:
+  nosetests  --logging-level=WARNING --with-coverage --cover-package=t3f
+after_success:
+  coveralls
