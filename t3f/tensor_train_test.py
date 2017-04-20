@@ -134,13 +134,5 @@ class TensorTrainTest(tf.test.TestCase):
       desired, actual = sess.run([desired, actual], {start: 1, end: 3})
       self.assertAllClose(desired, actual)
 
-  def testTensorIndexingOneElement(self):
-    tens = initializers.random_tensor((4, 4, 4))
-    with self.test_session() as sess:
-      desired = ops.full(tens)[1, 2, 3]
-      actual = ops.full(tens[1, 2, 3])
-      desired, actual = sess.run([desired, actual])
-      self.assertAllClose(desired, actual)
-
 if __name__ == "__main__":
   tf.test.main()
