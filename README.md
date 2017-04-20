@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Bihaqo/t3f.svg?branch=develop)](https://travis-ci.org/Bihaqo/t3f)
+
 TensorFlow implementation of the Tensor Train (TT) -Toolbox.
 
 # Installation
