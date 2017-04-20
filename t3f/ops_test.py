@@ -338,7 +338,8 @@ class TTMatrixTest(tf.test.TestCase):
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = b_val.T.dot(A_val).dot(c_val)
-          self.assertAllClose(res_actual_val, np.squeeze(res_desired))
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired),
+                              atol=1e-5, rtol=1e-5)
 
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
