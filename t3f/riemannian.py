@@ -558,7 +558,7 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
       curr_du_2 = curr_core_2[:, left_size:, :, :, :right_size]
       res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
 
-    left_size = tt_ranks[-2] / 2
+    left_size = tt_ranks[-2] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
     curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
     curr_du_1 = curr_core_1[:, left_size:, :, :, :]
