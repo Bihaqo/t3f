@@ -2,12 +2,16 @@ dist: trusty
 language: python
 python:
   - "2.7"
+  - "3.4"
+  - "3.5"
   - "3.6"
+env:
+  matrix:
+    - TF_VERSION=1.0
 # command to install dependencies
 install:
   # Python 2.7 has very old pip by default that doesn't have tensorflow.
-  - pip install --upgrade pip
-  - pip install numpy tensorflow
+  - pip install numpy tensorflow==$TF_VERSION
   - pip install coveralls
 # command to run tests
 script:
