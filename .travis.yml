@@ -3,6 +3,8 @@ python:
   - "2.7"
   - "3.6"
 # command to install dependencies
-install: "pip install numpy tensorflow"
+install:
+  - pip install numpy tensorflow
+  - pip install .
 # command to run tests
 script: "nosetests  --logging-level=WARNING"
