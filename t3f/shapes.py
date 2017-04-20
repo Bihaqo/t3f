@@ -18,7 +18,7 @@ def tt_ranks(tt):
   num_dims = tt.ndims()
   ranks = []
   # TODO: ugly.
-  from tensor_train_batch import TensorTrainBatch
+  from t3f.tensor_train_batch import TensorTrainBatch
   left_rank_dim = 1 if isinstance(tt, TensorTrainBatch) else 0
   for i in range(num_dims):
     ranks.append(tf.shape(tt.tt_cores[i])[left_rank_dim])
@@ -48,7 +48,7 @@ def shape(tt):
     res = tt_raw_shape[0]
 
   # TODO: ugly.
-  from tensor_train_batch import TensorTrainBatch
+  from t3f.tensor_train_batch import TensorTrainBatch
   if isinstance(tt, TensorTrainBatch):
     res = tf.concat((tf.expand_dims(batch_size(tt), 0), res), axis=0)
 
@@ -74,7 +74,7 @@ def raw_shape(tt):
   num_tensor_axis = len(tt.get_raw_shape())
   final_raw_shape = []
   # TODO: ugly.
-  from tensor_train import TensorTrain
+  from t3f.tensor_train import TensorTrain
   axes_shift = 1 if isinstance(tt, TensorTrain) else 2
   for ax in range(num_tensor_axis):
     curr_raw_shape = []
@@ -273,7 +273,7 @@ def expand_batch_dim(tt):
   if hasattr(tt, 'batch_size'):
     return tt
   else:
-    from tensor_train_batch import TensorTrainBatch
+    from t3f.tensor_train_batch import TensorTrainBatch
     tt_cores = []
     for core_idx in range(tt.ndims()):
       tt_cores.append(tf.expand_dims(tt.tt_cores[core_idx], 0))

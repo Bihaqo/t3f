@@ -1,11 +1,11 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
-import ops
-import shapes
-import initializers
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import ops
+from t3f import shapes
+from t3f import initializers
 
 
 class TTTensorTest(tf.test.TestCase):

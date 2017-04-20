@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 
 import t3f
-import tensor_train
-import kronecker as kr
-import ops
+from t3f import tensor_train
+from t3f import kronecker as kr
+from t3f import ops
 
 class KroneckerTest(tf.test.TestCase):
 

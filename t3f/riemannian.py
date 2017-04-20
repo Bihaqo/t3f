@@ -1,9 +1,9 @@
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
-import shapes
-import decompositions
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import shapes
+from t3f import decompositions
 
 
 def project_sum(what, where, weights=None):

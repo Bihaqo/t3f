@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-from tensor_train_base import TensorTrainBase
-import shapes
+from t3f.tensor_train_base import TensorTrainBase
+from t3f import shapes
 
 
 class TensorTrain(TensorTrainBase):

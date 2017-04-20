@@ -1,8 +1,8 @@
 import tensorflow as tf
 
-import tensor_train
-import initializers
-import ops
+from t3f import tensor_train
+from t3f import initializers
+from t3f import ops
 
 
 class TensorTrainTest(tf.test.TestCase):
