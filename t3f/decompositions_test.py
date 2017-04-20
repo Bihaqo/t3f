@@ -1,10 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
-import ops
-import shapes
-import decompositions
-import initializers
+from t3f import ops
+from t3f import shapes
+from t3f import decompositions
+from t3f import initializers
 
 
 class DecompositionsTest(tf.test.TestCase):

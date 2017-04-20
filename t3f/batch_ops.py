@@ -1,8 +1,8 @@
 import tensorflow as tf
 
-from tensor_train_base import TensorTrainBase
-from tensor_train_batch import TensorTrainBatch
-import ops
+from t3f.tensor_train_base import TensorTrainBase
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import ops
 
 
 def concat_along_batch_dim(tt_list):
@@ -45,6 +45,30 @@ def concat_along_batch_dim(tt_list):
                           tt_list[0].get_tt_ranks(), batch_size)
 
 
+def multiply_along_batch_dim(batch_tt, weights):
+  """Multiply each TensorTrain in a batch by a number.
+
+  Args:
+    batch_tt: TensorTrainBatch object, TT-matrices or TT-tensors.
+    weights: 1-D tf.Tensor (or something convertible to it like np.array) of size
+     tt.batch_sie with weights. 
+
+  Returns:
+    TensorTrainBatch
+  """
+  weights = tf.convert_to_tensor(weights)
+  tt_cores = list(batch_tt.tt_cores)
+  if batch_tt.is_tt_matrix():
+    weights = weights[:, tf.newaxis, tf.newaxis, tf.newaxis, tf.newaxis]
+  else:
+    weights = weights[:, tf.newaxis, tf.newaxis, tf.newaxis]
+  tt_cores[0] = weights * tt_cores[0]
+  out_shape = batch_tt.get_raw_shape()
+  out_ranks = batch_tt.get_tt_ranks()
+  out_batch_size = batch_tt.batch_size
+  return TensorTrainBatch(tt_cores, out_shape, out_ranks, out_batch_size)
+
+
 def gram_matrix(tt_vectors, matrix=None):
   """Computes Gramian matrix of a batch of TT-vecors.
 
@@ -52,8 +76,9 @@ def gram_matrix(tt_vectors, matrix=None):
     res[i, j] = t3f.flat_inner(tt_vectors[i], tt_vectors[j]).
   If matrix is present, computes
       res[i, j] = t3f.flat_inner(tt_vectors[i], t3f.matmul(matrix, tt_vectors[j]))
-    or more shorly
+    or more shortly
       res[i, j] = tt_vectors[i]^T * matrix * tt_vectors[j]
+    but is more efficient.
 
   Args:
     tt_vectors: TensorTrainBatch.
@@ -62,35 +87,94 @@ def gram_matrix(tt_vectors, matrix=None):
   Returns:
     tf.tensor with the Gram matrix.
   """
-  ndims = tt_vectors.ndims()
+  return pairwise_flat_inner(tt_vectors, tt_vectors, matrix)
+
+
+def pairwise_flat_inner(tt_1, tt_2, matrix=None):
+  """Computes all scalar products between two batches of TT-objects.
+
+  If matrix is None, computes
+    res[i, j] = t3f.flat_inner(tt_1[i], tt_2[j]).
+    
+  If matrix is present, computes
+      res[i, j] = t3f.flat_inner(tt_1[i], t3f.matmul(matrix, tt_2[j]))
+    or more shortly
+      res[i, j] = tt_1[i]^T * matrix * tt_2[j]
+    but is more efficient.
+
+  Args:
+    tt_1: TensorTrainBatch.
+    tt_2: TensorTrainBatch.
+    matrix: None, or TensorTrain matrix.
+
+  Returns:
+    tf.tensor with the matrix of pairwise scalar products (flat inners).
+  """
+  ndims = tt_1.ndims()
   if matrix is None:
-    curr_core = tt_vectors.tt_cores[0]
-    res = tf.einsum('paijb,qcijd->pqbd', curr_core, curr_core)
+    curr_core_1 = tt_1.tt_cores[0]
+    curr_core_2 = tt_2.tt_cores[0]
+    mode_string = 'ij' if tt_1.is_tt_matrix() else 'i'
+    einsum_str = 'pa{0}b,qc{0}d->pqbd'.format(mode_string)
+    res = tf.einsum(einsum_str, curr_core_1, curr_core_2)
     for core_idx in range(1, ndims):
-      curr_core = tt_vectors.tt_cores[core_idx]
-      res = tf.einsum('pqac,paijb,qcijd->pqbd', res, curr_core, curr_core)
+      curr_core_1 = tt_1.tt_cores[core_idx]
+      curr_core_2 = tt_2.tt_cores[core_idx]
+      einsum_str = 'pqac,pa{0}b,qc{0}d->pqbd'.format(mode_string)
+      res = tf.einsum(einsum_str, res, curr_core_1, curr_core_2)
   else:
-    # res[i, j] = tt_vectors[i] ^ T * matrix * tt_vectors[j]
-    vectors_shape = tt_vectors.get_shape()
-    if vectors_shape[2] == 1 and vectors_shape[1] != 1:
+    # res[i, j] = tt_1[i] ^ T * matrix * tt_2[j]
+    if not tt_1.is_tt_matrix() or not tt_2.is_tt_matrix() or not matrix.is_tt_matrix():
+      raise ValueError('When passing three arguments to pairwise_flat_inner, '
+                       'the first 2 of them should be TT-vecors and the last '
+                       'should be a TT-matrix. Got %s, %s, and %s instead.' %
+                       (tt_1, tt_2, matrix))
+    matrix_shape = matrix.get_raw_shape()
+    if not tt_1.get_raw_shape()[0].is_compatible_with(matrix_shape[0]):
+      raise ValueError('The shape of the first argument should be compatible '
+                       'with the shape of the TT-matrix, that is it should be '
+                       'possible to do the following matmul: '
+                       'transpose(tt_1) * matrix. Got the first argument '
+                       '"%s" and matrix "%s"' % (tt_1, matrix))
+    if not tt_2.get_raw_shape()[0].is_compatible_with(matrix_shape[1]):
+      raise ValueError('The shape of the second argument should be compatible '
+                       'with the shape of the TT-matrix, that is it should be '
+                       'possible to do the following matmul: '
+                       'matrix * tt_2. Got the second argument '
+                       '"%s" and matrix "%s"' % (tt_2, matrix))
+
+    vectors_1_shape = tt_1.get_shape()
+    if vectors_1_shape[2] == 1 and vectors_1_shape[1] != 1:
       # TODO: not very efficient, better to use different order in einsum.
-      tt_vectors = ops.transpose(tt_vectors)
-    vectors_shape = tt_vectors.get_shape()
-    if vectors_shape[1] != 1:
+      tt_1 = ops.transpose(tt_1)
+    vectors_1_shape = tt_1.get_shape()
+    vectors_2_shape = tt_2.get_shape()
+    if vectors_2_shape[2] == 1 and vectors_2_shape[1] != 1:
+      # TODO: not very efficient, better to use different order in einsum.
+      tt_2 = ops.transpose(tt_2)
+    vectors_2_shape = tt_2.get_shape()
+    if vectors_1_shape[1] != 1:
       # TODO: do something so that in case the shape is undefined on compilation
       # it still works.
-      raise ValueError('The tt_vectors argument should be vectors (not '
+      raise ValueError('The tt_vectors_1 argument should be vectors (not '
                        'matrices) with shape defined on compilation.')
-    curr_core = tt_vectors.tt_cores[0]
+    if vectors_2_shape[1] != 1:
+      # TODO: do something so that in case the shape is undefined on compilation
+      # it still works.
+      raise ValueError('The tt_vectors_2 argument should be vectors (not '
+                       'matrices) with shape defined on compilation.')
+    curr_core_1 = tt_1.tt_cores[0]
+    curr_core_2 = tt_2.tt_cores[0]
     curr_matrix_core = matrix.tt_cores[0]
     # We enumerate the dummy dimension (that takes 1 value) with `k`.
-    res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core, curr_matrix_core,
-                    curr_core)
+    res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core_1, curr_matrix_core,
+                    curr_core_2)
     for core_idx in range(1, ndims):
-      curr_core = tt_vectors.tt_cores[core_idx]
+      curr_core_1 = tt_1.tt_cores[core_idx]
+      curr_core_2 = tt_2.tt_cores[core_idx]
       curr_matrix_core = matrix.tt_cores[core_idx]
-      res = tf.einsum('pqace,pakib,cijd,qekjf->pqbdf', res, curr_core,
-                      curr_matrix_core, curr_core)
+      res = tf.einsum('pqace,pakib,cijd,qekjf->pqbdf', res, curr_core_1,
+                      curr_matrix_core, curr_core_2)
 
   # Squeeze to make the result of size batch_size x batch_size instead of
   # batch_size x batch_size x 1 x 1.

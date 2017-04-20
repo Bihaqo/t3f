@@ -1,10 +1,11 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
-import ops
-import initializers
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import ops
+from t3f import shapes
+from t3f import initializers
 
 
 class TTTensorTest(tf.test.TestCase):
@@ -105,6 +106,18 @@ class TTTensorTest(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
+  def testMultiplyByNumber(self):
+    # Multiply a tensor by a number.
+    tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1))
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt, 4))
+      res_actual2 = ops.full(4.0 * tt)
+      res_desired = 4.0 * ops.full(tt)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
   def testFrobeniusNormTens(self):
     # Frobenius norm of a TT-tensor.
     shape_list = ((2, 2),
@@ -130,8 +143,12 @@ class TTTensorTest(tf.test.TestCase):
     # Test cast function for float tt-tensors.
     tt_x = initializers.random_tensor((2, 3, 2), tt_rank=2)
 
-    for dtype in [tf.float16, tf.float32, tf.float64]:
-      self.assertEqual(ops.cast(tt_x, dtype).dtype, dtype)
+    with self.test_session() as sess:
+      for dtype in [tf.float16, tf.float32, tf.float64]:
+        casted = ops.cast(tt_x, dtype)
+        casted_val = sess.run(ops.full(casted))
+        self.assertEqual(dtype, casted.dtype)
+        self.assertTrue(dtype, casted_val.dtype)
 
   def testCastIntFloat(self):
     # Tests cast function from int to float for tensors.
@@ -140,9 +157,13 @@ class TTTensorTest(tf.test.TestCase):
     K_2 = np.random.randint(0, high=100, size=(2, 3, 2))
     K_3 = np.random.randint(0, high=100, size=(2, 2, 1))
     tt_int = TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
-    
-    for dtype in [tf.float16, tf.float32, tf.float64]:
-      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
+
+    with self.test_session() as sess:
+      for dtype in [tf.float16, tf.float32, tf.float64]:
+        casted = ops.cast(tt_int, dtype)
+        casted_val = sess.run(ops.full(casted))
+        self.assertEqual(dtype, casted.dtype)
+        self.assertTrue(dtype, casted_val.dtype)
 
 
 class TTMatrixTest(tf.test.TestCase):
@@ -317,18 +338,22 @@ class TTMatrixTest(tf.test.TestCase):
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = b_val.T.dot(A_val).dot(c_val)
-          self.assertAllClose(res_actual_val, np.squeeze(res_desired))
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired),
+                              atol=1e-5, rtol=1e-5)
 
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
     
     tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
-
     tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
-    
-    for dtype in [tf.float16, tf.float32, tf.float64]:
-      self.assertEqual(ops.cast(tt_vec, dtype).dtype, dtype)
-      self.assertEqual(ops.cast(tt_mat, dtype).dtype, dtype)
+
+    with self.test_session() as sess:
+      for tt in [tt_mat, tt_vec]:
+        for dtype in [tf.float16, tf.float32, tf.float64]:
+          casted = ops.cast(tt, dtype)
+          casted_val = sess.run(ops.full(casted))
+          self.assertEqual(dtype, casted.dtype)
+          self.assertTrue(dtype, casted_val.dtype)
 
   def testCastIntFloat(self):
     # Tests cast function from int to float for matrices.
@@ -337,9 +362,13 @@ class TTMatrixTest(tf.test.TestCase):
     K_2 = np.random.randint(0, high=100, size=(2, 3, 3, 2))
     K_3 = np.random.randint(0, high=100, size=(2, 2, 2, 1))
     tt_int = TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
-    
-    for dtype in [tf.float16, tf.float32, tf.float64]:
-      self.assertEqual(ops.cast(tt_int, dtype).dtype, dtype)
+
+    with self.test_session() as sess:
+      for dtype in [tf.float16, tf.float32, tf.float64]:
+        casted = ops.cast(tt_int, dtype)
+        casted_val = sess.run(ops.full(casted))
+        self.assertEqual(dtype, casted.dtype)
+        self.assertTrue(dtype, casted_val.dtype)
 
   def testUnknownRanksTTMatmul(self):
     # Tests tt_tt_matmul for matrices with unknown ranks
@@ -464,6 +493,19 @@ class TTTensorBatchTest(tf.test.TestCase):
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_b + tt_a)
       res_desired = ops.full(tt_a) + ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyByNumber(self):
+    # Multiply batch of tensors by a number.
+    tt = initializers.random_tensor_batch((1, 2, 3), tt_rank=(1, 2, 3, 1),
+                                          batch_size=3)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt, 4))
+      res_actual2 = ops.full(4.0 * tt)
+      res_desired = 4.0 * ops.full(tt)
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
@@ -599,6 +641,34 @@ class TTMatrixTestBatch(tf.test.TestCase):
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testCastFloat(self):
+    # Test cast function for float tt-matrices and vectors.
+    tt_mat = initializers.random_matrix_batch(((2, 3), (3, 2)), tt_rank=2,
+                                              batch_size=3)
+
+    with self.test_session() as sess:
+      for dtype in [tf.float16, tf.float32, tf.float64]:
+        casted = ops.cast(tt_mat, dtype)
+        casted_val = sess.run(ops.full(casted))
+        self.assertEqual(dtype, casted.dtype)
+        self.assertTrue(dtype, casted_val.dtype)
+
+  def testCastIntFloat(self):
+    # Tests cast function from int to float for matrices.
+    np.random.seed(1)
+    K_1 = np.random.randint(0, high=100, size=(1, 2, 2, 2))
+    K_2 = np.random.randint(0, high=100, size=(2, 3, 3, 2))
+    K_3 = np.random.randint(0, high=100, size=(2, 2, 2, 1))
+    tt_int = TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
+    tt_int_batch = shapes.expand_batch_dim(tt_int)
+
+    with self.test_session() as sess:
+      for dtype in [tf.float16, tf.float32, tf.float64]:
+        casted = ops.cast(tt_int_batch, dtype)
+        casted_val = sess.run(ops.full(casted))
+        self.assertEqual(dtype, casted.dtype)
+        self.assertTrue(dtype, casted_val.dtype)
 
 
 def _random_sparse(shape, non_zeros):

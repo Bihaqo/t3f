@@ -1,29 +1,30 @@
 import numpy as np
 import tensorflow as tf
 
-import t3f
-import tensor_train
-import kronecker as kr
-import ops
+from t3f import tensor_train
+from t3f import kronecker as kr
+from t3f import ops
+from t3f import initializers
+from t3f import variables
 
 class KroneckerTest(tf.test.TestCase):
 
   def testIsKronNonKron(self):
     # Tests _is_kron on a non-Kronecker matrix
-    initializer = t3f.random_matrix(((2, 3), (3, 2)), tt_rank=2)
-    tt_mat = t3f.get_variable('tt_mat', initializer=initializer)
+    initializer = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
+    tt_mat = variables.get_variable('tt_mat', initializer=initializer)
     self.assertFalse(kr._is_kron(tt_mat))
            
   def testIsKronKron(self):
     # Tests _is_kron on a Kronecker matrix
-    initializer = t3f.random_matrix(((2, 3), (3, 2)), tt_rank=1)
-    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
+    initializer = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=1)
+    kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     self.assertTrue(kr._is_kron(kron_mat))
 
   def testDet(self):
     # Tests the determinant function
-    initializer = t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
-    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
+    initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
+    kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
@@ -38,12 +39,12 @@ class KroneckerTest(tf.test.TestCase):
     # the current version is platform-dependent
     
     tf.set_random_seed(5) # negative derminant
-    initializer = t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1)
-    kron_neg = t3f.get_variable('kron_neg', initializer=initializer)
+    initializer = initializers.random_matrix(((2, 3), (2, 3)), tt_rank=1)
+    kron_neg = variables.get_variable('kron_neg', initializer=initializer)
   
     tf.set_random_seed(1) # positive determinant
-    initializer = t3f.random_matrix(((2, 3), (2, 3)), tt_rank=1)
-    kron_pos = t3f.get_variable('kron_pos', initializer=initializer)
+    initializer = initializers.random_matrix(((2, 3), (2, 3)), tt_rank=1)
+    kron_pos = variables.get_variable('kron_pos', initializer=initializer)
 
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
@@ -62,8 +63,8 @@ class KroneckerTest(tf.test.TestCase):
 
   def testInv(self):
     # Tests the inv function
-    initializer = t3f.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
-    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
+    initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1)
+    kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
@@ -84,7 +85,7 @@ class KroneckerTest(tf.test.TestCase):
     initializer = tensor_train.TensorTrain([K_1[None, :, :, None], 
                                             K_2[None, :, :, None]], 
                                             tt_ranks=7*[1])
-    kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
+    kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:
       sess.run(init_op)
