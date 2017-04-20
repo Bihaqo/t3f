@@ -148,7 +148,7 @@ class TensorTrainBase(object):
     """
     # TODO: ugly.
     # We can't import ops in the beginning since it creates cyclic dependencies.
-    import ops
+    from t3f import ops
     return ops.add(self, other)
 
   def __mul__(self, other):
@@ -160,7 +160,7 @@ class TensorTrainBase(object):
     """
     # TODO: ugly.
     # We can't import ops in the beginning since it creates cyclic dependencies.
-    import ops
+    from t3f import ops
     return ops.multiply(self, other)
 
   # To support 'TT * 4' as well as '4 * TT'.
