@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2017-04-20
+### Added
+- Python 3 support.
+- Speed improvements.
+- Bug fixes.
+- Travis CI.
+- project_matmul -- fast projection of matrix-by-vector product.
+- pairwise_flat_inner_projected -- fast pairwise dot products between projections on the same tangent space.
+- multiply_along_batch_dim
+- Support for indexing with placeholders or tf.Tensors.
+- Support for t3f.cast(batch_tt).
+- A function to replace tf.svd by np.svd.
+
+### Changed
+- Better Frobenius norm implementation (via QR).
+- Riemannian projection API: now it's project(what, where). 
+
+
 ## [0.2.0] - 2017-03-23
 ### Added
 - (Partial) support for batches of TT-tensors.
