@@ -543,15 +543,15 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
   tt_ranks = shapes.lazy_tt_ranks(projected_tt_vectors_1)
 
   if projected_tt_vectors_1.is_tt_matrix():
-    right_size = tt_ranks[1] / 2
+    right_size = tt_ranks[1] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[0]
     curr_core_2 = projected_tt_vectors_2.tt_cores[0]
     curr_du_1 = curr_core_1[:, :, :, :, :right_size]
     curr_du_2 = curr_core_2[:, :, :, :, :right_size]
     res = tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
     for core_idx in range(1, ndims):
-      left_size = tt_ranks[core_idx] / 2
-      right_size = tt_ranks[core_idx + 1] / 2
+      left_size = tt_ranks[core_idx] // 2
+      right_size = tt_ranks[core_idx + 1] // 2
       curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
       curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
       curr_du_1 = curr_core_1[:, left_size:, :, :, :right_size]
@@ -566,22 +566,22 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
   else:
     # Working with TT-tensor, not TT-matrix.
-    right_size = tt_ranks[1] / 2
+    right_size = tt_ranks[1] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[0]
     curr_core_2 = projected_tt_vectors_2.tt_cores[0]
     curr_du_1 = curr_core_1[:, :, :, :right_size]
     curr_du_2 = curr_core_2[:, :, :, :right_size]
     res = tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
     for core_idx in range(1, ndims):
-      left_size = tt_ranks[core_idx] / 2
-      right_size = tt_ranks[core_idx + 1] / 2
+      left_size = tt_ranks[core_idx] // 2
+      right_size = tt_ranks[core_idx + 1] // 2
       curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
       curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
       curr_du_1 = curr_core_1[:, left_size:, :, :right_size]
       curr_du_2 = curr_core_2[:, left_size:, :, :right_size]
       res += tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
 
-    left_size = tt_ranks[-2] / 2
+    left_size = tt_ranks[-2] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
     curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
     curr_du_1 = curr_core_1[:, left_size:, :, :]
