@@ -4,7 +4,8 @@ python:
   - "3.6"
 # command to install dependencies
 install:
+  # Python 2.7 has very old pip by default that doesn't have tensorflow.
+  - pip install --upgrade pip
   - pip install numpy tensorflow
-  - pip install .
 # command to run tests
 script: "nosetests  --logging-level=WARNING"
