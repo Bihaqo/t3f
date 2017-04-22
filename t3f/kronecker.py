@@ -87,20 +87,23 @@ def slog_determinant(kron_a):
     if i_shapes != j_shapes:
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
+
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   pows = tf.cast(tf.reduce_prod(i_shapes), kron_a.dtype)
-                                                          
   logdet = 0.
   det_sign = 1.
+
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    if is_batch:
+      core_det = tf.matrix_determinant(core[:, 0, :, :, 0])
+    else:
+      core_det = tf.matrix_determinant(core[0, :, :, 0])
     core_abs_det = tf.abs(core_det)
     core_det_sign = tf.sign(core_det)
     core_pow = pows / i_shapes[core_idx].value
     logdet += tf.log(core_abs_det) * core_pow
     det_sign *= core_det_sign**(core_pow)
-  
-  
   return det_sign, logdet
 
 def inv(kron_a):
