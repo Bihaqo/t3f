@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from t3f.tensor_train import TensorTrain
-from t3f import ops
+from t3f import TensorTrain, TensorTrainBatch
+import ops
 
 def determinant(kron_a):
   """Computes the determinant of a given Kronecker-factorized matrix. 
@@ -38,12 +38,16 @@ def determinant(kron_a):
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
       
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   pows = tf.cast(tf.reduce_prod(i_shapes), kron_a.dtype)
   cores = kron_a.tt_cores
   det = 1
   for core_idx in range(kron_a.ndims()):
     core = cores[core_idx]
-    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    if is_batch:
+      core_det = tf.matrix_determinant(core[:, 0, :, :, 0])
+    else:
+      core_det = tf.matrix_determinant(core[0, :, :, 0])
     core_pow = pows / i_shapes[core_idx].value
 
     det *= tf.pow(core_det, core_pow)
