@@ -132,10 +132,23 @@ class BatchKroneckerTest(tf.test.TestCase):
     with self.test_session() as sess:
        # negative derminant
       sess.run(init_op)
-      desired_sign, desired_det = np.linalg.slogdet(ops.full(kron_mat_batch).eval())
+      desired_sign, desired_det = np.linalg.slogdet(
+                                                ops.full(kron_mat_batch).eval())
       actual_sign, actual_det = sess.run(kr.slog_determinant(kron_mat_batch))
       self.assertAllEqual(desired_sign, actual_sign)
       self.assertAllClose(desired_det, actual_det)
 
+  def testInv(self):
+    # Tests the inv function
+    initializer = t3f.random_matrix_batch(((2, 3, 2), (2, 3, 2)), tt_rank=1,
+                                                        batch_size=3)
+    kron_mat_batch = t3f.get_variable('kron_mat_batch', initializer=initializer)
+    init_op = tf.global_variables_initializer()
+    with self.test_session() as sess:
+      sess.run(init_op)
+      desired = np.linalg.inv(ops.full(kron_mat_batch).eval())
+      actual = ops.full(kr.inv(kron_mat_batch)).eval()
+      self.assertAllClose(desired, actual, atol=1e-4)
+    
 if __name__ == "__main__":
   tf.test.main()

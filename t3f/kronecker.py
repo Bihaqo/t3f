@@ -139,15 +139,24 @@ def inv(kron_a):
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
 
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   inv_cores = []
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    core_inv = tf.matrix_inverse(core[0, :, :, 0])
-    inv_cores.append(tf.expand_dims(tf.expand_dims(core_inv, 0), -1))
+    if is_batch:
+      core_inv = tf.matrix_inverse(core[:, 0, :, :, 0])
+      core_inv = tf.expand_dims(tf.expand_dims(core_inv, 1), -1)
+    else:
+      core_inv = tf.matrix_inverse(core[0, :, :, 0])
+      core_inv = tf.expand_dims(tf.expand_dims(core_inv, 0), -1)
+    inv_cores.append(core_inv)
 
   res_ranks = kron_a.get_tt_ranks() 
   res_shape = kron_a.get_raw_shape()
-  return TensorTrain(inv_cores, res_shape, res_ranks) 
+  if is_batch:
+    return TensorTrainBatch(inv_cores, res_shape, res_ranks) 
+  else:
+    return TensorTrain(inv_cores, res_shape, res_ranks) 
 
 def cholesky(kron_a):
   """Computes the Cholesky decomposition of a given Kronecker-factorized matrix.
