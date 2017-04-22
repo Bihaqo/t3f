@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 import t3f
-import kronecker as kr
+import t3f.kronecker as kr
 from t3f import TensorTrain, TensorTrainBatch
 import ops
 
