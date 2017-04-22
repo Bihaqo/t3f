@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 
 import t3f
-import tensor_train
 import kronecker as kr
+from t3f import TensorTrain, TensorTrainBatch
 import ops
 
 class KroneckerTest(tf.test.TestCase):
@@ -81,7 +81,7 @@ class KroneckerTest(tf.test.TestCase):
     K_1 = L_1.dot(L_1.T)
     K_2 = L_2.dot(L_2.T)
     K = np.kron(K_1, K_2)
-    initializer = tensor_train.TensorTrain([K_1[None, :, :, None], 
+    initializer = TensorTrain([K_1[None, :, :, None], 
                                             K_2[None, :, :, None]], 
                                             tt_ranks=7*[1])
     kron_mat = t3f.get_variable('kron_mat', initializer=initializer)
