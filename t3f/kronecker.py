@@ -10,12 +10,13 @@ def determinant(kron_a):
   Note, that this method can suffer from overflow.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). 
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). 
   
   Returns:
-    Number, the determinant of the given matrix.
+    A number or a Tensor with numbers for each element in the batch.
+    The determinant of the given matrix.
 
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
@@ -58,12 +59,13 @@ def slog_determinant(kron_a):
   """Computes the sign and log-det of a given Kronecker-factorized matrix.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square).
-
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). 
+  
   Returns:
-    Two numbers, sign of the determinant and the log-determinant of the given 
+    Two number or two Tensor with numbers for each element in the batch.
+    Sign of the determinant and the log-determinant of the given 
     matrix. If the determinant is zero, then sign will be 0 and logdet will be
     -Inf. In all cases, the determinant is equal to sign * np.exp(logdet).
 
@@ -110,13 +112,15 @@ def inv(kron_a):
   """Computes the inverse of a given Kronecker-factorized matrix.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). All the cores
-    must be invertable.
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). 
 
   Returns:
-    `TensorTrain` object, containing a TT-matrix of size N x N. 
+    `TensorTrain` object containing a TT-matrix of size N x N if the argument is
+      `TensorTrain`
+    `TensorTrainBatch` object, containing TT-matrices of size N x N if the 
+      argument is `TensorTrainBatch`  
   
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
@@ -162,13 +166,16 @@ def cholesky(kron_a):
   """Computes the Cholesky decomposition of a given Kronecker-factorized matrix.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). All the cores
-    must be symmetric positive-definite.
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). All the 
+    cores must be symmetric positive-definite.
 
   Returns:
-    `TensorTrain` object, containing a TT-matrix of size N x N. 
+    `TensorTrain` object containing a TT-matrix of size N x N if the argument is
+      `TensorTrain`
+    `TensorTrainBatch` object, containing TT-matrices of size N x N if the 
+      argument is `TensorTrainBatch`  
     
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
@@ -216,8 +223,8 @@ def _is_kron(tt_a):
   """Returns True if the argument is a Kronecker product matrix.
 
   Args:
-    tt_a: `TensorTrain` object
-
+    t_a: `TensorTrain` or `TensorTrainBatch` object.
+    
   Returns:
     bool
   """
