@@ -150,5 +150,25 @@ class BatchKroneckerTest(tf.test.TestCase):
       actual = ops.full(kr.inv(kron_mat_batch)).eval()
       self.assertAllClose(desired, actual, atol=1e-4)
     
+  def testCholesky(self):
+    # Tests the cholesky function
+    np.random.seed(8)
+
+    # generating two symmetric positive-definite tt-cores
+    L_1 = np.tril(np.random.normal(scale=2., size=(4, 2, 2)))
+    L_2 = np.tril(np.random.normal(scale=2., size=(4, 3, 3)))
+    K_1 = np.einsum('ijk,ilk->ijl', L_1, L_1)
+    K_2 = np.einsum('ijk,ilk->ijl', L_2, L_2)
+    initializer = t3f.TensorTrainBatch([K_1[:, None, :, :, None],
+                                    K_2[:, None, :, :, None]], tt_ranks=7*[1])
+    kron_mat_batch = t3f.get_variable('kron_mat_batch', initializer=initializer)
+    init_op = tf.global_variables_initializer()
+    with self.test_session() as sess:
+      sess.run(init_op)
+      desired = np.linalg.cholesky(ops.full(kron_mat_batch).eval())
+      actual = ops.full(kr.cholesky(kron_mat_batch)).eval()
+      self.assertAllClose(desired, actual)
+
+
 if __name__ == "__main__":
   tf.test.main()

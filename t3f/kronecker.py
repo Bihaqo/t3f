@@ -190,15 +190,26 @@ def cholesky(kron_a):
     if i_shapes != j_shapes:
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
+
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   cho_cores = []
+
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    core_cho = tf.cholesky(core[0, :, :, 0])
-    cho_cores.append(tf.expand_dims(tf.expand_dims(core_cho, 0), -1))
+    if is_batch:
+      core_cho = tf.cholesky(core[:, 0, :, :, 0])
+      core_cho = tf.expand_dims(tf.expand_dims(core_cho, 1), -1)
+    else:
+      core_cho = tf.cholesky(core[0, :, :, 0])
+      core_cho = tf.expand_dims(tf.expand_dims(core_cho, 0), -1)
+    cho_cores.append(core_cho)
 
   res_ranks = kron_a.get_tt_ranks() 
   res_shape = kron_a.get_raw_shape()
-  return TensorTrain(cho_cores, res_shape, res_ranks) 
+  if is_batch:
+    return TensorTrainBatch(cho_cores, res_shape, res_ranks) 
+  else:
+    return TensorTrain(cho_cores, res_shape, res_ranks) 
 
 
 def _is_kron(tt_a):
