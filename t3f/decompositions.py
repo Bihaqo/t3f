@@ -379,7 +379,8 @@ def _round_batch_tt(tt, max_tt_rank, epsilon):
   tt_cores[0] = tf.reshape(tt_cores[0], core_shape)
   if not are_tt_ranks_defined:
     ranks = None
-  return TensorTrainBatch(tt_cores, tt.get_raw_shape(), ranks, batch_size=tt.batch_size)
+  return TensorTrainBatch(tt_cores, tt.get_raw_shape(), ranks,
+                          batch_size=tt.batch_size)
 
 
 def orthogonalize_tt_cores(tt, left_to_right=True):
@@ -513,7 +514,8 @@ def _orthogonalize_batch_tt_cores_left_to_right(tt):
 
     tt_cores[core_idx] = tf.reshape(curr_core, new_core_shape)
 
-    next_core = tf.reshape(tt_cores[core_idx + 1], (batch_size, triang_shape[2], -1))
+    next_core_shape = (batch_size, triang_shape[2], -1)
+    next_core = tf.reshape(tt_cores[core_idx + 1], next_core_shape)
     tt_cores[core_idx + 1] = tf.matmul(triang, next_core)
 
   if tt.is_tt_matrix():

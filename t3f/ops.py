@@ -166,7 +166,8 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
     left_mode = a_shape[0][core_idx]
     right_mode = b_shape[1][core_idx]
     if is_res_batch:
-      core_shape = (batch_size, res_left_rank, left_mode, right_mode, res_right_rank)
+      core_shape = (batch_size, res_left_rank, left_mode, right_mode,
+                    res_right_rank)
     else:
       core_shape = (res_left_rank, left_mode, right_mode,
                     res_right_rank)
@@ -702,7 +703,8 @@ def add(tt_a, tt_b):
     raise ValueError('The batch sizes are different and not 1, broadcasting is '
                      'not available.')
 
-  is_batch_case = isinstance(tt_a, TensorTrainBatch) or isinstance(tt_b, TensorTrainBatch)
+  is_batch_case = isinstance(tt_a, TensorTrainBatch) or \
+                  isinstance(tt_b, TensorTrainBatch)
   batch_size = None
   if is_batch_case:
     if tt_a.is_tt_matrix():

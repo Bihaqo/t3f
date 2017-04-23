@@ -92,7 +92,7 @@ class TensorTrain(TensorTrainBase):
                                                tt_ranks)
     else:
       return "A Tensor Train%s of shape %s, TT-ranks: %s" % (variable_str,
-                                                              shape, tt_ranks)
+                                                             shape, tt_ranks)
 
   def __getitem__(self, slice_spec):
     """Basic indexing, returns a `TensorTrain` containing the specified region.

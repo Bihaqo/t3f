@@ -7,6 +7,7 @@ from t3f import ops
 from t3f import initializers
 from t3f import variables
 
+
 class KroneckerTest(tf.test.TestCase):
 
   def testIsKronNonKron(self):
@@ -38,11 +39,11 @@ class KroneckerTest(tf.test.TestCase):
     # TODO: use kron and -1 * kron matrices, when mul is implemented 
     # the current version is platform-dependent
     
-    tf.set_random_seed(5) # negative derminant
+    tf.set_random_seed(5)  # negative derminant
     initializer = initializers.random_matrix(((2, 3), (2, 3)), tt_rank=1)
     kron_neg = variables.get_variable('kron_neg', initializer=initializer)
   
-    tf.set_random_seed(1) # positive determinant
+    tf.set_random_seed(1)  # positive determinant
     initializer = initializers.random_matrix(((2, 3), (2, 3)), tt_rank=1)
     kron_pos = variables.get_variable('kron_pos', initializer=initializer)
 
@@ -83,8 +84,8 @@ class KroneckerTest(tf.test.TestCase):
     K_2 = L_2.dot(L_2.T)
     K = np.kron(K_1, K_2)
     initializer = tensor_train.TensorTrain([K_1[None, :, :, None], 
-                                            K_2[None, :, :, None]], 
-                                            tt_ranks=7*[1])
+                                            K_2[None, :, :, None]],
+                                           tt_ranks=7*[1])
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
     with self.test_session() as sess:

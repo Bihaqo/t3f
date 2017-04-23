@@ -124,6 +124,5 @@ def assign(ref, value, validate_shape=None, use_locking=None, name=None):
                             value.get_tt_ranks(), value.batch_size,
                             convert_to_tensors=False)
   else:
-    return TensorTrain(new_cores, value.get_raw_shape(),
-                                  value.get_tt_ranks(),
-                                  convert_to_tensors=False)
+    return TensorTrain(new_cores, value.get_raw_shape(), value.get_tt_ranks(),
+                       convert_to_tensors=False)

@@ -5,6 +5,7 @@ from t3f import variables
 from t3f import ops
 from t3f import initializers
 
+
 class VariablesTest(tf.test.TestCase):
 
   def testGetExistingVariable(self):

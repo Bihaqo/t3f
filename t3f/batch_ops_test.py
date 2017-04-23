@@ -40,7 +40,8 @@ class BatchOpsTest(tf.test.TestCase):
       first_second_third_desired_val = res[5]
       self.assertAllClose(first_res_val, first_desired_val)
       self.assertAllClose(first_second_res_val, first_second_desired_val)
-      self.assertAllClose(first_second_third_res_val, first_second_third_desired_val)
+      self.assertAllClose(first_second_third_res_val,
+                          first_second_third_desired_val)
 
   def testBatchMultiply(self):
     # Test multiplying batch of TTMatrices by individual numbers.
