@@ -130,10 +130,9 @@ class TensorTrainBase(object):
       session: (Optional.) The `Session` to be used to evaluate this sparse
         tensor. If none, the default session will be used.
     """
-    # TODO: implement feed_dict
     if session is None:
       session = tf.get_default_session()
-    session.run(self.tt_cores)
+    session.run(self.tt_cores, feed_dict=feed_dict)
 
   # TODO: do we need this?
   # @staticmethod

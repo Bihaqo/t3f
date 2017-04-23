@@ -13,7 +13,7 @@ class BatchOpsTest(tf.test.TestCase):
     first = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=1)
     second = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=4)
     third = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=3)
-    first_res = batch_ops.concat_along_batch_dim((first))
+    first_res = batch_ops.concat_along_batch_dim(first)
     first_res = ops.full(first_res)
     first_second_res = batch_ops.concat_along_batch_dim((first, second))
     first_second_res = ops.full(first_second_res)
