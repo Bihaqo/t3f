@@ -83,12 +83,12 @@ class TensorTrain(TensorTrainBase):
 
   @property
   def left_tt_rank_dim(self):
-    """The dimension of the left rank in each TT-core."""
+    """The dimension of the left TT-rank in each TT-core."""
     return 0
 
   @property
   def right_tt_rank_dim(self):
-    """The dimension of the right rank in each TT-core."""
+    """The dimension of the right TT-rank in each TT-core."""
     if self.is_tt_matrix():
       # The dimensions of each TT-core are
       # [left_rank, n, m, right_rank]
