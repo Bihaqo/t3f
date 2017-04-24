@@ -586,8 +586,8 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
   return res
 
 
-def add_projected(tt_objects, coef=None):
-  """Sum TT-objects that are projections on the same tangent space.
+def add_n_projected(tt_objects, coef=None):
+  """Adds all input TT-objects that are projections on the same tangent space.
 
     add_projected((a, b)) is equivalent add(a, b) for a and b that are from the
     same tangent space, but doesn't increase the TT-ranks.
@@ -619,3 +619,36 @@ def add_projected(tt_objects, coef=None):
                        'least the pointers are different.' % (tt.projection_on,
                                                               projection_on))
 
+  ndims = tt_objects[0].ndims()
+  tt_ranks = shapes.lazy_tt_ranks(tt_objects[0])
+  left_rank_dim = tt_objects[0].left_tt_rank_dim
+  right_rank_dim = tt_objects[0].right_tt_rank_dim
+  res_cores = []
+
+  for core_idx in range(1, ndims - 1):
+    first_obj_core = tt_objects[0].tt_cores[core_idx]
+    num_dims = len(first_obj_core.get_shape())
+    left_half_rank = tt_ranks[core_idx] // 2
+    right_half_rank = tt_ranks[core_idx] // 2
+    upper_idx = [slice(None)] * num_dims
+    upper_idx[left_rank_dim] = slice(0, left_half_rank)
+    upper_part = first_obj_core[upper_idx]
+
+    lower_right_idx = [slice(None)] * num_dims
+    lower_right_idx[left_rank_dim] = slice(left_half_rank, None)
+    lower_right_idx[right_rank_dim] = slice(right_half_rank, None)
+    lower_right_part = first_obj_core[lower_right_idx]
+
+    lower_left_chunks = []
+    lower_left_idx = [slice(None)] * num_dims
+    lower_left_idx[left_rank_dim] = slice(0, left_half_rank)
+    lower_left_idx[right_rank_dim] = slice(right_half_rank, None)
+    for tt in tt_objects:
+      lower_left_chunks.append(tt.tt_cores[core_idx][lower_left_idx])
+    lower_left_part = tf.add_n(lower_left_chunks)
+    lower_part = tf.concat((lower_left_part, lower_right_part),
+                           axis=right_rank_dim)
+    curr_core = tf.concat((upper_part, lower_part), axis=left_rank_dim)
+    res_cores.append(curr_core)
+
+  return TensorTrain(res_core)
