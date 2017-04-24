@@ -69,7 +69,8 @@ class TTTensorTest(tf.test.TestCase):
         for rank in rank_list:
           for num_elements in [1, 10]:
             tt_1 = initializers.random_tensor(shape, tt_rank=rank)
-            sparse_flat_indices = np.random.choice(np.prod(shape), num_elements).astype(int)
+            sparse_flat_indices = np.random.choice(np.prod(shape), num_elements)
+            sparse_flat_indices = sparse_flat_indices.astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, shape)
             sparse_indices = np.vstack(sparse_indices).transpose()
             values = np.random.randn(num_elements).astype(np.float32)
@@ -385,7 +386,6 @@ class TTMatrixTest(tf.test.TestCase):
       res_desired_val = sess.run(res_desired, {K_1: K_1_val, K_2: K_2_val})
       self.assertAllClose(res_desired_val, res_actual_val)
 
-
   def testHalfKnownRanksTTMatmul(self):
     # Tests tt_tt_matmul for the case  when one matrice has known ranks 
     # and the other one doesn't    
@@ -677,7 +677,7 @@ def _random_sparse(shape, non_zeros):
   sparse_indices = np.vstack(sparse_indices).transpose()
   values = np.random.randn(non_zeros).astype(np.float32)
   sparse = tf.SparseTensor(indices=sparse_indices, values=values,
-                             dense_shape=shape)
+                           dense_shape=shape)
   return sparse
 
 if __name__ == "__main__":

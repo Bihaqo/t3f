@@ -22,18 +22,20 @@ class RiemannianTest(tf.test.TestCase):
   def testProject(self):
     # Compare our projection with the results obtained (and precomputed) from
     # tt.riemannian.project which is well tested.
-    tangent_tens_cores = ([[[-0.42095269,  0.02130842],
-         [-0.4181081 ,  0.42945687],
+    tangent_tens_cores = \
+      ([[[-0.42095269,  0.02130842],
+         [-0.4181081,  0.42945687],
          [ 0.45972439, -0.4525616 ],
          [-0.17159869, -0.14505528]]], [[[ 0.23344421],
          [ 0.81480049],
          [-0.92385135]],
 
         [[-0.19279465],
-         [ 0.524976  ],
+         [ 0.524976],
          [-0.40149197]]])
     tangent_tens = TensorTrain(tangent_tens_cores, (4, 3), (1, 2, 1))
-    tens_cores = ([[[-1.01761142,  0.36075896, -0.2493624 ],
+    tens_cores = \
+      ([[[-1.01761142,  0.36075896, -0.2493624 ],
          [-0.99896565, -1.12685474,  1.02832458],
          [ 1.08739724, -0.6537435 ,  1.99975537],
          [ 0.35128005,  0.40395104, -0.16790072]]], [[[ 0.34105142],
@@ -53,7 +55,7 @@ class RiemannianTest(tf.test.TestCase):
        [-0.04847773, -0.72908174,  0.20142675],
        [ 0.34431125, -0.20935516, -1.15864246]]
     proj = riemannian.project_sum(tens, tangent_tens)
-    with self.test_session() as sess:
+    with self.test_session():
       self.assertAllClose(desired_projection, ops.full(proj).eval())
 
   def testProjectSum(self):

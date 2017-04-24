@@ -5,6 +5,7 @@ from t3f import variables
 from t3f import ops
 from t3f import initializers
 
+
 class VariablesTest(tf.test.TestCase):
 
   def testGetExistingVariable(self):
@@ -74,7 +75,7 @@ class VariablesTest(tf.test.TestCase):
       self.assertAllClose(assigner_value, after_value)
       # Assert that the value actually changed:
       abs_diff = np.linalg.norm((init_value - after_value).flatten())
-      rel_diff = abs_diff / np.linalg.norm((init_value).flatten())
+      rel_diff = abs_diff / np.linalg.norm(init_value.flatten())
       self.assertGreater(rel_diff, 0.2)
 
 
