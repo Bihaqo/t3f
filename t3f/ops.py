@@ -52,12 +52,12 @@ def _full_tt(tt):
       intermediate_shape.append(raw_shape[0][i])
       intermediate_shape.append(raw_shape[1][i])
     res = tf.reshape(res, intermediate_shape)
-    transpose = []
+    transpose_params = []
     for i in range(0, 2 * num_dims, 2):
-      transpose.append(i)
+      transpose_params.append(i)
     for i in range(1, 2 * num_dims, 2):
-      transpose.append(i)
-    res = tf.transpose(res, transpose)
+      transpose_params.append(i)
+    res = tf.transpose(res, transpose_params)
     return tf.reshape(res, shape)
   else:
     return tf.reshape(res, shape)
