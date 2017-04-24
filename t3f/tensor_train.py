@@ -79,6 +79,23 @@ class TensorTrain(TensorTrainBase):
     """
     return self._tt_cores
 
+  @property
+  def left_rank_dim(self):
+    """The dimension of the left rank in each TT-core."""
+    return 0
+
+  @property
+  def right_rank_dim(self):
+    """The dimension of the right rank in each TT-core."""
+    if self.is_tt_matrix():
+      # The dimensions of each TT-core are
+      # [left_rank, n, m, right_rank]
+      return 3
+    else:
+      # The dimensions of each TT-core are
+      # [left_rank, n, right_rank]
+      return 2
+
   def __str__(self):
     """A string describing the TensorTrain object, its TT-rank, and shape."""
     shape = self.get_shape()
