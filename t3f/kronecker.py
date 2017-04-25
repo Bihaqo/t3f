@@ -1,7 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from t3f import TensorTrain, TensorTrainBatch
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import ops
 
 def determinant(kron_a):
