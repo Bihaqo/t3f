@@ -18,6 +18,8 @@ class TensorTrain(TensorTrainBase):
   @@graph
   @@ndims
   @@get_tt_ranks
+  @@left_tt_rank_dim
+  @@right_tt_rank_dim
   @@is_tt_matrix
   @@is_variable
   @@eval
@@ -78,6 +80,23 @@ class TensorTrain(TensorTrainBase):
         `[r_k-1, n_k, m_k, r_k]`
     """
     return self._tt_cores
+
+  @property
+  def left_tt_rank_dim(self):
+    """The dimension of the left TT-rank in each TT-core."""
+    return 0
+
+  @property
+  def right_tt_rank_dim(self):
+    """The dimension of the right TT-rank in each TT-core."""
+    if self.is_tt_matrix():
+      # The dimensions of each TT-core are
+      # [left_rank, n, m, right_rank]
+      return 3
+    else:
+      # The dimensions of each TT-core are
+      # [left_rank, n, right_rank]
+      return 2
 
   def __str__(self):
     """A string describing the TensorTrain object, its TT-rank, and shape."""

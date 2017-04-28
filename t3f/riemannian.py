@@ -63,8 +63,8 @@ def project_sum(what, where, weights=None):
 
   # For einsum notation.
   mode_str = 'ij' if where.is_tt_matrix() else 'i'
-  right_rank_dim = 3 if where.is_tt_matrix() else 2
-  left_rank_dim = 0
+  right_rank_dim = where.right_tt_rank_dim
+  left_rank_dim = where.left_tt_rank_dim
   if weights is not None:
     weights_shape = weights.get_shape()
     output_is_batch = len(weights_shape) > 1 and weights_shape[1] > 1
@@ -73,7 +73,7 @@ def project_sum(what, where, weights=None):
   output_batch_str = 'o' if output_is_batch else ''
   if output_is_batch:
     right_rank_dim += 1
-    left_rank_dim = 1
+    left_rank_dim += 1
     output_batch_size = weights.get_shape()[1].value
 
   # Prepare rhs vectors.
@@ -234,12 +234,10 @@ def project(what, where):
 
   # For einsum notation.
   mode_str = 'ij' if where.is_tt_matrix() else 'i'
-  right_rank_dim = 3 if where.is_tt_matrix() else 2
-  left_rank_dim = 0
+  right_rank_dim = what.right_tt_rank_dim
+  left_rank_dim = what.left_tt_rank_dim
   output_is_batch = isinstance(what, TensorTrainBatch)
   if output_is_batch:
-    right_rank_dim += 1
-    left_rank_dim = 1
     output_batch_size = what.batch_size
 
   # Always work with batch of TT objects for simplicity.
@@ -397,12 +395,10 @@ def project_matmul(what, where, matrix):
   left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
 
   # For einsum notation.
-  right_rank_dim = 3
-  left_rank_dim = 0
+  right_rank_dim = what.right_tt_rank_dim
+  left_rank_dim = what.left_tt_rank_dim
   output_is_batch = isinstance(what, TensorTrainBatch)
   if output_is_batch:
-    right_rank_dim += 1
-    left_rank_dim = 1
     output_batch_size = what.batch_size
 
   # Always work with batch of TT objects for simplicity.
