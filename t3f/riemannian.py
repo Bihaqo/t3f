@@ -649,25 +649,20 @@ def add_n_projected(tt_objects, coef=None):
 
   for core_idx in range(1, ndims - 1):
     first_obj_core = tt_objects[0].tt_cores[core_idx]
-    num_dims = len(first_obj_core.get_shape())
     left_half_rank = tt_ranks[core_idx] // 2
     right_half_rank = tt_ranks[core_idx + 1] // 2
 
-    upper_idx = [slice(None)] * num_dims
-    upper_idx[left_rank_dim] = slice(0, left_half_rank)
-    upper_part = first_obj_core[upper_idx]
-
-    lower_right_idx = [slice(None)] * num_dims
-    lower_right_idx[left_rank_dim] = slice(left_half_rank, None)
-    lower_right_idx[right_rank_dim] = slice(right_half_rank, None)
-    lower_right_part = first_obj_core[lower_right_idx]
+    upper_part = slice_tt_core(tt.tt_cores[core_idx], slice(0, left_half_rank),
+                               slice(None))
+    lower_right_part = slice_tt_core(first_obj_core,
+                                     slice(left_half_rank, None),
+                                     slice(right_half_rank, None))
 
     lower_left_chunks = []
-    lower_left_idx = [slice(None)] * num_dims
-    lower_left_idx[left_rank_dim] = slice(left_half_rank, None)
-    lower_left_idx[right_rank_dim] = slice(0, right_half_rank)
     for obj_idx, tt in enumerate(tt_objects):
-      curr_core = tt.tt_cores[core_idx][lower_left_idx]
+      curr_core = slice_tt_core(tt.tt_cores[core_idx],
+                                slice(left_half_rank, None),
+                                slice(0, right_half_rank))
       if coef is not None:
         curr_core *= coef[obj_idx]
       lower_left_chunks.append(curr_core)
@@ -678,7 +673,7 @@ def add_n_projected(tt_objects, coef=None):
     res_cores.append(curr_core)
 
   left_half_rank = tt_ranks[ndims - 1] // 2
-  upper_part = slice_tt_core(tt.tt_cores[-1], slice(0, right_half_rank),
+  upper_part = slice_tt_core(tt.tt_cores[-1], slice(0, left_half_rank),
                              slice(None))
   lower_chunks = []
   for obj_idx, tt in enumerate(tt_objects):
