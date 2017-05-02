@@ -228,7 +228,6 @@ def project(what, where):
   ndims = where.ndims()
   dtype = where.dtype
   raw_shape = shapes.lazy_raw_shape(where)
-  batch_size = shapes.lazy_batch_size(what)
   right_tangent_tt_ranks = shapes.lazy_tt_ranks(right_tangent_space_tens)
   left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
 
@@ -242,6 +241,7 @@ def project(what, where):
 
   # Always work with batch of TT objects for simplicity.
   what = shapes.expand_batch_dim(what)
+  batch_size = shapes.lazy_batch_size(what)
 
   # Prepare rhs vectors.
   # rhs[core_idx] is of size
@@ -583,4 +583,116 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     curr_du_1 = curr_core_1[:, left_size:, :, :]
     curr_du_2 = curr_core_2[:, left_size:, :, :]
     res += tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
+  return res
+
+
+def add_n_projected(tt_objects, coef=None):
+  """Adds all input TT-objects that are projections on the same tangent space.
+
+    add_projected((a, b)) is equivalent add(a, b) for a and b that are from the
+    same tangent space, but doesn't increase the TT-ranks.
+
+  Args:
+    tt_objects: a list of TT-objects that are projections on the same tangent
+      space.
+    coef: a list of numbers or anything else convertable to tf.Tensor.
+      If provided, computes weighted sum. The size of this array should be
+        len(tt_objects) x tt_objects[0].batch_size
+
+  Returns:
+    TT-objects representing the sum of the tt_objects (weighted sum if coef is
+    provided). The TT-rank of the result equals to the TT-ranks of the arguments.
+  """
+  for tt in tt_objects:
+    if not hasattr(tt, 'projection_on'):
+      raise ValueError('Both arguments should be projections on the tangent '
+                       'space of some other TT-object. All projection* functions '
+                       'leave .projection_on field in the resulting TT-object '
+                       'which is not present in the argument you\'ve provided.')
+
+  projection_on = tt_objects[0].projection_on
+  for tt in tt_objects[1:]:
+    if tt.projection_on != projection_on:
+      raise ValueError('All tt_objects should be projections on the tangent '
+                       'space of the same TT-object. The provided arguments are '
+                       'projections on different TT-objects (%s and %s). Or at '
+                       'least the pointers are different.' % (tt.projection_on,
+                                                              projection_on))
+
+  ndims = tt_objects[0].ndims()
+  tt_ranks = shapes.lazy_tt_ranks(tt_objects[0])
+  left_rank_dim = tt_objects[0].left_tt_rank_dim
+  right_rank_dim = tt_objects[0].right_tt_rank_dim
+  res_cores = []
+
+  def slice_tt_core(tt_core, left_idx, right_idx):
+    num_tt_core_dims = len(tt_core.get_shape())
+    idx = [slice(None)] * num_tt_core_dims
+    idx[left_rank_dim] = left_idx
+    idx[right_rank_dim] = right_idx
+    return tt_core[idx]
+
+  right_half_rank = tt_ranks[1] // 2
+  left_chunks = []
+  for obj_idx, tt in enumerate(tt_objects):
+    curr_core = slice_tt_core(tt.tt_cores[0], slice(None),
+                              slice(0, right_half_rank))
+    if coef is not None:
+      curr_core *= coef[obj_idx]
+    left_chunks.append(curr_core)
+  left_part = tf.add_n(left_chunks)
+  first_obj_core = tt_objects[0].tt_cores[0]
+  right_part = slice_tt_core(first_obj_core, slice(None),
+                             slice(right_half_rank, None))
+  first_core = tf.concat((left_part, right_part), axis=right_rank_dim)
+  res_cores.append(first_core)
+
+  for core_idx in range(1, ndims - 1):
+    first_obj_core = tt_objects[0].tt_cores[core_idx]
+    left_half_rank = tt_ranks[core_idx] // 2
+    right_half_rank = tt_ranks[core_idx + 1] // 2
+
+    upper_part = slice_tt_core(tt.tt_cores[core_idx], slice(0, left_half_rank),
+                               slice(None))
+    lower_right_part = slice_tt_core(first_obj_core,
+                                     slice(left_half_rank, None),
+                                     slice(right_half_rank, None))
+
+    lower_left_chunks = []
+    for obj_idx, tt in enumerate(tt_objects):
+      curr_core = slice_tt_core(tt.tt_cores[core_idx],
+                                slice(left_half_rank, None),
+                                slice(0, right_half_rank))
+      if coef is not None:
+        curr_core *= coef[obj_idx]
+      lower_left_chunks.append(curr_core)
+    lower_left_part = tf.add_n(lower_left_chunks)
+    lower_part = tf.concat((lower_left_part, lower_right_part),
+                           axis=right_rank_dim)
+    curr_core = tf.concat((upper_part, lower_part), axis=left_rank_dim)
+    res_cores.append(curr_core)
+
+  left_half_rank = tt_ranks[ndims - 1] // 2
+  upper_part = slice_tt_core(tt.tt_cores[-1], slice(0, left_half_rank),
+                             slice(None))
+  lower_chunks = []
+  for obj_idx, tt in enumerate(tt_objects):
+    curr_core = slice_tt_core(tt.tt_cores[-1], slice(left_half_rank, None),
+                              slice(None))
+    if coef is not None:
+      curr_core *= coef[obj_idx]
+    lower_chunks.append(curr_core)
+  lower_part = tf.add_n(lower_chunks)
+  last_core = tf.concat((upper_part, lower_part), axis=left_rank_dim)
+  res_cores.append(last_core)
+
+  raw_shape = tt_objects[0].get_raw_shape()
+  static_tt_ranks = tt_objects[0].get_tt_ranks()
+  if isinstance(tt_objects[0], TensorTrain):
+    res = TensorTrain(res_cores, raw_shape, static_tt_ranks)
+  elif isinstance(tt_objects[0], TensorTrainBatch):
+    res = TensorTrainBatch(res_cores, raw_shape, static_tt_ranks,
+                           tt_objects[0].batch_size)
+  # Maintain the projection_on property.
+  res.projection_on = tt_objects[0].projection_on
   return res
