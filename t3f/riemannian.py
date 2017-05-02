@@ -626,27 +626,29 @@ def add_n_projected(tt_objects, coef=None):
   res_cores = []
 
   def slice_tt_core(tt_core, left_idx, right_idx):
-    num_tt_core_dims = len(first_obj_core.get_shape())
+    num_tt_core_dims = len(tt_core.get_shape())
     idx = [slice(None)] * num_tt_core_dims
     idx[left_rank_dim] = left_idx
-    idx[right_rank_dim] = left_idx
+    idx[right_rank_dim] = right_idx
     return tt_core[idx]
 
   right_half_rank = tt_ranks[0] // 2
   left_chunks = []
   for tt in tt_objects:
-    left_chunks.append(slice_tt_core(tt.tt_cores[0], None, slice(0, right_half_rank)))
+    left_chunks.append(slice_tt_core(tt.tt_cores[0], slice(None),
+                                     slice(0, right_half_rank)))
   left_part = tf.add_n(left_chunks)
-  right_part = slice_tt_core(tt.tt_cores[0], None, slice(right_half_rank, None))
+  first_obj_core = tt_objects[0].tt_cores[0]
+  right_part = slice_tt_core(first_obj_core, slice(None),
+                             slice(right_half_rank, None))
   first_core = tf.concat((left_part, right_part), axis=right_rank_dim)
   res_cores.append(first_core)
-
 
   for core_idx in range(1, ndims - 1):
     first_obj_core = tt_objects[0].tt_cores[core_idx]
     num_dims = len(first_obj_core.get_shape())
     left_half_rank = tt_ranks[core_idx] // 2
-    right_half_rank = tt_ranks[core_idx] // 2
+    right_half_rank = tt_ranks[core_idx + 1] // 2
 
     upper_idx = [slice(None)] * num_dims
     upper_idx[left_rank_dim] = slice(0, left_half_rank)
@@ -670,13 +672,14 @@ def add_n_projected(tt_objects, coef=None):
     res_cores.append(curr_core)
 
   left_half_rank = tt_ranks[ndims - 1] // 2
-  upper_part = slice_tt_core(tt.tt_cores[-1], slice(0, right_half_rank), None)
+  upper_part = slice_tt_core(tt.tt_cores[-1], slice(0, right_half_rank),
+                             slice(None))
   lower_chunks = []
   for tt in tt_objects:
-    lower_chunks.append(
-      slice_tt_core(tt.tt_cores[-1], slice(left_half_rank, None), None))
+    lower_chunks.append(slice_tt_core(tt.tt_cores[-1],
+                                      slice(left_half_rank, None), slice(None)))
   lower_part = tf.add_n(lower_chunks)
-  last_core = tf.concat((upper_part, lower_part), axis=right_rank_dim)
+  last_core = tf.concat((upper_part, lower_part), axis=left_rank_dim)
   res_cores.append(last_core)
 
   raw_shape = tt_objects[0].get_raw_shape()
