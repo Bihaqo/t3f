@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-import variables
-import ops
-import initializers
+from t3f import variables
+from t3f import ops
+from t3f import initializers
 
 class VariablesTest(tf.test.TestCase):
 

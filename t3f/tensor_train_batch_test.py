@@ -1,9 +1,7 @@
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-import tensor_train_batch
-import initializers
-import ops
+from t3f import initializers
+from t3f import ops
 
 
 class TensorTrainBatchTest(tf.test.TestCase):

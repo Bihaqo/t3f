@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train_base import TensorTrainBase
-from tensor_train import TensorTrain
-import shapes
+from t3f.tensor_train_base import TensorTrainBase
+from t3f.tensor_train import TensorTrain
+from t3f import shapes
 
 
 class TensorTrainBatch(TensorTrainBase):
@@ -20,6 +20,8 @@ class TensorTrainBatch(TensorTrainBase):
   @@graph
   @@ndims
   @@get_tt_ranks
+  @@left_tt_rank_dim
+  @@right_tt_rank_dim
   @@is_tt_matrix
   @@is_variable
   @@eval
@@ -104,6 +106,23 @@ class TensorTrainBatch(TensorTrainBase):
   def batch_size(self):
     """The number of elements or None if not known."""
     return self._batch_size
+
+  @property
+  def left_tt_rank_dim(self):
+    """The dimension of the left TT-rank in each TT-core."""
+    return 1
+
+  @property
+  def right_tt_rank_dim(self):
+    """The dimension of the right TT-rank in each TT-core."""
+    if self.is_tt_matrix():
+      # The dimensions of each TT-core are
+      # [batch_idx, left_rank, n, m, right_rank]
+      return 4
+    else:
+      # The dimensions of each TT-core are
+      # [batch_idx, left_rank, n, right_rank]
+      return 3
 
   def __str__(self):
     """A string describing the TensorTrainBatch, its TT-rank and shape."""

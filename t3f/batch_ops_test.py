@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-import ops
-import batch_ops
-import initializers
+from t3f import ops
+from t3f import batch_ops
+from t3f import initializers
 
 
 class BatchOpsTest(tf.test.TestCase):

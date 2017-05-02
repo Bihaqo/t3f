@@ -1,8 +1,8 @@
 import tensorflow as tf
 
-from tensor_train_base import TensorTrainBase
-from tensor_train_batch import TensorTrainBatch
-import ops
+from t3f.tensor_train_base import TensorTrainBase
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import ops
 
 
 def concat_along_batch_dim(tt_list):

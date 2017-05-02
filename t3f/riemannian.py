@@ -1,9 +1,9 @@
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
-import shapes
-import decompositions
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import shapes
+from t3f import decompositions
 
 
 def project_sum(what, where, weights=None):
@@ -63,8 +63,8 @@ def project_sum(what, where, weights=None):
 
   # For einsum notation.
   mode_str = 'ij' if where.is_tt_matrix() else 'i'
-  right_rank_dim = 3 if where.is_tt_matrix() else 2
-  left_rank_dim = 0
+  right_rank_dim = where.right_tt_rank_dim
+  left_rank_dim = where.left_tt_rank_dim
   if weights is not None:
     weights_shape = weights.get_shape()
     output_is_batch = len(weights_shape) > 1 and weights_shape[1] > 1
@@ -73,7 +73,7 @@ def project_sum(what, where, weights=None):
   output_batch_str = 'o' if output_is_batch else ''
   if output_is_batch:
     right_rank_dim += 1
-    left_rank_dim = 1
+    left_rank_dim += 1
     output_batch_size = weights.get_shape()[1].value
 
   # Prepare rhs vectors.
@@ -116,16 +116,20 @@ def project_sum(what, where, weights=None):
         einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
       else:
-        einsum_str = 'sa{0}b,sbc,s{1}->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1], weights)
+        einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str, output_batch_str)
+        proj_core_s = tf.einsum(einsum_str, proj_core, rhs[core_idx + 1])
+        einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
+        proj_core = tf.einsum(einsum_str, weights, proj_core_s)
 
     if core_idx == ndims - 1:
       if weights is None:
         einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
         proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core)
       else:
-        einsum_str = 'sab,sb{0}c,s{1}->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = tf.einsum(einsum_str, lhs[core_idx], tens_core, weights)
+        einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str, output_batch_str)
+        proj_core_s = tf.einsum(einsum_str, lhs[core_idx], tens_core)
+        einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
+        proj_core = tf.einsum(einsum_str, weights, proj_core_s)
 
     if output_is_batch:
       # Add batch dimension of size output_batch_size to left_tang_core and
@@ -230,12 +234,10 @@ def project(what, where):
 
   # For einsum notation.
   mode_str = 'ij' if where.is_tt_matrix() else 'i'
-  right_rank_dim = 3 if where.is_tt_matrix() else 2
-  left_rank_dim = 0
+  right_rank_dim = what.right_tt_rank_dim
+  left_rank_dim = what.left_tt_rank_dim
   output_is_batch = isinstance(what, TensorTrainBatch)
   if output_is_batch:
-    right_rank_dim += 1
-    left_rank_dim = 1
     output_batch_size = what.batch_size
 
   # Always work with batch of TT objects for simplicity.
@@ -393,12 +395,10 @@ def project_matmul(what, where, matrix):
   left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
 
   # For einsum notation.
-  right_rank_dim = 3
-  left_rank_dim = 0
+  right_rank_dim = what.right_tt_rank_dim
+  left_rank_dim = what.left_tt_rank_dim
   output_is_batch = isinstance(what, TensorTrainBatch)
   if output_is_batch:
-    right_rank_dim += 1
-    left_rank_dim = 1
     output_batch_size = what.batch_size
 
   # Always work with batch of TT objects for simplicity.
@@ -539,22 +539,22 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
   tt_ranks = shapes.lazy_tt_ranks(projected_tt_vectors_1)
 
   if projected_tt_vectors_1.is_tt_matrix():
-    right_size = tt_ranks[1] / 2
+    right_size = tt_ranks[1] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[0]
     curr_core_2 = projected_tt_vectors_2.tt_cores[0]
     curr_du_1 = curr_core_1[:, :, :, :, :right_size]
     curr_du_2 = curr_core_2[:, :, :, :, :right_size]
     res = tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
     for core_idx in range(1, ndims):
-      left_size = tt_ranks[core_idx] / 2
-      right_size = tt_ranks[core_idx + 1] / 2
+      left_size = tt_ranks[core_idx] // 2
+      right_size = tt_ranks[core_idx + 1] // 2
       curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
       curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
       curr_du_1 = curr_core_1[:, left_size:, :, :, :right_size]
       curr_du_2 = curr_core_2[:, left_size:, :, :, :right_size]
       res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
 
-    left_size = tt_ranks[-2] / 2
+    left_size = tt_ranks[-2] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
     curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
     curr_du_1 = curr_core_1[:, left_size:, :, :, :]
@@ -562,22 +562,22 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     res += tf.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
   else:
     # Working with TT-tensor, not TT-matrix.
-    right_size = tt_ranks[1] / 2
+    right_size = tt_ranks[1] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[0]
     curr_core_2 = projected_tt_vectors_2.tt_cores[0]
     curr_du_1 = curr_core_1[:, :, :, :right_size]
     curr_du_2 = curr_core_2[:, :, :, :right_size]
     res = tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
     for core_idx in range(1, ndims):
-      left_size = tt_ranks[core_idx] / 2
-      right_size = tt_ranks[core_idx + 1] / 2
+      left_size = tt_ranks[core_idx] // 2
+      right_size = tt_ranks[core_idx + 1] // 2
       curr_core_1 = projected_tt_vectors_1.tt_cores[core_idx]
       curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
       curr_du_1 = curr_core_1[:, left_size:, :, :right_size]
       curr_du_2 = curr_core_2[:, left_size:, :, :right_size]
       res += tf.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
 
-    left_size = tt_ranks[-2] / 2
+    left_size = tt_ranks[-2] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
     curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
     curr_du_1 = curr_core_1[:, left_size:, :, :]
