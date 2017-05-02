@@ -685,7 +685,10 @@ def add_n_projected(tt_objects, coef=None):
   raw_shape = tt_objects[0].get_raw_shape()
   static_tt_ranks = tt_objects[0].get_tt_ranks()
   if isinstance(tt_objects[0], TensorTrain):
-    return TensorTrain(res_cores, raw_shape, static_tt_ranks)
+    res = TensorTrain(res_cores, raw_shape, static_tt_ranks)
   elif isinstance(tt_objects[0], TensorTrainBatch):
-    return TensorTrainBatch(res_cores, raw_shape, static_tt_ranks,
-                            tt_objects[0].batch_size)
+    res = TensorTrainBatch(res_cores, raw_shape, static_tt_ranks,
+                           tt_objects[0].batch_size)
+  # Maintain the projection_on property.
+  res.projection_on = tt_objects[0].projection_on
+  return projection_on
