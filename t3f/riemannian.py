@@ -632,7 +632,7 @@ def add_n_projected(tt_objects, coef=None):
     idx[right_rank_dim] = right_idx
     return tt_core[idx]
 
-  right_half_rank = tt_ranks[0] // 2
+  right_half_rank = tt_ranks[1] // 2
   left_chunks = []
   for tt in tt_objects:
     left_chunks.append(slice_tt_core(tt.tt_cores[0], slice(None),
@@ -661,8 +661,8 @@ def add_n_projected(tt_objects, coef=None):
 
     lower_left_chunks = []
     lower_left_idx = [slice(None)] * num_dims
-    lower_left_idx[left_rank_dim] = slice(0, left_half_rank)
-    lower_left_idx[right_rank_dim] = slice(right_half_rank, None)
+    lower_left_idx[left_rank_dim] = slice(left_half_rank, None)
+    lower_left_idx[right_rank_dim] = slice(0, right_half_rank)
     for tt in tt_objects:
       lower_left_chunks.append(tt.tt_cores[core_idx][lower_left_idx])
     lower_left_part = tf.add_n(lower_left_chunks)
