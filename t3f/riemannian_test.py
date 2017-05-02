@@ -201,7 +201,7 @@ class RiemannianTest(tf.test.TestCase):
     another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
-      riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
+      riemannian.add_n_projected((projected1, another_projected2))
 
   def testWeightedAddNProjected(self):
     # Add several TT-objects from the same tangent space with coefs.
@@ -219,12 +219,13 @@ class RiemannianTest(tf.test.TestCase):
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
-      riemannian.add_n_projected((projected1, what2))
+      riemannian.add_n_projected((projected1, what2), coef=[1.2, -2.0])
     where2 = initializers.random_tensor((2, 3, 4), 3)
     another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
-      riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
+      riemannian.add_n_projected((projected1, another_projected2),
+                                 coef=[1.2, -2.0])
 
 if __name__ == "__main__":
   tf.test.main()
