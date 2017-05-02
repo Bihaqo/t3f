@@ -228,7 +228,6 @@ def project(what, where):
   ndims = where.ndims()
   dtype = where.dtype
   raw_shape = shapes.lazy_raw_shape(where)
-  batch_size = shapes.lazy_batch_size(what)
   right_tangent_tt_ranks = shapes.lazy_tt_ranks(right_tangent_space_tens)
   left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
 
@@ -242,6 +241,7 @@ def project(what, where):
 
   # Always work with batch of TT objects for simplicity.
   what = shapes.expand_batch_dim(what)
+  batch_size = shapes.lazy_batch_size(what)
 
   # Prepare rhs vectors.
   # rhs[core_idx] is of size
