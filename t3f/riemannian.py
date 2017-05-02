@@ -691,4 +691,4 @@ def add_n_projected(tt_objects, coef=None):
                            tt_objects[0].batch_size)
   # Maintain the projection_on property.
   res.projection_on = tt_objects[0].projection_on
-  return projection_on
+  return res
