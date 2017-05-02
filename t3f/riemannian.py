@@ -634,9 +634,12 @@ def add_n_projected(tt_objects, coef=None):
 
   right_half_rank = tt_ranks[1] // 2
   left_chunks = []
-  for tt in tt_objects:
-    left_chunks.append(slice_tt_core(tt.tt_cores[0], slice(None),
-                                     slice(0, right_half_rank)))
+  for obj_idx, tt in enumerate(tt_objects):
+    curr_core = slice_tt_core(tt.tt_cores[0], slice(None),
+                              slice(0, right_half_rank))
+    if coef is not None:
+      curr_core *= coef[obj_idx]
+    left_chunks.append(curr_core)
   left_part = tf.add_n(left_chunks)
   first_obj_core = tt_objects[0].tt_cores[0]
   right_part = slice_tt_core(first_obj_core, slice(None),
@@ -663,8 +666,11 @@ def add_n_projected(tt_objects, coef=None):
     lower_left_idx = [slice(None)] * num_dims
     lower_left_idx[left_rank_dim] = slice(left_half_rank, None)
     lower_left_idx[right_rank_dim] = slice(0, right_half_rank)
-    for tt in tt_objects:
-      lower_left_chunks.append(tt.tt_cores[core_idx][lower_left_idx])
+    for obj_idx, tt in enumerate(tt_objects):
+      curr_core = tt.tt_cores[core_idx][lower_left_idx]
+      if coef is not None:
+        curr_core *= coef[obj_idx]
+      lower_left_chunks.append(curr_core)
     lower_left_part = tf.add_n(lower_left_chunks)
     lower_part = tf.concat((lower_left_part, lower_right_part),
                            axis=right_rank_dim)
@@ -675,9 +681,12 @@ def add_n_projected(tt_objects, coef=None):
   upper_part = slice_tt_core(tt.tt_cores[-1], slice(0, right_half_rank),
                              slice(None))
   lower_chunks = []
-  for tt in tt_objects:
-    lower_chunks.append(slice_tt_core(tt.tt_cores[-1],
-                                      slice(left_half_rank, None), slice(None)))
+  for obj_idx, tt in enumerate(tt_objects):
+    curr_core = slice_tt_core(tt.tt_cores[-1], slice(left_half_rank, None),
+                              slice(None))
+    if coef is not None:
+      curr_core *= coef[obj_idx]
+    lower_chunks.append(curr_core)
   lower_part = tf.add_n(lower_chunks)
   last_core = tf.concat((upper_part, lower_part), axis=left_rank_dim)
   res_cores.append(last_core)
