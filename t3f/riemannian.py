@@ -600,8 +600,8 @@ def add_n_projected(tt_objects, coef=None):
         len(tt_objects) x tt_objects[0].batch_size
 
   Returns:
-    TT-objects representing the some of the tt_objects (weighted some if coef is
-    provided). The TT-rank of the resuls equals to the TT-ranks of the arguments.
+    TT-objects representing the sum of the tt_objects (weighted sum if coef is
+    provided). The TT-rank of the result equals to the TT-ranks of the arguments.
   """
   for tt in tt_objects:
     if not hasattr(tt, 'projection_on'):
