@@ -240,14 +240,14 @@ def pairwise_quadratic_form(A, b, c):
   curr_core_A = A.tt_cores[0]
   curr_core_b = b.tt_cores[0]
   curr_core_c = c.tt_cores[0]
-  res = tf.einsum('paijb,qcikd,pekjf->pqbdf', curr_core_b,
-                  curr_core_A, curr_core_c)
+  res = tf.einsum('qcikd,paijb,pekjf->pqbdf', curr_core_A, curr_core_b,
+                  curr_core_c)
   for core_idx in range(1, ndims):
     curr_core_A = A.tt_cores[core_idx]
     curr_core_b = b.tt_cores[core_idx]
     curr_core_c = c.tt_cores[core_idx]
-    res = tf.einsum('pqace,paijb,qcikd,pekjf->pqbdf', res, curr_core_b,
-                    curr_core_A, curr_core_c)
+    res = tf.einsum('qcikd,pekjf,paijb,pqace->pqbdf', curr_core_A, curr_core_c,
+                    curr_core_b, res)
 
   # Squeeze to make the result of size batch_size x batch_size instead of
   # batch_size x batch_size x 1 x 1.
