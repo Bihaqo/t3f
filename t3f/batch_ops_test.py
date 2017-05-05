@@ -134,6 +134,29 @@ class BatchOpsTest(tf.test.TestCase):
           res_desired_val[i, j] = curr_val
       self.assertAllClose(res_desired_val, res_actual_val)
 
+  def testPairwiseQuadraticForm(self):
+    # Test pairwise_quadratic_form
+    # res[i, j] = tt_vectors_1[i] ^ T * matrices[j] * tt_vectors_2[i]
+    tt_vectors_1 = initializers.random_matrix_batch(((2, 3), None), batch_size=2)
+    tt_vectors_2 = initializers.random_matrix_batch(((2, 3), None), batch_size=2)
+    tt_matrices = initializers.random_matrix_batch(((2, 3), (2, 3)), batch_size=3)
+    res_actual = batch_ops.pairwise_quadratic_form(tt_matrices, tt_vectors_1,
+                                                   tt_vectors_2)
+    full_vectors_1 = tf.reshape(ops.full(tt_vectors_1), (2, 6))
+    full_vectors_2 = tf.reshape(ops.full(tt_vectors_2), (2, 6))
+    full_matrices = tf.reshape(ops.full(tt_matrices), (3, 6, 6))
+    with self.test_session() as sess:
+      res = sess.run((res_actual, full_vectors_1, full_vectors_2,
+                      ops.full(tt_matrices)))
+      res_actual_val, vectors_1_val, vectors_2_val, matrices_val = res
+      res_desired_val = np.zeros((2, 3))
+      for i in range(2):
+        for j in range(3):
+          curr_val = np.dot(vectors_1_val[i], matrices_val[j])
+          curr_val = np.dot(curr_val, vectors_2_val[i])
+          res_desired_val[i, j] = curr_val
+      self.assertAllClose(res_desired_val, res_actual_val)
+
 if __name__ == "__main__":
   tf.test.main()
 
