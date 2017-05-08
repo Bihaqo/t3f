@@ -40,7 +40,7 @@ def shape(tt):
   """
   tt_raw_shape = raw_shape(tt)
   if tt.is_tt_matrix():
-    res = tf.reduce_prod(raw_shape, axis=1)
+    res = tf.reduce_prod(tt_raw_shape, axis=1)
   else:
     res = tt_raw_shape[0]
 
