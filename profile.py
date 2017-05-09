@@ -93,5 +93,5 @@ print('Projecting %s on %s takes %f seconds.' % (vecs, one_vec,
                                                  batch_project_time))
 logs['batch_project_time'] = batch_project_time
 
-pickle.save(open('profile_logs.pickle', 'wb'), logs)
+pickle.dump(logs, open('profile_logs.pickle', 'wb'))
 
