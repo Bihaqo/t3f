@@ -13,7 +13,7 @@ args = parser.parse_args()
 print(device_lib.list_local_devices())
 
 
-def my_timeit(f, number=100, repeat=3):
+def my_timeit(f, number=20, repeat=3):
   # Warmup.
   for i in range(3):
     f()
