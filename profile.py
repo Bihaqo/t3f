@@ -1,9 +1,14 @@
 import timeit
 import numpy as np
 import pickle
+import argparse
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 import t3f
+
+parser = argparse.ArgumentParser(description='Measure execution time of various t3f operations.')
+parser.add_argument('--file_path', help='Path to the file to save logs.')
+args = parser.parse_args()
 
 print(device_lib.list_local_devices())
 
@@ -93,5 +98,6 @@ print('Projecting %s on %s takes %f seconds.' % (vecs, one_vec,
                                                  batch_project_time))
 logs['batch_project_time'] = batch_project_time
 
-pickle.dump(logs, open('profile_logs.pickle', 'wb'))
+if args.file_path is not None:
+  pickle.dump(logs, open(args.file_path, 'wb'))
 
