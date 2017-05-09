@@ -27,8 +27,8 @@ def my_timeit(f, number=100, repeat=3):
 shape = 10 * np.ones(10)
 matrices = t3f.random_matrix_batch((shape, shape), 10, batch_size=100)
 matrices = t3f.cast(matrices, tf.float64)
-matrices = t3f.get_variable('matrices', initializer=matrices)
 one_matrix = t3f.get_variable('one_matrix', initializer=matrices[0])
+matrices = t3f.get_variable('matrices', initializer=matrices)
 vecs = t3f.random_matrix_batch((shape, None), 10, batch_size=100)
 vecs = t3f.cast(vecs, tf.float64)
 one_vec = t3f.get_variable('one_vec', initializer=vecs[0])
@@ -47,11 +47,11 @@ print('Multiplying %s by %s takes %f seconds.' % (one_matrix, vecs,
 
 matmul_op = t3f.matmul(one_matrix, one_matrix).op
 matmul_time = my_timeit(lambda: sess.run(matmul_op))
-print('Multiplying %s by itself takes %f seconds.' % (one_matrix, matmul_time))
+print('Multipilying %s by itself takes %f seconds.' % (one_matrix, matmul_time))
 
 batch_matmul_op = t3f.matmul(one_matrix, matrices).op
 batch_matmul_time = my_timeit(lambda: sess.run(batch_matmul_op))
-print('Multplying %s by %s takes %f seconds.' % (one_matrix, matrices,
+print('Multpilying %s by %s takes %f seconds.' % (one_matrix, matrices,
                                                  batch_matmul_time))
 
 norm_op = t3f.frobenius_norm(one_matrix).op
@@ -80,3 +80,4 @@ batch_project_op = t3f.project(vecs, one_vec).op
 batch_project_time = my_timeit(lambda: sess.run(batch_project_op))
 print('Projecting %s on %s takes %f seconds.' % (vecs, one_vec,
                                                  batch_project_time))
+
