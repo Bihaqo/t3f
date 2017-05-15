@@ -39,7 +39,11 @@ def concat_along_batch_dim(tt_list):
     curr_core = tf.concat([tt.tt_cores[core_idx] for tt in tt_list], axis=0)
     res_cores.append(curr_core)
 
-  batch_size = sum([tt.batch_size for tt in tt_list])
+  try:
+    batch_size = sum([tt.batch_size for tt in tt_list])
+  except TypeError:
+    # The batch sizes are not defined and you can't sum Nones.
+    batch_size = None
 
   return TensorTrainBatch(res_cores, tt_list[0].get_raw_shape(),
                           tt_list[0].get_tt_ranks(), batch_size)
