@@ -113,4 +113,4 @@ nosetests  --logging-level=WARNING
 ```
 
 # Other implementations
-There are also implementations of the TT-toolbox in [plain python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).
+There are also implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).
