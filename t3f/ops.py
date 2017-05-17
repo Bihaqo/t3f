@@ -923,7 +923,6 @@ def quadratic_form_batch(A, b, c):
   curr_core_1 = b.tt_cores[0]
   curr_core_2 = c.tt_cores[0]
   curr_matrix_core = A.tt_cores[0]
-  print(curr_core_1.get_shape(), curr_matrix_core.get_shape(), curr_core_2.get_shape())
   # We enumerate the dummy dimension (that takes 1 value) with `k`.
   res = tf.einsum('paikb,cijd,pejkf->pbdf', curr_core_1, curr_matrix_core,
                   curr_core_2)
