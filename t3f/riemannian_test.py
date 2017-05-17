@@ -227,5 +227,22 @@ class RiemannianTest(tf.test.TestCase):
       riemannian.add_n_projected((projected1, another_projected2),
                                  coef=[1.2, -2.0])
 
+  def testWeightedAddNProjectedBatch(self):
+    # Add several batches of TT-objects from the same tangent space with coefs.
+    what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3)
+    what2 = initializers.random_tensor_batch((2, 3, 4), 1, batch_size=3)
+    where = initializers.random_tensor((2, 3, 4), 3)
+    coef = [[1.2, -1, 0], [0.5, 0.01, -0.2]]
+    projected1 = riemannian.project(what1, where)
+    projected2 = riemannian.project(what2, where)
+    multiplied1 = batch_ops.multiply_along_batch_dim(projected1, coef[0])
+    multiplied2 = batch_ops.multiply_along_batch_dim(projected2, coef[1])
+    desired = ops.full(multiplied1 + multiplied2)
+    actual = ops.full(riemannian.add_n_projected((projected1, projected2),
+                                                 coef=coef))
+    with self.test_session() as sess:
+      desired_val, actual_val = sess.run((desired, actual))
+      self.assertAllClose(desired_val, actual_val)
+
 if __name__ == "__main__":
   tf.test.main()
