@@ -942,7 +942,7 @@ def cast(tt_a, dtype):
                      'TensorTrainBatch.' % tt_a)
 
 
-def add_n(tt_objects, max_r):
+def add_n(tt_objects, max_tt_rank):
   """Adds a bunch of TT-object and round after each summation.
   
   This version implements a slow-to-compile but fast-to-execute (at least on
@@ -950,6 +950,7 @@ def add_n(tt_objects, max_r):
 
   Args:
     tt_objects: a list of `TensorTrainBase` objects.
+    max_tt_rank: a number, TT-rank for each individual rounding.
   
   Returns:
     Object of the same type as each input.
@@ -960,7 +961,7 @@ def add_n(tt_objects, max_r):
     for i in range(0, len(prev_level), 2):
       curr = prev_level[i]
       if i + 1 < len(prev_level):
-        curr = decompositions.round(curr + prev_level[i + 1], max_r)
+        curr = decompositions.round(curr + prev_level[i + 1], max_tt_rank)
       next_level.append(curr)
     prev_level = next_level
   return prev_level[0]
