@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Regenerates documentaion and adds it to the commite
+#
+# To enable this hook, rename this file to "pre-commit".
+echo
+echo "Regenerating Documentation"
+echo
+pdoc --html --overwrite --html-dir docs/ ./t3f
+echo
+echo
+echo "Regeneration complete"
+echo
+echo "Adding updated docs to commit"
+echo
+git add docs
+git add -u docs
+echo
