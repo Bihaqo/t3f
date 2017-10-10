@@ -127,13 +127,17 @@ class TensorTrainBatch(TensorTrainBase):
 
   def __str__(self):
     """A string describing the TensorTrainBatch, its TT-rank and shape."""
+
+
+
     shape = self.get_shape()
     tt_ranks = self.get_tt_ranks()
 
     if self.batch_size is None:
-        batch_size_str = '(?)'
+        batch_size_str = "(?)"
     else:
         batch_size_str = str(self.batch_size)
+
 
     if self.is_tt_matrix():
       raw_shape = self.get_raw_shape()
