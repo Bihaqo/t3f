@@ -3,6 +3,9 @@
 
 TensorFlow implementation of the Tensor Train (TT) -Toolbox.
 
+# API
+API is available via [readthedocs](https://t3f.readthedocs.io/en/latest/).
+
 # Installation
 T3f assumes you have a working TensorFlow [v1.0](https://www.tensorflow.org/versions/r1.0/install/), [v1.1](https://www.tensorflow.org/versions/r1.1/install/), or [v1.2](https://www.tensorflow.org/versions/r1.2/install/)  installation.
 We don't include it into pip requirements since the installation of TensorFlow varies depending on your setup.
@@ -110,6 +113,13 @@ def restore_all_saved(sess, path):
 # Tests
 ```bash
 nosetests  --logging-level=WARNING
+```
+
+# Building API documentation
+The documentation is build by sphinx and hosted on readthedocs.org. To rebuild the documentation, install sphinx and compile the docs by
+```bash
+cd docs
+make html
 ```
 
 # Other implementations
