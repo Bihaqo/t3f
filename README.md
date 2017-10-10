@@ -112,15 +112,5 @@ def restore_all_saved(sess, path):
 nosetests  --logging-level=WARNING
 ```
 
-# Building documentation
-To build the documentation from source code, install ```pdoc``` (e.g. from pip). Now you can build the documentation manually:
-```bash
-pdoc --html --overwrite --html-dir docs/ ./t3f
-```
-Or add a hook to regenerate the docs just with each commit:
-```bash
-ln -s absolute_path_to_t3f_folder/pre-commit-hook absolute_path_to_t3f_folder/.git/hooks/pre-commit
-```
-
 # Other implementations
 There are also implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).
