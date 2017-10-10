@@ -56,3 +56,10 @@ from t3f.decompositions import to_tt_matrix
 from t3f.decompositions import to_tt_tensor
 
 import kronecker
+
+_directly_imported = ['tensor_train_base', 'tensor_train', 'tensor_train_batch',
+                      'variables', 'ops', 'batch_ops', 'initializers',
+                      'regularizers', 'riemannian', 'shapes', 'decompositions']
+
+__all__ = [s for s in dir() if
+           s not in _directly_imported and not s.startswith('_')]
