@@ -802,20 +802,26 @@ def frobenius_norm_squared(tt, differentiable=False):
     sum of squares of all elements in `tt`
   """
   if differentiable:
-    if tt.is_tt_matrix():
-      running_prod = tf.einsum('aijb,cijd->bd', tt.tt_cores[0], tt.tt_cores[0])
+    if hasattr(tt, 'batch_size'):
+        bs_str = "n"
     else:
-      running_prod = tf.einsum('aib,cid->bd', tt.tt_cores[0], tt.tt_cores[0])
+        bs_str = ""
+    if tt.is_tt_matrix():
+      running_prod = tf.einsum('{0}aijb,{0}cijd->{0}bd'.format(bs_str), tt.tt_cores[0], tt.tt_cores[0])
+    else:
+      running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str), tt.tt_cores[0], tt.tt_cores[0])
 
     for core_idx in range(1, tt.ndims()):
       curr_core = tt.tt_cores[core_idx]
       if tt.is_tt_matrix():
-        running_prod = tf.einsum('ac,aijb,cijd->bd', running_prod, curr_core,
+        running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str), running_prod, curr_core,
                                  curr_core)
       else:
-        running_prod = tf.einsum('ac,aib,cid->bd', running_prod, curr_core,
+        running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str), running_prod, curr_core,
                                  curr_core)
-    return running_prod[0, 0]
+    return tf.squeeze(running_prod, [1, 2])
+
+
   else:
     orth_tt = decompositions.orthogonalize_tt_cores(tt, left_to_right=True)
     # All the cores of orth_tt except the last one are orthogonal, hence
@@ -921,7 +927,7 @@ def cast(tt_a, dtype):
 
   Args:
     tt_a: `TensorTrain` object.
-    dtype: The destination type. 
+    dtype: The destination type.
 
   Raises:
     TypeError: If `tt_a` cannot be cast to the `dtype`.

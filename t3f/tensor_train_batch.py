@@ -29,11 +29,12 @@ class TensorTrainBatch(TensorTrainBase):
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, batch_size=None,
                convert_to_tensors=True):
-    """Creates a `TensorTrain`.
+    """Creates a `TensorTrainBatch`.
 
     Args:
-      tt_cores: A tuple of 3d or 4d tensor-like objects of shape
-        `[r_k-1, n_k, r_k]`.
+      tt_cores: A tuple of 4d or 5d tensor-like objects of shape
+        `[batch_size, r_k-1, n_k, r_k]` or
+        `[batch_size, r_k-1, n_k, m_k, r_k]`
         Tensor-like can be numpy array, tf.Tensor, of tf.Variable
       batch_size: number of elements in the batch. If None, tries to infer from
         the TT-cores (not always possible even if it should be, e.g. if ranks
@@ -126,15 +127,25 @@ class TensorTrainBatch(TensorTrainBase):
 
   def __str__(self):
     """A string describing the TensorTrainBatch, its TT-rank and shape."""
+
+
+
     shape = self.get_shape()
     tt_ranks = self.get_tt_ranks()
+
+    if self.batch_size is None:
+        batch_size_str = "(?)"
+    else:
+        batch_size_str = str(self.batch_size)
+
 
     if self.is_tt_matrix():
       raw_shape = self.get_raw_shape()
       type_str = 'TT-matrix variables' if self.is_variable() else 'TT-matrices'
-      return "A %d element batch of %s of size %d x %d, underlying tensor " \
-             "shape: %s x %s, TT-ranks: %s" % (self.batch_size, type_str,
-                                               shape[0], shape[1],
+
+      return "A %s element batch of %s of size %d x %d, underlying tensor " \
+             "shape: %s x %s, TT-ranks: %s" % (batch_size_str, type_str,
+                                               shape[1], shape[2],
                                                raw_shape[0], raw_shape[1],
                                                tt_ranks)
     else:
@@ -142,8 +153,8 @@ class TensorTrainBatch(TensorTrainBase):
         type_str = 'Tensor Train variables'
       else:
         type_str = 'Tensor Trains'
-      return "A %d element batch of %s of shape %s, TT-ranks: %s" % \
-             (self.batch_size, type_str, shape, tt_ranks)
+      return "A %s element batch of %s of shape %s, TT-ranks: %s" % \
+             (batch_size_str, type_str, shape[1:], tt_ranks)
 
   @staticmethod
   def _do_collapse_dim(slice_spec):
