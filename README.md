@@ -1,4 +1,15 @@
+[![Build Status](https://travis-ci.org/Bihaqo/t3f.svg?branch=develop)](https://travis-ci.org/Bihaqo/t3f)
+[![Coverage Status](https://coveralls.io/repos/github/Bihaqo/t3f/badge.svg?branch=develop)](https://coveralls.io/github/Bihaqo/t3f?branch=develop)
+
 TensorFlow implementation of the Tensor Train (TT) -Toolbox.
+
+# Installation
+T3f assumes you have a working TensorFlow [v1.0](https://www.tensorflow.org/versions/r1.0/install/), [v1.1](https://www.tensorflow.org/versions/r1.1/install/), or [v1.2](https://www.tensorflow.org/versions/r1.2/install/)  installation.
+We don't include it into pip requirements since the installation of TensorFlow varies depending on your setup.
+Then simply run
+```bash
+pip install t3f
+```
 
 # Basic usage
 Import the libraries
@@ -100,3 +111,16 @@ def restore_all_saved(sess, path):
 ```bash
 nosetests  --logging-level=WARNING
 ```
+
+# Building documentation
+To build the documentation from source code, install ```pdoc``` (e.g. from pip). Now you can build the documentation manually:
+```bash
+pdoc --html --overwrite --html-dir docs/ ./t3f
+```
+Or add a hook to regenerate the docs just with each commit:
+```bash
+ln -s absolute_path_to_t3f_folder/pre-commit-hook absolute_path_to_t3f_folder/.git/hooks/pre-commit
+```
+
+# Other implementations
+There are also implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).

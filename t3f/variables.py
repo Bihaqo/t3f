@@ -1,8 +1,7 @@
-import re
 import tensorflow as tf
 
-import tensor_train
-from initializers import random_tensor
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
 
 
 def get_variable(name,
@@ -20,7 +19,8 @@ def get_variable(name,
       Used to name the TT-cores.
     dtype: Type of the new or existing TensorTrain variable TT-cores (defaults
       to DT_FLOAT).
-    initializer: Initializer for the variable if one is created.
+    initializer: TensorTrain or TensorTrainBatch, initializer for the variable
+      if one is created.
     regularizer: A (TensorTrain -> Tensor or None) function; the result of
       applying it on a newly created variable will be added to the collection
       GraphKeys.REGULARIZATION_LOSSES and can be used for regularization.
@@ -49,8 +49,13 @@ def get_variable(name,
   # TODO: support validate shape: check that the tensor dimensions are correct,
   # but ignore the ranks.
   # TODO: add validate ranks flag.
+
+  reuse = tf.get_variable_scope().reuse
+  if not reuse and initializer is None:
+    raise ValueError('Scope reuse is False and initializer is not provided.')
+
   variable_cores = []
-  if initializer is None:
+  if reuse:
     # Find an existing variable in the collection.
     path = tf.get_variable_scope().name
     if path != '' and path[-1] != '/':
@@ -82,9 +87,14 @@ def get_variable(name,
                                         collections=collections,
                                         caching_device=caching_device)
         variable_cores.append(curr_core_var)
-    v = tensor_train.TensorTrain(variable_cores, initializer.get_raw_shape(),
-                                 initializer.get_tt_ranks(),
-                                 convert_to_tensors=False)
+    if isinstance(initializer, TensorTrain):
+      v = TensorTrain(variable_cores, initializer.get_raw_shape(),
+                      initializer.get_tt_ranks(),
+                      convert_to_tensors=False)
+    else:
+      v = TensorTrainBatch(variable_cores, initializer.get_raw_shape(),
+                           initializer.get_tt_ranks(), initializer.batch_size,
+                           convert_to_tensors=False)
 
     # Add the create TensorTrain object into a collection so that we can
     # retrieve it in the future by get_tt_variable('name').
@@ -109,6 +119,11 @@ def assign(ref, value, validate_shape=None, use_locking=None, name=None):
     for i in range(ref.ndims()):
       new_cores.append(tf.assign(ref.tt_cores[i], value.tt_cores[i],
                                  use_locking=use_locking))
-  return tensor_train.TensorTrain(new_cores, value.get_raw_shape(),
+  if isinstance(value, TensorTrainBatch):
+    return TensorTrainBatch(new_cores, value.get_raw_shape(),
+                            value.get_tt_ranks(), value.batch_size,
+                            convert_to_tensors=False)
+  else:
+    return TensorTrain(new_cores, value.get_raw_shape(),
                                   value.get_tt_ranks(),
                                   convert_to_tensors=False)

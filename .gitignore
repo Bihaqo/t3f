@@ -9,3 +9,6 @@
 
 # Documentation build files.
 /docs/_build/
+
+# Test coverage results.
+.coverage
