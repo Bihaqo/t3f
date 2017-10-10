@@ -6,15 +6,28 @@
 Welcome to t3f documentation!
 ===============================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+Module contents
+---------------
 
-   api.rst
+.. automodule:: t3f
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+t3f\.utils module
+-----------------
+
+.. automodule:: t3f.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+t3f\.kronecker module
+-----------------
+
+.. automodule:: t3f.kronecker
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
