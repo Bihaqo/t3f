@@ -106,6 +106,42 @@ class TTTensorTest(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
+  def testMultiplyBatchByTensor(self):
+    tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+        res_actual = ops.full(ops.multiply(tt_a, tt_b))
+        res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+        res_desired = ops.full(tt_a) * ops.full(tt_b)
+        to_run = [res_actual, res_actual2, res_desired]
+        res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+        self.assertAllClose(res_actual_val, res_desired_val)
+        self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyBatchByBatch(self):
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+        res_actual = ops.full(ops.multiply(tt_a, tt_b))
+        res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+        res_desired = ops.full(tt_a) * ops.full(tt_b)
+        to_run = [res_actual, res_actual2, res_desired]
+        res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+        self.assertAllClose(res_actual_val, res_desired_val)
+        self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyBroadcasting(self):
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+        res_actual = ops.full(ops.multiply(tt_a, tt_b))
+        res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+        res_desired = ops.full(tt_a) * ops.full(tt_b)
+        to_run = [res_actual, res_actual2, res_desired]
+        res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+        self.assertAllClose(res_actual_val, res_desired_val)
+        self.assertAllClose(res_actual2_val, res_desired_val)
+
   def testMultiplyByNumber(self):
     # Multiply a tensor by a number.
     tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1))
@@ -343,7 +379,7 @@ class TTMatrixTest(tf.test.TestCase):
 
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
-    
+
     tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
     tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
 
@@ -387,8 +423,8 @@ class TTMatrixTest(tf.test.TestCase):
 
 
   def testHalfKnownRanksTTMatmul(self):
-    # Tests tt_tt_matmul for the case  when one matrice has known ranks 
-    # and the other one doesn't    
+    # Tests tt_tt_matmul for the case  when one matrice has known ranks
+    # and the other one doesn't
     np.random.seed(1)
     K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
     K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
