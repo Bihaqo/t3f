@@ -790,7 +790,8 @@ def multiply(tt_left, right):
 
 
 def frobenius_norm_squared(tt, differentiable=False):
-  """Frobenius norm squared of a TensorTrain (sum of squares of all elements).
+  """Frobenius norm squared (sum of squares of all elements) of a TensorTrain
+  or of each TensorTrain in a TensorTrainBatch .
 
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object
@@ -810,22 +811,22 @@ def frobenius_norm_squared(tt, differentiable=False):
         bs_str = ''
     if tt.is_tt_matrix():
       running_prod = tf.einsum('{0}aijb,{0}cijd->{0}bd'.format(bs_str),
-                                tt.tt_cores[0], tt.tt_cores[0])
+                               tt.tt_cores[0], tt.tt_cores[0])
     else:
       running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str),
-                                tt.tt_cores[0], tt.tt_cores[0])
+                               tt.tt_cores[0], tt.tt_cores[0])
 
     for core_idx in range(1, tt.ndims()):
       curr_core = tt.tt_cores[core_idx]
       if tt.is_tt_matrix():
         running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
-                                  running_prod, curr_core, curr_core)
+                                 running_prod, curr_core, curr_core)
       else:
         running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
-                                  running_prod, curr_core, curr_core)
+                                 running_prod, curr_core, curr_core)
 
     return tf.squeeze(running_prod, [-1, -2])
-            
+
   else:
     orth_tt = decompositions.orthogonalize_tt_cores(tt, left_to_right=True)
     # All the cores of orth_tt except the last one are orthogonal, hence
@@ -839,10 +840,11 @@ def frobenius_norm_squared(tt, differentiable=False):
 
 
 def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
-  """Frobenius norm of a TensorTrain (sqrt of the sum of squares of all elements).
+  """Frobenius norm (sqrt of sum of squares of all elements) of a TensorTrain
+  or of each TensorTrain in a TensorTrainBatch .
 
   Args:
-    tt: `TensorTrain` object
+    tt: `TensorTrain` or `TensorTrainBatch` object
     epsilon: the function actually computes sqrt(norm_squared + epsilon) for
       numerical stability (e.g. gradient of sqrt at zero is inf).
     differentiable: bool, whether to use a differentiable implementation or
