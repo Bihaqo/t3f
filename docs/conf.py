@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.abspath('../t3f'))
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
-    'sphinxcontrib.napoleon',
+    'sphinx.ext.napoleon',
     'sphinx.ext.mathjax']
 
 # Add any paths that contain templates here, relative to this directory.
