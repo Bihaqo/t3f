@@ -610,8 +610,9 @@ class TTMatrixTestBatch(tf.test.TestCase):
                               ops.full(tt_mat_2[0]))
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
-      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5)
-      self.assertAllClose(res_actual2_val, res_desired_val, rtol=1e-5)
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5, rtol=1e-5)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-5,
+                          rtol=1e-5)
 
   def testTranspose(self):
     # Transpose a batch of TT-matrices.
