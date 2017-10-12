@@ -792,6 +792,8 @@ def multiply(tt_left, right):
 def frobenius_norm_squared(tt, differentiable=False):
   """Frobenius norm squared of `TensorTrain` or of each TT in `TensorTrainBatch`.
 
+  Frobenius norm squared is the sum of squares of all elements in a tensor.
+
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object
     differentiable: bool, whether to use a differentiable implementation
@@ -840,6 +842,8 @@ def frobenius_norm_squared(tt, differentiable=False):
 
 def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
   """Frobenius norm of `TensorTrain` or of each TT in `TensorTrainBatch`
+
+  Frobenius norm is the sqrt of the sum of squares of all elements in a tensor.
 
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object
