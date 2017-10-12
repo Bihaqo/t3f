@@ -343,7 +343,7 @@ class TTMatrixTest(tf.test.TestCase):
 
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
-    
+
     tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
     tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
 
@@ -387,8 +387,8 @@ class TTMatrixTest(tf.test.TestCase):
 
 
   def testHalfKnownRanksTTMatmul(self):
-    # Tests tt_tt_matmul for the case  when one matrice has known ranks 
-    # and the other one doesn't    
+    # Tests tt_tt_matmul for the case  when one matrice has known ranks
+    # and the other one doesn't
     np.random.seed(1)
     K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
     K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
@@ -510,6 +510,15 @@ class TTTensorBatchTest(tf.test.TestCase):
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testFrobeniusNormDifferentiableBatch(self):
+    with self.test_session() as sess:
+        tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+        norm_sq_diff = ops.frobenius_norm_squared(tt, differentiable=True)
+        variables = [norm_sq_diff,  ops.full(tt)]
+        norm_sq_diff_val, tt_full = sess.run(variables)
+        desired_norm = np.linalg.norm(tt_full.reshape((5, -1)), axis=1)**2
+        self.assertAllClose(norm_sq_diff_val, desired_norm, atol=1e-5, rtol=1e-5)
 
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
