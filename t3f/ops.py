@@ -844,32 +844,44 @@ def multiply(tt_left, right):
 
 
 def frobenius_norm_squared(tt, differentiable=False):
-  """Frobenius norm squared of a TensorTrain (sum of squares of all elements).
+  """Frobenius norm squared of `TensorTrain` or of each TT in `TensorTrainBatch`.
+
+  Frobenius norm squared is the sum of squares of all elements in a tensor.
 
   Args:
-    tt: `TensorTrain` object
+    tt: `TensorTrain` or `TensorTrainBatch` object
     differentiable: bool, whether to use a differentiable implementation
       or a fast and stable implementation based on QR decomposition.
 
   Returns
-    a number
-    sum of squares of all elements in `tt`
+    a number which is the Frobenius norm squared of `tt`, if it is `TensorTrain`
+    OR
+    a Tensor of size tt.batch_size, consisting of the Frobenius norms squared of
+    each TensorTrain in `tt`, if it is `TensorTrainBatch`
   """
   if differentiable:
-    if tt.is_tt_matrix():
-      running_prod = tf.einsum('aijb,cijd->bd', tt.tt_cores[0], tt.tt_cores[0])
+    if hasattr(tt, 'batch_size'):
+        bs_str = 'n'
     else:
-      running_prod = tf.einsum('aib,cid->bd', tt.tt_cores[0], tt.tt_cores[0])
+        bs_str = ''
+    if tt.is_tt_matrix():
+      running_prod = tf.einsum('{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+                               tt.tt_cores[0], tt.tt_cores[0])
+    else:
+      running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str),
+                               tt.tt_cores[0], tt.tt_cores[0])
 
     for core_idx in range(1, tt.ndims()):
       curr_core = tt.tt_cores[core_idx]
       if tt.is_tt_matrix():
-        running_prod = tf.einsum('ac,aijb,cijd->bd', running_prod, curr_core,
-                                 curr_core)
+        running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+                                 running_prod, curr_core, curr_core)
       else:
-        running_prod = tf.einsum('ac,aib,cid->bd', running_prod, curr_core,
-                                 curr_core)
-    return running_prod[0, 0]
+        running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
+                                 running_prod, curr_core, curr_core)
+
+    return tf.squeeze(running_prod, [-1, -2])
+
   else:
     orth_tt = decompositions.orthogonalize_tt_cores(tt, left_to_right=True)
     # All the cores of orth_tt except the last one are orthogonal, hence
@@ -883,18 +895,22 @@ def frobenius_norm_squared(tt, differentiable=False):
 
 
 def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
-  """Frobenius norm of a TensorTrain (sqrt of the sum of squares of all elements).
+  """Frobenius norm of `TensorTrain` or of each TT in `TensorTrainBatch`
+
+  Frobenius norm is the sqrt of the sum of squares of all elements in a tensor.
 
   Args:
-    tt: `TensorTrain` object
+    tt: `TensorTrain` or `TensorTrainBatch` object
     epsilon: the function actually computes sqrt(norm_squared + epsilon) for
       numerical stability (e.g. gradient of sqrt at zero is inf).
     differentiable: bool, whether to use a differentiable implementation or
       a fast and stable implementation based on QR decomposition.
 
   Returns
-    a number
-    sqrt of the sum of squares of all elements in `tt`
+    a number which is the Frobenius norm of `tt`, if it is `TensorTrain`
+    OR
+    a Tensor of size tt.batch_size, consisting of the Frobenius norms of
+    each TensorTrain in `tt`, if it is `TensorTrainBatch`
   """
   return tf.sqrt(frobenius_norm_squared(tt, differentiable) + epsilon)
 

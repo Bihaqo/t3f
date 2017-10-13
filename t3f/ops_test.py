@@ -547,6 +547,15 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
+  def testFrobeniusNormDifferentiableBatch(self):
+    with self.test_session() as sess:
+        tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+        norm_sq_diff = ops.frobenius_norm_squared(tt, differentiable=True)
+        variables = [norm_sq_diff,  ops.full(tt)]
+        norm_sq_diff_val, tt_full = sess.run(variables)
+        desired_norm = np.linalg.norm(tt_full.reshape((5, -1)), axis=1)**2
+        self.assertAllClose(norm_sq_diff_val, desired_norm, atol=1e-5, rtol=1e-5)
+
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
     with self.test_session() as sess:
