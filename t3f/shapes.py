@@ -212,9 +212,9 @@ def is_batch_broadcasting_possible(tt_a, tt_b):
   """Check that the batch broadcasting possible for the given batch sizes.
 
   Returns true if the batch sizes are the same or if one of them is 1.
-  
+
   If the batch size that is supposed to be 1 is not known on compilation stage,
-  broadcasting is not allowed. 
+  broadcasting is not allowed.
 
   Args:
     tt_a: TensorTrain or TensorTrainBatch
