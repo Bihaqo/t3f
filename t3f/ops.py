@@ -765,8 +765,6 @@ def multiply(tt_left, right):
     if (isinstance(tt_left, TensorTrainBatch)):
         out_batch_size = tt_left.batch_size
   else:
-    tt_type = [isinstance(tt_left, TensorTrainBatch),
-               isinstance(right, TensorTrainBatch)]
     ndims = tt_left.ndims()
 
     if tt_left.is_tt_matrix() != right.is_tt_matrix():
@@ -788,7 +786,6 @@ def multiply(tt_left, right):
       elif (tt_left.batch_size is not None and right.batch_size is None):
         if (tt_left.batch_size > 1):
             is_none_and_k = True
-
 
     if is_none_and_k:
       message = ('The batch sizes are different and were unknown on '
