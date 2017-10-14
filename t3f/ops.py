@@ -745,22 +745,30 @@ def multiply(tt_left, right):
     right: `TensorTrain` OR `TensorTrainBatch` OR a number.
 
   Returns
-    a `TensorTrain` object corresponding to the element-wise product of the
-    arguments.
+    a `TensorTrain` or `TensorTrainBatch` object corresponding to the
+    element-wise product of the arguments.
 
   Raises
     ValueError if the arguments shapes do not coincide or broadcasting is not
     possible.
   """
-  is_batch_case = isinstance(tt_left, TensorTrainBatch) or isinstance(right, TensorTrainBatch)
+
+  tt_type = [isinstance(tt_left, TensorTrainBatch),
+             isinstance(right, TensorTrainBatch)]
+  is_batch_case = tt_type[0] or tt_type[1]
+
   if not isinstance(right, TensorTrainBase):
     # Assume right is a number, not TensorTrain.
     tt_cores = list(tt_left.tt_cores)
     tt_cores[0] = right * tt_cores[0]
     out_ranks = tt_left.get_tt_ranks()
-
+    if (isinstance(tt_left, TensorTrainBatch)):
+        out_batch_size = tt_left.batch_size
   else:
+    tt_type = [isinstance(tt_left, TensorTrainBatch),
+               isinstance(right, TensorTrainBatch)]
     ndims = tt_left.ndims()
+
     if tt_left.is_tt_matrix() != right.is_tt_matrix():
       raise ValueError('The arguments should be both TT-tensors or both '
                        'TT-matrices')
@@ -768,68 +776,95 @@ def multiply(tt_left, right):
     if tt_left.get_raw_shape() != right.get_raw_shape():
       raise ValueError('The arguments should have the same shape.')
 
-    if not shapes.is_batch_broadcasting_possible(tt_left, right):
-      raise ValueError('The batch sizes are different and not 1, broadcasting is'
-                        'not available.')
+    out_batch_size = 1
+    dependencies = []
+    is_none_and_k = False
+    if (tt_type[0] and tt_type[1]):
+      if (tt_left.batch_size is None and right.batch_size is None):
+          is_none_and_k = True
+      if (tt_left.batch_size is None and right.batch_size > 1):
+          is_none_and_k = True
+      if (tt_left.batch_size > 1 and right.batch_size is None):
+          is_none_and_k = True
 
-    if (is_batch_case):
-         if isinstance(tt_left, TensorTrainBatch):
-             out_batch_size = tt_left.batch_size
-         else:
-             out_batch_size = right.batch_size
+    if is_none_and_k:
+      message = ('The batch sizes are different and were unknown on '
+                   'compilation stage. Note that we dont support broacasting for'
+                   'batch sizes unknown on compilation.')
+
+      dependencies.append(tf.assert_equal(shapes.lazy_batch_size(tt_left),
+                                          shapes.lazy_batch_size(right),
+                                          message=message))
+
+    if (not shapes.is_batch_broadcasting_possible(tt_left, right)
+        and not is_none_and_k):
+      raise ValueError('The batch sizes are different and not 1, broadcasting is '
+                       'not available.')
 
     a_ranks = shapes.lazy_tt_ranks(tt_left)
     b_ranks = shapes.lazy_tt_ranks(right)
     shape = shapes.lazy_raw_shape(tt_left)
-    output_string = ''
-    out_batch_size = 1
-    bs_strings = ['', '']
-    op_type = [isinstance(tt_left, TensorTrainBatch), isinstance(right, TensorTrainBatch)]
+
+    output_str = ''
+    bs_str_left = ''
+    bs_str_right = ''
 
     if is_batch_case:
-        if (op_type[0] and op_type[1]):
-            bs_desc = [tt_left.batch_size == 1, right.batch_size == 1]
-            if (not (bs_desc[0] + bs_desc[1])):
-                #Both arguments are batches, but we don't have to use broadcasting
-                #E.g. batches of size 1 and 1 or n and n
-                bs_strings = ['n', 'n']
-                output_string = 'n'
-            else:
-                #Using broadcasting (e.g batch_sizes are 1 and n>1)
-                bs_strings = ['n', 'm']
-                output_string = 'nm'
-            out_batch_size = max(tt_left.batch_size, right.batch_size)
+      if (tt_type[0] and tt_type[1]):
+        # Both arguments are batches of equal size
+        if (tt_left.batch_size == right.batch_size or is_none_and_k):
+          bs_str_left = 'n'
+          bs_str_right = 'n'
+          output_str = 'n'
+          if (is_none_and_k):
+            out_batch_size = None
+          else:
+            out_batch_size = tt_left.batch_size
         else:
-            #One of the arguments is TensorTrain
-            if op_type[0]:
-                bs_strings = ['n', '']
-                out_batch_size = tt_left.batch_size
-            else:
-                bs_strings = ['', 'n']
-                out_batch_size = right.batch_size
-            output_string = 'n'
+          # Broadcasting (e.g batch_sizes are 1 and n>1)
+          bs_str_left = 'n'
+          bs_str_right = 'm'
+          output_str = 'nm'
+          if (tt_left.batch_size is None) or (tt_left.batch_size > 1):
+            out_batch_size = tt_left.batch_size
+          else:
+            out_batch_size = right.batch_size
+      else:
+        # One of the arguments is TensorTrain
+        if tt_type[0]:
+          bs_str_left = 'n'
+          bs_str_right = ''
+          out_batch_size = tt_left.batch_size
+        else:
+          bs_str_left = ''
+          bs_str_right = 'n'
+          out_batch_size = right.batch_size
+        output_str = 'n'
 
     is_matrix = tt_left.is_tt_matrix()
     tt_cores = []
+
     for core_idx in range(ndims):
       a_core = tt_left.tt_cores[core_idx]
       b_core = right.tt_cores[core_idx]
       left_rank = a_ranks[core_idx] * b_ranks[core_idx]
       right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
       if is_matrix:
-        curr_core = tf.einsum('{0}aijb,{1}cijd->{2}acijbd'.format(bs_strings[0],
-                              bs_strings[1], output_string), a_core, b_core)
-        curr_core = tf.reshape(curr_core, (out_batch_size, left_rank,
-                                           shape[0][core_idx], shape[1][core_idx],
-                                           right_rank))
-        if (not is_batch_case):
-            curr_core = tf.squeeze(curr_core, axis=0)
+        with tf.control_dependencies(dependencies):
+          curr_core = tf.einsum('{0}aijb,{1}cijd->{2}acijbd'.format(bs_str_left,
+                                bs_str_right, output_str), a_core, b_core)
+          curr_core = tf.reshape(curr_core, (-1, left_rank,
+                                             shape[0][core_idx], shape[1][core_idx],
+                                             right_rank))
+          if (not is_batch_case):
+              curr_core = tf.squeeze(curr_core, axis=0)
       else:
-        curr_core = tf.einsum('{0}aib,{1}cid->{2}acibd'.format(bs_strings[0],
-                              bs_strings[1], output_string), a_core, b_core)
-        curr_core = tf.reshape(curr_core, (out_batch_size, left_rank,
-                               shape[0][core_idx], right_rank))
-        if (not is_batch_case):
+        with tf.control_dependencies(dependencies):
+          curr_core = tf.einsum('{0}aib,{1}cid->{2}acibd'.format(bs_str_left,
+                                bs_str_right, output_str), a_core, b_core)
+          curr_core = tf.reshape(curr_core, (-1, left_rank,
+                                 shape[0][core_idx], right_rank))
+          if (not is_batch_case):
             curr_core = tf.squeeze(curr_core, axis=0)
 
       tt_cores.append(curr_core)
@@ -840,8 +875,8 @@ def multiply(tt_left, right):
   if not is_batch_case:
     return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
   else:
-    return TensorTrainBatch(tt_cores, tt_left.get_raw_shape(), out_ranks)
-
+    return TensorTrainBatch(tt_cores, tt_left.get_raw_shape(), out_ranks,
+                            batch_size=out_batch_size)
 
 def frobenius_norm_squared(tt, differentiable=False):
   """Frobenius norm squared of `TensorTrain` or of each TT in `TensorTrainBatch`.

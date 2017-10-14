@@ -106,42 +106,6 @@ class TTTensorTest(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
-  def testMultiplyBatchByTensor(self):
-    tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2)
-    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
-    with self.test_session() as sess:
-        res_actual = ops.full(ops.multiply(tt_a, tt_b))
-        res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
-        res_desired = ops.full(tt_a) * ops.full(tt_b)
-        to_run = [res_actual, res_actual2, res_desired]
-        res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
-        self.assertAllClose(res_actual_val, res_desired_val)
-        self.assertAllClose(res_actual2_val, res_desired_val)
-
-  def testMultiplyBatchByBatch(self):
-    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
-    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
-    with self.test_session() as sess:
-        res_actual = ops.full(ops.multiply(tt_a, tt_b))
-        res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
-        res_desired = ops.full(tt_a) * ops.full(tt_b)
-        to_run = [res_actual, res_actual2, res_desired]
-        res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
-        self.assertAllClose(res_actual_val, res_desired_val)
-        self.assertAllClose(res_actual2_val, res_desired_val)
-
-  def testMultiplyBroadcasting(self):
-    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1)
-    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
-    with self.test_session() as sess:
-        res_actual = ops.full(ops.multiply(tt_a, tt_b))
-        res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
-        res_desired = ops.full(tt_a) * ops.full(tt_b)
-        to_run = [res_actual, res_actual2, res_desired]
-        res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
-        self.assertAllClose(res_actual_val, res_desired_val)
-        self.assertAllClose(res_actual2_val, res_desired_val)
-
   def testMultiplyByNumber(self):
     # Multiply a tensor by a number.
     tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1))
@@ -549,12 +513,12 @@ class TTTensorBatchTest(tf.test.TestCase):
 
   def testFrobeniusNormDifferentiableBatch(self):
     with self.test_session() as sess:
-        tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
-        norm_sq_diff = ops.frobenius_norm_squared(tt, differentiable=True)
-        variables = [norm_sq_diff,  ops.full(tt)]
-        norm_sq_diff_val, tt_full = sess.run(variables)
-        desired_norm = np.linalg.norm(tt_full.reshape((5, -1)), axis=1)**2
-        self.assertAllClose(norm_sq_diff_val, desired_norm, atol=1e-5, rtol=1e-5)
+      tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+      norm_sq_diff = ops.frobenius_norm_squared(tt, differentiable=True)
+      variables = [norm_sq_diff,  ops.full(tt)]
+      norm_sq_diff_val, tt_full = sess.run(variables)
+      desired_norm = np.linalg.norm(tt_full.reshape((5, -1)), axis=1)**2
+      self.assertAllClose(norm_sq_diff_val, desired_norm, atol=1e-5, rtol=1e-5)
 
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
@@ -570,6 +534,109 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(norm_sq_actual_val, norm_sq_desired_val)
       self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                           rtol=1e-5)
+
+  def testMultiplyBatchByTensor(self):
+    tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+      res_desired = ops.full(tt_a) * ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyBatchByBatch(self):
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    res_actual = ops.full(ops.multiply(tt_a, tt_b))
+    res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+    res_desired = ops.full(tt_a) * ops.full(tt_b)
+    to_run = [res_actual, res_actual2, res_desired]
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+      res_desired = ops.full(tt_a) * ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyBroadcasting(self):
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+      res_desired = ops.full(tt_a) * ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyUnknownBatchSizeBroadcasting(self):
+    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    tt_a = TensorTrainBatch([c1, c2])
+    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=3, batch_size=1)
+    tt_c = initializers.random_tensor((3, 3), tt_rank=3)
+    res_ab = ops.full(ops.multiply(tt_a, tt_b))
+    res_ba = ops.full(ops.multiply(tt_b, tt_a))
+    res_ac = ops.full(ops.multiply(tt_a, tt_c))
+    res_ca = ops.full(ops.multiply(tt_c, tt_a))
+    res_desired_ab = ops.full(tt_a) * ops.full(tt_b)
+    res_desired_ac = ops.full(tt_a) * ops.full(tt_c)
+    to_run = [res_ab, res_ba, res_ac, res_ca, res_desired_ab, res_desired_ac]
+    feed_dict = {c1:np.random.rand(7, 1, 3, 2),
+                 c2:np.random.rand(7, 2, 3, 1)}
+    with self.test_session() as sess:
+      ab, ba, ac, ca, des_ab, des_ac = sess.run(to_run, feed_dict=feed_dict)
+      self.assertAllClose(ab, des_ab)
+      self.assertAllClose(ba, des_ab)
+      self.assertAllClose(ac, des_ac)
+      self.assertAllClose(ca, des_ac)
+
+  def testMultiplyTwoBatchesUnknownSize(self):
+    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    c3 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c4 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    tt_a = TensorTrainBatch([c1, c2])
+    tt_b = TensorTrainBatch([c3, c4])
+    res_ab = ops.full(ops.multiply(tt_a, tt_b))
+    res_ba = ops.full(ops.multiply(tt_b, tt_a))
+    res_desired = ops.full(tt_a) * ops.full(tt_b)
+    to_run = [res_ab, res_ba, res_desired]
+    feed_dict = {c1:np.random.rand(7, 1, 3, 2),
+                 c2:np.random.rand(7, 2, 3, 1),
+                 c3:np.random.rand(7, 1, 3, 2),
+                 c4:np.random.rand(7, 2, 3, 1)}
+
+    with self.test_session() as sess:
+        ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
+        self.assertAllClose(ab_full, des_full)
+        self.assertAllClose(ba_full, des_full)
+
+  def testMultiplyUnknownSizeBatchAndBatch(self):
+    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=2, batch_size=8)
+    tt_a = TensorTrainBatch([c1, c2])
+    res_ab = ops.full(ops.multiply(tt_a, tt_b))
+    res_ba = ops.full(ops.multiply(tt_b, tt_a))
+    res_desired = ops.full(tt_a) * ops.full(tt_b)
+    to_run = [res_ab, res_ba, res_desired]
+    feed_dict = {c1:np.random.rand(8, 1, 3, 2),
+                 c2:np.random.rand(8, 2, 3, 1)}
+
+    with self.test_session() as sess:
+      ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
+      self.assertAllClose(ab_full, des_full)
+      self.assertAllClose(ba_full, des_full)
+
+
+
 
 
 class TTMatrixTestBatch(tf.test.TestCase):
