@@ -782,10 +782,13 @@ def multiply(tt_left, right):
     if (tt_type[0] and tt_type[1]):
       if (tt_left.batch_size is None and right.batch_size is None):
         is_none_and_k = True
-      elif (tt_left.batch_size is None and right.batch_size > 1):
-        is_none_and_k = True
-      elif (tt_left.batch_size > 1 and right.batch_size is None):
-        is_none_and_k = True
+      elif (tt_left.batch_size is None and right.batch_size is not None):
+        if (right.batch_size > 1):
+            is_none_and_k = True
+      elif (tt_left.batch_size is not None and right.batch_size is None):
+        if (tt_left.batch_size > 1):
+            is_none_and_k = True
+
 
     if is_none_and_k:
       message = ('The batch sizes are different and were unknown on '
