@@ -753,9 +753,10 @@ def multiply(tt_left, right):
     possible.
   """
 
-  tt_type = [isinstance(tt_left, TensorTrainBatch),
-             isinstance(right, TensorTrainBatch)]
-  is_batch_case = tt_type[0] or tt_type[1]
+  is_left_batch = isinstance(tt_left, TensorTrainBatch)
+  is_right_batch = isinstance(right, TensorTrainBatch)
+
+  is_batch_case = is_left_batch or is_right_batch
 
   if not isinstance(right, TensorTrainBase):
     # Assume right is a number, not TensorTrain.
@@ -776,30 +777,37 @@ def multiply(tt_left, right):
 
     out_batch_size = 1
     dependencies = []
-    is_none_and_k = False
-    if (tt_type[0] and tt_type[1]):
-      if (tt_left.batch_size is None and right.batch_size is None):
-        is_none_and_k = True
-      elif (tt_left.batch_size is None and right.batch_size is not None):
-        if (right.batch_size > 1):
-            is_none_and_k = True
-      elif (tt_left.batch_size is not None and right.batch_size is None):
-        if (tt_left.batch_size > 1):
-            is_none_and_k = True
+    cant_determine_if_broadcast = False
+    if is_left_batch and is_right_batch:
+      if tt_left.batch_size is None and right.batch_size is None:
+        cant_determine_if_broadcast = True
+      elif tt_left.batch_size is None and right.batch_size is not None:
+        if right.batch_size > 1:
+            cant_determine_if_broadcast = True
+      elif tt_left.batch_size is not None and right.batch_size is None:
+        if tt_left.batch_size > 1:
+            cant_determine_if_broadcast = True
 
-    if is_none_and_k:
-      message = ('The batch sizes are different and were unknown on '
-                   'compilation stage. Note that we dont support broacasting for'
-                   'batch sizes unknown on compilation.')
+    if cant_determine_if_broadcast:
+      # Cannot determine if broadcasting is needed. Avoid broadcasting and
+      # assume elementwise multiplication AND add execution time assert to print
+      # a better error message if the batch sizes turn out to be different.
 
-      dependencies.append(tf.assert_equal(shapes.lazy_batch_size(tt_left),
-                                          shapes.lazy_batch_size(right),
-                                          message=message))
+      message = ('The batch sizes were unknown on compilation stage, so '
+                 'assumed elementwise multiplication (i.e. no broadcasting). '
+                 'Now it seems that they are different after all :')
 
-    if (not shapes.is_batch_broadcasting_possible(tt_left, right)
-        and not is_none_and_k):
-      raise ValueError('The batch sizes are different and not 1, broadcasting is '
-                       'not available.')
+      data = [message, shapes.lazy_shape(tt_left)[0], ' x ',
+              shapes.lazy_shape(right)[0]]
+      bs_eq = tf.assert_equal(shapes.lazy_batch_size(tt_left),
+                              shapes.lazy_batch_size(right), data=data)
+
+      dependencies.append(bs_eq)
+
+    do_broadcast = shapes.is_batch_broadcasting_possible(tt_left, right)
+    if not do_broadcast and not cant_determine_if_broadcast:
+      raise ValueError('The batch sizes are different and not 1, broadcasting '
+                       'is not available.')
 
     a_ranks = shapes.lazy_tt_ranks(tt_left)
     b_ranks = shapes.lazy_tt_ranks(right)
@@ -810,28 +818,28 @@ def multiply(tt_left, right):
     bs_str_right = ''
 
     if is_batch_case:
-      if (tt_type[0] and tt_type[1]):
-        # Both arguments are batches of equal size
-        if (tt_left.batch_size == right.batch_size or is_none_and_k):
+      if is_left_batch and is_right_batch:
+        # Both arguments are batches of equal size.
+        if tt_left.batch_size == right.batch_size or cant_determine_if_broadcast:
           bs_str_left = 'n'
           bs_str_right = 'n'
           output_str = 'n'
-          if (is_none_and_k):
+          if cant_determine_if_broadcast:
             out_batch_size = None
           else:
             out_batch_size = tt_left.batch_size
         else:
-          # Broadcasting (e.g batch_sizes are 1 and n>1)
+          # Broadcasting (e.g batch_sizes are 1 and n>1).
           bs_str_left = 'n'
           bs_str_right = 'm'
           output_str = 'nm'
-          if (tt_left.batch_size is None) or (tt_left.batch_size > 1):
+          if tt_left.batch_size is None or tt_left.batch_size > 1:
             out_batch_size = tt_left.batch_size
           else:
             out_batch_size = right.batch_size
       else:
-        # One of the arguments is TensorTrain
-        if tt_type[0]:
+        # One of the arguments is TensorTrain.
+        if is_left_batch:
           bs_str_left = 'n'
           bs_str_right = ''
           out_batch_size = tt_left.batch_size
@@ -854,9 +862,10 @@ def multiply(tt_left, right):
           curr_core = tf.einsum('{0}aijb,{1}cijd->{2}acijbd'.format(bs_str_left,
                                 bs_str_right, output_str), a_core, b_core)
           curr_core = tf.reshape(curr_core, (-1, left_rank,
-                                             shape[0][core_idx], shape[1][core_idx],
+                                             shape[0][core_idx],
+                                             shape[1][core_idx],
                                              right_rank))
-          if (not is_batch_case):
+          if not is_batch_case:
               curr_core = tf.squeeze(curr_core, axis=0)
       else:
         with tf.control_dependencies(dependencies):
@@ -864,7 +873,7 @@ def multiply(tt_left, right):
                                 bs_str_right, output_str), a_core, b_core)
           curr_core = tf.reshape(curr_core, (-1, left_rank,
                                  shape[0][core_idx], right_rank))
-          if (not is_batch_case):
+          if not is_batch_case:
             curr_core = tf.squeeze(curr_core, axis=0)
 
       tt_cores.append(curr_core)
