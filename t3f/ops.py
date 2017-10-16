@@ -797,8 +797,8 @@ def multiply(tt_left, right):
                  'assumed elementwise multiplication (i.e. no broadcasting). '
                  'Now it seems that they are different after all :')
 
-      data = [message, shapes.lazy_shape(tt_left)[0], ' x ',
-              shapes.lazy_shape(right)[0]]
+      data = [message, shapes.lazy_batch_size(tt_left), ' x ',
+              shapes.lazy_batch_size(right)]
       bs_eq = tf.assert_equal(shapes.lazy_batch_size(tt_left),
                               shapes.lazy_batch_size(right), data=data)
 
@@ -806,7 +806,7 @@ def multiply(tt_left, right):
 
     do_broadcast = shapes.is_batch_broadcasting_possible(tt_left, right)
     if not can_determine_if_broadcast:
-      # Assume elementwise multiplication if broadcasting cannot be determene
+      # Assume elementwise multiplication if broadcasting cannot be determined
       # on compilation stage.
       do_broadcast = False
     if not do_broadcast and can_determine_if_broadcast:

@@ -613,10 +613,17 @@ class TTTensorBatchTest(tf.test.TestCase):
                  c3:np.random.rand(7, 1, 3, 2),
                  c4:np.random.rand(7, 2, 3, 1)}
 
+    feed_dict_err = {c1:np.random.rand(7, 1, 3, 2),
+                     c2:np.random.rand(7, 2, 3, 1),
+                     c3:np.random.rand(1, 1, 3, 2),
+                     c4:np.random.rand(1, 2, 3, 1)}
+
     with self.test_session() as sess:
-        ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
-        self.assertAllClose(ab_full, des_full)
-        self.assertAllClose(ba_full, des_full)
+      ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
+      self.assertAllClose(ab_full, des_full)
+      self.assertAllClose(ba_full, des_full)
+      with self.assertRaises(tf.errors.InvalidArgumentError):
+        sess.run(to_run, feed_dict=feed_dict_err)
 
   def testMultiplyUnknownSizeBatchAndBatch(self):
     c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
@@ -630,13 +637,15 @@ class TTTensorBatchTest(tf.test.TestCase):
     feed_dict = {c1:np.random.rand(8, 1, 3, 2),
                  c2:np.random.rand(8, 2, 3, 1)}
 
+    feed_dict_err = {c1:np.random.rand(1, 1, 3, 2),
+                     c2:np.random.rand(1, 2, 3, 1)}
+
     with self.test_session() as sess:
       ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
       self.assertAllClose(ab_full, des_full)
       self.assertAllClose(ba_full, des_full)
-
-
-
+      with self.assertRaises(tf.errors.InvalidArgumentError):
+        sess.run(to_run, feed_dict=feed_dict_err)
 
 
 class TTMatrixTestBatch(tf.test.TestCase):
