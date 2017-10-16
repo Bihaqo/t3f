@@ -763,7 +763,7 @@ def multiply(tt_left, right):
     tt_cores = list(tt_left.tt_cores)
     tt_cores[0] = right * tt_cores[0]
     out_ranks = tt_left.get_tt_ranks()
-    if (isinstance(tt_left, TensorTrainBatch)):
+    if is_left_batch:
         out_batch_size = tt_left.batch_size
   else:
     ndims = tt_left.ndims()
