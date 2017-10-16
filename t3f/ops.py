@@ -777,18 +777,18 @@ def multiply(tt_left, right):
 
     out_batch_size = 1
     dependencies = []
-    cant_determine_if_broadcast = False
+    can_determine_if_broadcast = True
     if is_left_batch and is_right_batch:
       if tt_left.batch_size is None and right.batch_size is None:
-        cant_determine_if_broadcast = True
+        can_determine_if_broadcast = False
       elif tt_left.batch_size is None and right.batch_size is not None:
         if right.batch_size > 1:
-            cant_determine_if_broadcast = True
+            can_determine_if_broadcast = False
       elif tt_left.batch_size is not None and right.batch_size is None:
         if tt_left.batch_size > 1:
-            cant_determine_if_broadcast = True
+            can_determine_if_broadcast = False
 
-    if cant_determine_if_broadcast:
+    if not can_determine_if_broadcast:
       # Cannot determine if broadcasting is needed. Avoid broadcasting and
       # assume elementwise multiplication AND add execution time assert to print
       # a better error message if the batch sizes turn out to be different.
@@ -805,7 +805,11 @@ def multiply(tt_left, right):
       dependencies.append(bs_eq)
 
     do_broadcast = shapes.is_batch_broadcasting_possible(tt_left, right)
-    if not do_broadcast and not cant_determine_if_broadcast:
+    if not can_determine_if_broadcast:
+      # Assume elementwise multiplication if broadcasting cannot be determene
+      # on compilation stage.
+      do_broadcast = False
+    if not do_broadcast and can_determine_if_broadcast:
       raise ValueError('The batch sizes are different and not 1, broadcasting '
                        'is not available.')
 
@@ -820,11 +824,11 @@ def multiply(tt_left, right):
     if is_batch_case:
       if is_left_batch and is_right_batch:
         # Both arguments are batches of equal size.
-        if tt_left.batch_size == right.batch_size or cant_determine_if_broadcast:
+        if tt_left.batch_size == right.batch_size or not can_determine_if_broadcast:
           bs_str_left = 'n'
           bs_str_right = 'n'
           output_str = 'n'
-          if cant_determine_if_broadcast:
+          if not can_determine_if_broadcast:
             out_batch_size = None
           else:
             out_batch_size = tt_left.batch_size
