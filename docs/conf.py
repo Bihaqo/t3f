@@ -50,8 +50,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u't3f'
-copyright = u'2017, Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov'
-author = u'Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov'
+copyright = u'2017, Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov, Valentin Khrulkov'
+author = u'Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov, Valentin Khrulkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
