@@ -651,9 +651,9 @@ class TTTensorBatchTest(tf.test.TestCase):
     idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
     pl_idx = tf.placeholder(tf.int32, [None, 3])
     tt = initializers.random_tensor((3, 4, 5), tt_rank=2)
-    res_np = t3f.gather_nd(tt, idx)
-    res_pl = t3f.gather_nd(tt, pl_idx)
-    res_desired = tf.gather(t3f.full(tt), idx)
+    res_np = ops.gather_nd(tt, idx)
+    res_pl = ops.gather_nd(tt, pl_idx)
+    res_desired = tf.gather_nd(ops.full(tt), idx)
     to_run = [res_np, res_pl, res_desired]
     with self.test_session() as sess:
       res_np_v, res_pl_v, des_v = sess.run(to_run, feed_dict={pl_idx: idx})
@@ -664,9 +664,9 @@ class TTTensorBatchTest(tf.test.TestCase):
     idx = [[0, 0, 0, 0], [1, 0, 1, 2], [0, 0, 1, 0]]
     pl_idx = tf.placeholder(tf.int32, [None, 4])
     tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=2)
-    res_np = t3f.gather_nd(tt, idx)
-    res_pl = t3f.gather_nd(tt, pl_idx)
-    res_desired = tf.gather(t3f.full(tt), idx)
+    res_np = ops.gather_nd(tt, idx)
+    res_pl = ops.gather_nd(tt, pl_idx)
+    res_desired = tf.gather_nd(ops.full(tt), idx)
     to_run = [res_np, res_pl, res_desired]
     with self.test_session() as sess:
       res_np_v, res_pl_v, des_v = sess.run(to_run, feed_dict={pl_idx: idx})

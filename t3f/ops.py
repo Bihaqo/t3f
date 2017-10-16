@@ -1058,3 +1058,39 @@ def cast(tt_a, dtype):
   else:
     raise ValueError('Unsupported type of input "%s", should be TensorTrain or '
                      'TensorTrainBatch.' % tt_a)
+
+
+def gather_nd(tt, indices):
+  """out[i] = tt[indices[i, 0], indices[i, 1], ...]
+
+  Equivalent to
+      tf.gather_nd(t3f.full(tt), indices)
+    but much faster, since it does not materialize the full tensor.
+  
+  For batches of TT works indices should include the batch dimension as well.
+  
+  Args:
+    tt: `TensorTrain` or `TensorTrainBatch` object representing a tensor
+      (TT-matrices are not implemented yet)
+    indices: numpy array, tf.Tensor, placeholder with 2 or more dimensions.
+      The last dimension indices.shape[-1] should be equal to the numbers of
+      dimensions in TT:
+        indices.shape[-1] = tt.ndims for `TensorTrain`
+        indices.shape[-1] = tt.ndims + 1 for `TensorTrainBatch`
+  
+  Returns:
+    tf.Tensor with elements specified by indices.
+  
+  Raises:
+    ValueError if `indices` have wrong shape or if `tt` is a TT-matrix.
+  """
+  indices = tf.convert_to_tensor(indices)
+  tt_elements = tf.ones(tf.shape(indices)[:-1])
+  tt_elements = tf.reshape(tt_elements, (-1, 1, 1))
+  for core_idx in range(tt.ndims()):
+    curr_core = tt.tt_cores[core_idx]
+    curr_core = tf.transpose(curr_core, (1, 0, 2))
+    core_slices = tf.gather(curr_core, indices[:, core_idx])
+    tt_elements = tf.matmul(tt_elements, core_slices)
+  tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
+  return tt_elements
