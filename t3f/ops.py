@@ -1082,15 +1082,35 @@ def gather_nd(tt, indices):
     tf.Tensor with elements specified by indices.
   
   Raises:
-    ValueError if `indices` have wrong shape or if `tt` is a TT-matrix.
+    ValueError if `indices` have wrong shape.
+    NotImplementedError if `tt` is a TT-matrix.
   """
+  if tt.is_tt_matrix():
+    raise NotImplementedError('gather_nd doesnt support TT-matrices yet '
+                              '(got %s)' % tt)
   indices = tf.convert_to_tensor(indices)
+  if isinstance(tt, TensorTrainBatch):
+    if indices.get_shape()[-1] != tt.ndims() + 1:
+      raise ValueError('The last dimension of indices (%d) should have '
+                       'the same size as the number of dimensions in the tt '
+                       'object (%d) + 1 (for the batch dimension).' %
+                       (indices.get_shape()[-1], tt.ndims()))
+  else:
+    if indices.get_shape()[-1] != tt.ndims():
+      raise ValueError('The last dimension of indices (%d) should have '
+                       'the same size as the number of dimensions in the tt '
+                       'object (%d).' % (indices.get_shape()[-1], tt.ndims()))
   tt_elements = tf.ones(tf.shape(indices)[:-1])
   tt_elements = tf.reshape(tt_elements, (-1, 1, 1))
   for core_idx in range(tt.ndims()):
     curr_core = tt.tt_cores[core_idx]
-    curr_core = tf.transpose(curr_core, (1, 0, 2))
-    core_slices = tf.gather(curr_core, indices[:, core_idx])
+    if isinstance(tt, TensorTrainBatch):
+      curr_core = tf.transpose(curr_core, (0, 2, 1, 3))
+      curr_idx = tf.stack((indices[:, 0], indices[:, core_idx + 1]), axis=1)
+      core_slices = tf.gather_nd(curr_core, curr_idx)
+    else:
+      curr_core = tf.transpose(curr_core, (1, 0, 2))
+      core_slices = tf.gather(curr_core, indices[:, core_idx])
     tt_elements = tf.matmul(tt_elements, core_slices)
   tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
   return tt_elements
