@@ -436,6 +436,7 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
       # Ravel multiindex (row_idx[:, core_idx], col_idx[:, core_idx]) into
       # a linear index to use tf.gather that supports only first dimensional
       # gather.
+      # TODO: use gather_nd instead.
       curr_elements_idx = row_idx[:, core_idx] * tensor_shape[1][core_idx]
       curr_elements_idx += col_idx[:, core_idx]
       core_slices = tf.gather(curr_core, curr_elements_idx)
