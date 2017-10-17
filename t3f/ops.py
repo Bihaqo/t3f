@@ -415,10 +415,10 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
     num_elements = sparse_b.indices.get_shape()[0]
   else:
     num_elements = tf.shape(sparse_b.indices)[0]
-  tt_a_elements = tf.ones((num_elements, 1, 1))
   a_shape = shapes.lazy_raw_shape(tt_a)
   a_ranks = shapes.lazy_tt_ranks(tt_a)
   if tt_a.is_tt_matrix():
+    tt_a_elements = tf.ones((num_elements, 1, 1))
     # TODO: use t3f.shape is safer??
     tensor_shape = tt_a.get_raw_shape()
     row_idx_linear = tf.cast(sparse_b.indices[:, 0], tf.int64)
@@ -426,9 +426,6 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
     col_idx_linear = tf.cast(sparse_b.indices[:, 1], tf.int64)
     col_idx = utils.unravel_index(col_idx_linear, tf.cast(tensor_shape[1], tf.int64))
     for core_idx in range(tt_a.ndims()):
-      # TODO: probably a very slow way to do it, wait for a reasonable gather
-      # implementation
-      # https://github.com/tensorflow/tensorflow/issues/206
       curr_core = tt_a.tt_cores[core_idx]
       left_rank = a_ranks[core_idx]
       right_rank = a_ranks[core_idx + 1]
@@ -439,20 +436,13 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
       # Ravel multiindex (row_idx[:, core_idx], col_idx[:, core_idx]) into
       # a linear index to use tf.gather that supports only first dimensional
       # gather.
+      # TODO: use gather_nd instead.
       curr_elements_idx = row_idx[:, core_idx] * tensor_shape[1][core_idx]
       curr_elements_idx += col_idx[:, core_idx]
       core_slices = tf.gather(curr_core, curr_elements_idx)
       tt_a_elements = tf.matmul(tt_a_elements, core_slices)
   else:
-    for core_idx in range(tt_a.ndims()):
-      curr_elements_idx = sparse_b.indices[:, core_idx]
-      # TODO: probably a very slow way to do it, wait for a reasonable gather
-      # implementation
-      # https://github.com/tensorflow/tensorflow/issues/206
-      curr_core = tt_a.tt_cores[core_idx]
-      curr_core = tf.transpose(curr_core, (1, 0, 2))
-      core_slices = tf.gather(curr_core, curr_elements_idx)
-      tt_a_elements = tf.matmul(tt_a_elements, core_slices)
+    tt_a_elements = gather_nd(tt_a, sparse_b.indices)
   tt_a_elements = tf.reshape(tt_a_elements, (1, -1))
   sparse_b_elements = tf.reshape(sparse_b.values, (-1, 1))
   result = tf.matmul(tt_a_elements, sparse_b_elements)
@@ -1058,3 +1048,59 @@ def cast(tt_a, dtype):
   else:
     raise ValueError('Unsupported type of input "%s", should be TensorTrain or '
                      'TensorTrainBatch.' % tt_a)
+
+
+def gather_nd(tt, indices):
+  """out[i] = tt[indices[i, 0], indices[i, 1], ...]
+
+  Equivalent to
+      tf.gather_nd(t3f.full(tt), indices)
+    but much faster, since it does not materialize the full tensor.
+  
+  For batches of TT works indices should include the batch dimension as well.
+  
+  Args:
+    tt: `TensorTrain` or `TensorTrainBatch` object representing a tensor
+      (TT-matrices are not implemented yet)
+    indices: numpy array, tf.Tensor, placeholder with 2 or more dimensions.
+      The last dimension indices.shape[-1] should be equal to the numbers of
+      dimensions in TT:
+        indices.shape[-1] = tt.ndims for `TensorTrain`
+        indices.shape[-1] = tt.ndims + 1 for `TensorTrainBatch`
+  
+  Returns:
+    tf.Tensor with elements specified by indices.
+  
+  Raises:
+    ValueError if `indices` have wrong shape.
+    NotImplementedError if `tt` is a TT-matrix.
+  """
+  if tt.is_tt_matrix():
+    raise NotImplementedError('gather_nd doesnt support TT-matrices yet '
+                              '(got %s)' % tt)
+  indices = tf.convert_to_tensor(indices)
+  if isinstance(tt, TensorTrainBatch):
+    if indices.get_shape()[-1] != tt.ndims() + 1:
+      raise ValueError('The last dimension of indices (%d) should have '
+                       'the same size as the number of dimensions in the tt '
+                       'object (%d) + 1 (for the batch dimension).' %
+                       (indices.get_shape()[-1], tt.ndims()))
+  else:
+    if indices.get_shape()[-1] != tt.ndims():
+      raise ValueError('The last dimension of indices (%d) should have '
+                       'the same size as the number of dimensions in the tt '
+                       'object (%d).' % (indices.get_shape()[-1], tt.ndims()))
+  tt_elements = tf.ones(tf.shape(indices)[:-1])
+  tt_elements = tf.reshape(tt_elements, (-1, 1, 1))
+  for core_idx in range(tt.ndims()):
+    curr_core = tt.tt_cores[core_idx]
+    if isinstance(tt, TensorTrainBatch):
+      curr_core = tf.transpose(curr_core, (0, 2, 1, 3))
+      curr_idx = tf.stack((indices[:, 0], indices[:, core_idx + 1]), axis=1)
+      core_slices = tf.gather_nd(curr_core, curr_idx)
+    else:
+      curr_core = tf.transpose(curr_core, (1, 0, 2))
+      core_slices = tf.gather(curr_core, indices[:, core_idx])
+    tt_elements = tf.matmul(tt_elements, core_slices)
+  tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
+  return tt_elements
