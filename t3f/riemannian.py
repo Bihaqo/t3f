@@ -675,7 +675,6 @@ def add_n_projected(tt_objects, coef=None):
                                 slice(left_half_rank, None),
                                 slice(0, right_half_rank))
       if coef is not None:
-        # Multiply along first axis
         curr_core *= coef[obj_idx]
       lower_left_chunks.append(curr_core)
     lower_left_part = tf.add_n(lower_left_chunks)
