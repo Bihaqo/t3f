@@ -618,6 +618,17 @@ def add_n_projected(tt_objects, coef=None):
                        'projections on different TT-objects (%s and %s). Or at '
                        'least the pointers are different.' % (tt.projection_on,
                                                               projection_on))
+  if coef is not None:
+    coef = tf.convert_to_tensor(coef)
+    if coef.get_shape().ndims > 1:
+      # In batch case we will need to multiply each core by this coefficients
+      # along the first axis. To do it need to reshape the coefs to match
+      # the TT-cores number of dimensions.
+      some_core = tt_objects[0].tt_cores[0]
+      dim_array = [1] * (some_core.get_shape().ndims + 1)
+      dim_array[0] = coef.get_shape()[0].value
+      dim_array[1] = coef.get_shape()[1].value
+      coef = tf.reshape(coef, dim_array)
 
   ndims = tt_objects[0].ndims()
   tt_ranks = shapes.lazy_tt_ranks(tt_objects[0])
@@ -664,6 +675,7 @@ def add_n_projected(tt_objects, coef=None):
                                 slice(left_half_rank, None),
                                 slice(0, right_half_rank))
       if coef is not None:
+        # Multiply along first axis
         curr_core *= coef[obj_idx]
       lower_left_chunks.append(curr_core)
     lower_left_part = tf.add_n(lower_left_chunks)
