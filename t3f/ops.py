@@ -1147,8 +1147,8 @@ def renormalize_cores(tt):
 
     Returns:
       `TensorTrain` or `TensorTrainBatch` which represents the same
-      tensor as tt, but all cores have equal norms. In the batch case applies
-      to each TT in `TensorTrainBatch`.
+      tensor as tt, but with all cores having equal norm. In the batch
+      case applies to each TT in `TensorTrainBatch`.
 
     """
     if isinstance(tt, TensorTrain):
