@@ -165,6 +165,19 @@ class TTTensorTest(tf.test.TestCase):
         self.assertEqual(dtype, casted.dtype)
         self.assertTrue(dtype, casted_val.dtype)
 
+  def testGatherND(self):
+    idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
+    pl_idx = tf.placeholder(tf.int32, [None, 3])
+    tt = initializers.random_tensor((3, 4, 5), tt_rank=2)
+    res_np = ops.gather_nd(tt, idx)
+    res_pl = ops.gather_nd(tt, pl_idx)
+    res_desired = tf.gather_nd(ops.full(tt), idx)
+    to_run = [res_np, res_pl, res_desired]
+    with self.test_session() as sess:
+      res_np_v, res_pl_v, des_v = sess.run(to_run, feed_dict={pl_idx: idx})
+      self.assertAllClose(res_np_v, des_v)
+      self.assertAllClose(res_pl_v, res_pl_v)
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -667,18 +680,19 @@ class TTTensorBatchTest(tf.test.TestCase):
       with self.assertRaises(tf.errors.InvalidArgumentError):
         sess.run(to_run, feed_dict=feed_dict_err)
 
-  def testGatherND(self):
-    idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
-    pl_idx = tf.placeholder(tf.int32, [None, 3])
-    tt = initializers.random_tensor((3, 4, 5), tt_rank=2)
-    res_np = ops.gather_nd(tt, idx)
-    res_pl = ops.gather_nd(tt, pl_idx)
-    res_desired = tf.gather_nd(ops.full(tt), idx)
+  def testGatherBatchDim(self):
+    idx = [0, 0, 2, 1]
+    pl_idx = tf.placeholder(tf.int32, [None])
+    tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=3)
+    res_np = ops.full(ops.gather_batch_dim(tt, idx))
+    res_pl = ops.full(ops.gather_batch_dim(tt, pl_idx))
+    res_desired = tf.gather(ops.full(tt), idx)
     to_run = [res_np, res_pl, res_desired]
     with self.test_session() as sess:
       res_np_v, res_pl_v, des_v = sess.run(to_run, feed_dict={pl_idx: idx})
       self.assertAllClose(res_np_v, des_v)
       self.assertAllClose(res_pl_v, res_pl_v)
+
 
   def testGatherNDBatch(self):
     idx = [[0, 0, 0, 0], [1, 0, 1, 2], [0, 0, 1, 0]]

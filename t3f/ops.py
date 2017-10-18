@@ -1080,6 +1080,19 @@ def cast(tt_a, dtype):
                      'TensorTrainBatch.' % tt_a)
 
 
+def gather_batch_dim(tt_batch, indices):
+  """out[i] = tt_batch[indices[i]]
+  TODO: move this to indexing! tt_batch[indices] totally makes sense.
+  """
+  indices = tf.convert_to_tensor(indices)
+  new_tt_cores = []
+  for core in tt_batch.tt_cores:
+    new_tt_cores.append(tf.gather(core, indices))
+  return TensorTrainBatch(new_tt_cores, tt_batch.get_raw_shape(),
+                          tt_batch.get_tt_ranks().as_list(),
+                          indices.get_shape()[0].value)
+
+
 def gather_nd(tt, indices):
   """out[i] = tt[indices[i, 0], indices[i, 1], ...]
 
