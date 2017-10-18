@@ -991,24 +991,23 @@ def transpose(tt_matrix):
 
 
 def quadratic_form(A, b, c):
-  """Computes the quadratic form b^t A c where A is a TT-matrix (or a batch).
+  """Quadratic form b^t A c; A is a TT-matrix, b and c can be batches.
 
   Args:
-    A: `TensorTrain` object containing a TT-matrix or `TensorTrainBatch`
-      with a batch of TT-matrices.
-    b: `TensorTrain` object containing a TT-vector or `TensorTrainBatch`
-      with a batch of TT-vectors.
-    c: `TensorTrain` object containing a TT-vector or `TensorTrainBatch`
-      with a batch of TT-vectors.
+    A: `TensorTrain` object containing a TT-matrix of size N x M.
+    b: `TensorTrain` object containing a TT-matrix of size N x 1
+      or `TensorTrainBatch` with a batch of TT-matrices of size N x 1.
+    c: `TensorTrain` object containing a TT-matrix of size M x 1
+      or `TensorTrainBatch` with a batch of TT-matrices of size M x 1.
 
   Returns:
     A number, the value of the quadratic form if all the arguments are
       `TensorTrain`s.
-    OR tf.tensor of size batch_size if at least one of the arguments is
+    OR tf.Tensor of size batch_size if at least one of the arguments is
       `TensorTrainBatch`
 
   Raises:
-    ValueError if the argument is not a TT-matrix or if the shapes are
+    ValueError if the arguments are not TT-matrices or if the shapes are
       not consistent.
   """
   if not isinstance(A, TensorTrainBase) or not A.is_tt_matrix():
@@ -1020,8 +1019,37 @@ def quadratic_form(A, b, c):
   if not isinstance(c, TensorTrainBase) or not c.is_tt_matrix():
     raise ValueError('The arguments should be a TT-matrix.')
 
-  # TODO: make a more efficient implementation taylored for this case.
-  return flat_inner(A, tt_tt_matmul(b, transpose(c)))
+  b_is_batch = isinstance(b, TensorTrainBatch)
+  c_is_batch = isinstance(b, TensorTrainBatch)
+  b_bs_str = 'p' if b_is_batch else ''
+  c_bs_str = 'p' if c_is_batch else ''
+  out_bs_str = 'p' if b_is_batch or c_is_batch else ''
+
+  ndims = A.ndims()
+  curr_core_1 = b.tt_cores[0]
+  curr_core_2 = c.tt_cores[0]
+  curr_matrix_core = A.tt_cores[0]
+  # We enumerate the dummy dimension (that takes 1 value) with `k`.
+  einsum_str = '{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str, c_bs_str,
+                                                     out_bs_str)
+  res = tf.einsum(einsum_str, curr_core_1, curr_matrix_core, curr_core_2)
+  for core_idx in range(1, ndims):
+    curr_core_1 = b.tt_cores[core_idx]
+    curr_core_2 = c.tt_cores[core_idx]
+    curr_matrix_core = A.tt_cores[core_idx]
+    einsum_str = '{2}ace,{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str,
+                                                              c_bs_str,
+                                                              out_bs_str)
+    res = tf.einsum(einsum_str, res, curr_core_1,
+                    curr_matrix_core, curr_core_2)
+
+  # Squeeze to make the result a number instead of 1 x 1 for NON batch case and
+  # to make the result a tensor of size
+  #   batch_size
+  # instead of
+  #   batch_size x 1 x 1
+  # in the batch case.
+  return tf.squeeze(res)
 
 
 def cast(tt_a, dtype):

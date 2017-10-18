@@ -341,6 +341,26 @@ class TTMatrixTest(tf.test.TestCase):
           self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                               atol=1e-5, rtol=1e-5)
 
+  def testQuadraticFormBatch(self):
+    # Test quadratic form for batch of tensors.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          b = initializers.random_matrix_batch((tensor_shape[0], None),
+                                               tt_rank=rank, batch_size=5)
+          c = initializers.random_matrix_batch((tensor_shape[1], None),
+                                               tt_rank=rank, batch_size=5)
+          res_actual = ops.quadratic_form(A, b, c)
+          vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
+          res_actual_val, A_val, b_val, c_val = sess.run(vars)
+          res_desired = np.diag(b_val[:, :, 0].dot(A_val).dot(c_val[:, :, 0].T))
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired),
+                              atol=1e-5, rtol=1e-5)
+
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
 
