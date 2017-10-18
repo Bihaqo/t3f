@@ -131,7 +131,7 @@ class BatchOpsTest(tf.test.TestCase):
     res_desired = tf.squeeze(res_desired)
     with self.test_session() as sess:
       res_actual_val, res_desired_val = sess.run((res_actual, res_desired))
-      self.assertAllClose(res_desired_val, res_actual_val)
+      self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
   def testPairwiseFlatInnerVectorsWithMatrix(self):
     # Test pairwise_flat_inner of a batch of TT vectors with providing a matrix,
