@@ -1030,6 +1030,8 @@ def quadratic_form(A, b, c):
   curr_core_2 = c.tt_cores[0]
   curr_matrix_core = A.tt_cores[0]
   # We enumerate the dummy dimension (that takes 1 value) with `k`.
+  # You may think that using two different k would be faster, but in my
+  # experience it's even a little bit slower (but neglectable in general).
   einsum_str = '{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str, c_bs_str,
                                                      out_bs_str)
   res = tf.einsum(einsum_str, curr_core_1, curr_matrix_core, curr_core_2)
