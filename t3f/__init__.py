@@ -14,9 +14,8 @@ from t3f.ops import full
 from t3f.ops import matmul
 from t3f.ops import multiply
 from t3f.ops import quadratic_form
-from t3f.ops import sparse_tt_flat_inner
-from t3f.ops import sparse_tt_matmul
 from t3f.ops import transpose
+from t3f.ops import gather_nd
 
 from t3f.batch_ops import concat_along_batch_dim
 from t3f.batch_ops import gram_matrix
