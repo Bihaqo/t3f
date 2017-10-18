@@ -244,7 +244,7 @@ class RiemannianTest(tf.test.TestCase):
                                                        [-2.0, 2.0, 1.0]]))
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val)
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
 if __name__ == "__main__":
   tf.test.main()
