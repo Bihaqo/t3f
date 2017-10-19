@@ -167,7 +167,7 @@ class TTTensorTest(tf.test.TestCase):
 
   def testCoreRenorm(self):
       a = initializers.random_tensor(3 * (10,), tt_rank=7)
-      b = ops.renormalize_cores(a)
+      b = ops.renormalize_tt_cores(a)
       var_list = [ops.full(a), ops.full(b)]
       with self.test_session() as sess:
           af, bf = sess.run(var_list)
@@ -196,7 +196,7 @@ class TTMatrixTest(tf.test.TestCase):
       with self.test_session():
         tf_mat = TensorTrain(tt_cores)
         actual = ops.full(tf_mat)
-        self.assertAllClose(desired, actual.eval(), atol=1e-5, rtol=1e-5)
+        self.assertAllClose(desired, actual.eval())
 
   def testFullMatrix3d(self):
     np.random.seed(1)
@@ -709,7 +709,7 @@ class TTTensorBatchTest(tf.test.TestCase):
 
   def testCoreRenormBatch(self):
       a = initializers.random_tensor_batch(3 * (10,), tt_rank=7, batch_size=5)
-      b = ops.renormalize_cores(a)
+      b = ops.renormalize_tt_cores(a)
       var_list = [ops.full(a), ops.full(b)]
 
       with self.test_session() as sess:

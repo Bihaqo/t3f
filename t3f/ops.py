@@ -718,7 +718,7 @@ def add(tt_a, tt_b):
     return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
-def multiply(tt_left, right):
+def multiply(tt_left, right, fast=False):
   """Returns a TensorTrain corresponding to element-wise product tt_left * right.
 
   Supports broadcasting:
@@ -733,6 +733,9 @@ def multiply(tt_left, right):
   Args:
     tt_left: `TensorTrain` OR `TensorTrainBatch`
     right: `TensorTrain` OR `TensorTrainBatch` OR a number.
+    fast: bool, in the case when right is a number, whether to multiply only
+      first TT-core (faster), or all TT-cores uniformly (slower, but more
+      stable).
 
   Returns
     a `TensorTrain` or `TensorTrainBatch` object corresponding to the
@@ -747,20 +750,28 @@ def multiply(tt_left, right):
   is_right_batch = isinstance(right, TensorTrainBatch)
 
   is_batch_case = is_left_batch or is_right_batch
-
+  ndims = tt_left.ndims()
   if not isinstance(right, TensorTrainBase):
     # Assume right is a number, not TensorTrain.
     tt_cores = list(tt_left.tt_cores)
-    fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0/(tt_left.ndims()))
-    sign = tf.cast(tf.sign(right), tt_left.dtype)
-    for i in range(len(tt_cores)):
-      tt_cores[i] = fact * tt_cores[i]
-    tt_cores[0] = tt_cores[0] * sign
+    if not fast:
+      # To squash right uniformly across TT-cores we pull its absolute value
+      # and raise to the power 1/ndims. First TT-core is multiplied by the sign
+      # of right.
+      fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0 / ndims)
+      sign = tf.cast(tf.sign(right), tt_left.dtype)
+      for i in range(len(tt_cores)):
+        tt_cores[i] = fact * tt_cores[i]
+
+      tt_cores[0] = tt_cores[0] * sign
+    else:
+      # If we want fast multiplication just multiply first TT-core by right.
+      tt_cores[0] = tt_cores[0] * right
+
     out_ranks = tt_left.get_tt_ranks()
     if is_left_batch:
         out_batch_size = tt_left.batch_size
   else:
-    ndims = tt_left.ndims()
 
     if tt_left.is_tt_matrix() != right.is_tt_matrix():
       raise ValueError('The arguments should be both TT-tensors or both '
@@ -1137,14 +1148,15 @@ def gather_nd(tt, indices):
   tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
   return tt_elements
 
-def renormalize_cores(tt):
-    """Renormalizes tt cores to make them of the same Frobenius norm.
+def renormalize_tt_cores(tt, epsilon=1e-8):
+    """Renormalizes TT-cores to make them of the same Frobenius norm.
 
-    Does not change tt, but makes computations with cores more stable.
+    Doesn't change the tensor represented by `tt` object, but renormalizes the
+    TT-cores to make further computations more stable.
 
     Args:
       tt: `TensorTrain` or `TensorTrainBatch` object
-
+      epsilon: parameter for numerical stability of sqrt
     Returns:
       `TensorTrain` or `TensorTrainBatch` which represents the same
       tensor as tt, but with all cores having equal norm. In the batch
@@ -1156,7 +1168,7 @@ def renormalize_cores(tt):
       running_log_norm = 0
       core_norms = []
       for core in tt.tt_cores:
-        cur_core_norm = tf.sqrt(tf.reduce_sum(core ** 2) + 1e-8)
+        cur_core_norm = tf.sqrt(tf.maximum(tf.reduce_sum(core ** 2), epsilon))
         core_norms.append(cur_core_norm)
         running_log_norm += tf.log(cur_core_norm)
 
@@ -1172,8 +1184,8 @@ def renormalize_cores(tt):
       ax = np.arange(len(tt.tt_cores[0].shape))[1:]
       fact_list = []
       for core in tt.tt_cores:
-        cur_core_norm = tf.sqrt(tf.reduce_sum(core**2, axis=ax, keep_dims=True)
-                                + 1e-8)
+        cur_core_norm_sq = tf.reduce_sum(core**2, axis=ax, keep_dims=True)
+        cur_core_norm = tf.sqrt(tf.maximum(epsilon, cur_core_norm_sq))
         fact_list.append(cur_core_norm)
         running_core_log_norms += tf.log(cur_core_norm)
 
