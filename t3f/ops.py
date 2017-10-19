@@ -718,7 +718,7 @@ def add(tt_a, tt_b):
     return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
-def multiply(tt_left, right, fast=False):
+def multiply(tt_left, right):
   """Returns a TensorTrain corresponding to element-wise product tt_left * right.
 
   Supports broadcasting:
@@ -733,9 +733,6 @@ def multiply(tt_left, right, fast=False):
   Args:
     tt_left: `TensorTrain` OR `TensorTrainBatch`
     right: `TensorTrain` OR `TensorTrainBatch` OR a number.
-    fast: bool, in the case when right is a number, whether to multiply only
-      first TT-core (faster), or all TT-cores uniformly (slower, but more
-      stable).
 
   Returns
     a `TensorTrain` or `TensorTrainBatch` object corresponding to the
@@ -753,21 +750,16 @@ def multiply(tt_left, right, fast=False):
   ndims = tt_left.ndims()
   if not isinstance(right, TensorTrainBase):
     # Assume right is a number, not TensorTrain.
+    # To squash right uniformly across TT-cores we pull its absolute value
+    # and raise to the power 1/ndims. First TT-core is multiplied by the sign
+    # of right.
     tt_cores = list(tt_left.tt_cores)
-    if not fast:
-      # To squash right uniformly across TT-cores we pull its absolute value
-      # and raise to the power 1/ndims. First TT-core is multiplied by the sign
-      # of right.
-      fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0 / ndims)
-      sign = tf.cast(tf.sign(right), tt_left.dtype)
-      for i in range(len(tt_cores)):
-        tt_cores[i] = fact * tt_cores[i]
+    fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0 / ndims)
+    sign = tf.cast(tf.sign(right), tt_left.dtype)
+    for i in range(len(tt_cores)):
+      tt_cores[i] = fact * tt_cores[i]
 
-      tt_cores[0] = tt_cores[0] * sign
-    else:
-      # If we want fast multiplication just multiply first TT-core by right.
-      tt_cores[0] = tt_cores[0] * right
-
+    tt_cores[0] = tt_cores[0] * sign
     out_ranks = tt_left.get_tt_ranks()
     if is_left_batch:
         out_batch_size = tt_left.batch_size
@@ -1147,6 +1139,7 @@ def gather_nd(tt, indices):
     tt_elements = tf.matmul(tt_elements, core_slices)
   tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
   return tt_elements
+
 
 def renormalize_tt_cores(tt, epsilon=1e-8):
     """Renormalizes TT-cores to make them of the same Frobenius norm.
