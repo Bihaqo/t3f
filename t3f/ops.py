@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+import numpy as np
 from t3f.tensor_train_base import TensorTrainBase
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -747,16 +747,23 @@ def multiply(tt_left, right):
   is_right_batch = isinstance(right, TensorTrainBatch)
 
   is_batch_case = is_left_batch or is_right_batch
-
+  ndims = tt_left.ndims()
   if not isinstance(right, TensorTrainBase):
     # Assume right is a number, not TensorTrain.
+    # To squash right uniformly across TT-cores we pull its absolute value
+    # and raise to the power 1/ndims. First TT-core is multiplied by the sign
+    # of right.
     tt_cores = list(tt_left.tt_cores)
-    tt_cores[0] = right * tt_cores[0]
+    fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0 / ndims)
+    sign = tf.cast(tf.sign(right), tt_left.dtype)
+    for i in range(len(tt_cores)):
+      tt_cores[i] = fact * tt_cores[i]
+
+    tt_cores[0] = tt_cores[0] * sign
     out_ranks = tt_left.get_tt_ranks()
     if is_left_batch:
         out_batch_size = tt_left.batch_size
   else:
-    ndims = tt_left.ndims()
 
     if tt_left.is_tt_matrix() != right.is_tt_matrix():
       raise ValueError('The arguments should be both TT-tensors or both '
@@ -1086,9 +1093,9 @@ def gather_nd(tt, indices):
   Equivalent to
       tf.gather_nd(t3f.full(tt), indices)
     but much faster, since it does not materialize the full tensor.
-  
+
   For batches of TT works indices should include the batch dimension as well.
-  
+
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object representing a tensor
       (TT-matrices are not implemented yet)
@@ -1097,10 +1104,10 @@ def gather_nd(tt, indices):
       dimensions in TT:
         indices.shape[-1] = tt.ndims for `TensorTrain`
         indices.shape[-1] = tt.ndims + 1 for `TensorTrainBatch`
-  
+
   Returns:
     tf.Tensor with elements specified by indices.
-  
+
   Raises:
     ValueError if `indices` have wrong shape.
     NotImplementedError if `tt` is a TT-matrix.
@@ -1134,3 +1141,52 @@ def gather_nd(tt, indices):
     tt_elements = tf.matmul(tt_elements, core_slices)
   tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
   return tt_elements
+
+
+def renormalize_tt_cores(tt, epsilon=1e-8):
+    """Renormalizes TT-cores to make them of the same Frobenius norm.
+
+    Doesn't change the tensor represented by `tt` object, but renormalizes the
+    TT-cores to make further computations more stable.
+
+    Args:
+      tt: `TensorTrain` or `TensorTrainBatch` object
+      epsilon: parameter for numerical stability of sqrt
+    Returns:
+      `TensorTrain` or `TensorTrainBatch` which represents the same
+      tensor as tt, but with all cores having equal norm. In the batch
+      case applies to each TT in `TensorTrainBatch`.
+
+    """
+    if isinstance(tt, TensorTrain):
+      new_cores = []
+      running_log_norm = 0
+      core_norms = []
+      for core in tt.tt_cores:
+        cur_core_norm = tf.sqrt(tf.maximum(tf.reduce_sum(core ** 2), epsilon))
+        core_norms.append(cur_core_norm)
+        running_log_norm += tf.log(cur_core_norm)
+
+      running_log_norm = running_log_norm / tt.ndims()
+      fact = tf.exp(running_log_norm)
+      for i, core in enumerate(tt.tt_cores):
+        new_cores.append(core * fact / core_norms[i])
+
+      return TensorTrain(new_cores)
+    else:
+      sz = (tt.batch_size,) + (len(tt.tt_cores[0].shape) - 1) * (1,)
+      running_core_log_norms = tf.zeros(sz)
+      ax = np.arange(len(tt.tt_cores[0].shape))[1:]
+      fact_list = []
+      for core in tt.tt_cores:
+        cur_core_norm_sq = tf.reduce_sum(core**2, axis=ax, keep_dims=True)
+        cur_core_norm = tf.sqrt(tf.maximum(epsilon, cur_core_norm_sq))
+        fact_list.append(cur_core_norm)
+        running_core_log_norms += tf.log(cur_core_norm)
+
+      new_cores = []
+      exp_fact = tf.exp(running_core_log_norms / tt.ndims())
+      for i, core in enumerate(tt.tt_cores):
+        new_cores.append(tf.multiply(core, exp_fact / fact_list[i]))
+
+      return TensorTrainBatch(new_cores)

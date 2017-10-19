@@ -165,6 +165,20 @@ class TTTensorTest(tf.test.TestCase):
         self.assertEqual(dtype, casted.dtype)
         self.assertTrue(dtype, casted_val.dtype)
 
+  def testCoreRenorm(self):
+      a = initializers.random_tensor(3 * (10,), tt_rank=7)
+      b = ops.renormalize_tt_cores(a)
+      var_list = [ops.full(a), ops.full(b)]
+      with self.test_session() as sess:
+          af, bf = sess.run(var_list)
+          b_cores = sess.run(b.tt_cores)
+          b_cores_norms = []
+          for cr in b_cores:
+              b_cores_norms.append(np.linalg.norm(cr))
+          self.assertAllClose(af, bf, atol=1e-5, rtol=1e-5)
+          self.assertAllClose(b_cores_norms, b_cores_norms[0]
+                              * np.ones((len(b_cores))))
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -693,6 +707,20 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(res_np_v, des_v)
       self.assertAllClose(res_pl_v, res_pl_v)
 
+  def testCoreRenormBatch(self):
+      a = initializers.random_tensor_batch(3 * (10,), tt_rank=7, batch_size=5)
+      b = ops.renormalize_tt_cores(a)
+      var_list = [ops.full(a), ops.full(b)]
+
+      with self.test_session() as sess:
+          af, bf = sess.run(var_list)
+          b_cores = sess.run(b.tt_cores)
+          b_cores_norms = []
+          for cr in b_cores:
+              b_cores_norms.append(np.linalg.norm(cr))
+          self.assertAllClose(af, bf, atol=1e-5, rtol=1e-5)
+          self.assertAllClose(b_cores_norms, b_cores_norms[0]
+                              * np.ones((len(b_cores))))
 
 class TTMatrixTestBatch(tf.test.TestCase):
 
