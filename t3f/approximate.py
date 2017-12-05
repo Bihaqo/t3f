@@ -1,6 +1,7 @@
 import tensorflow as tf
 from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import decompositions
+from t3f import batch_ops
 
 
 def add_n(tt_objects, max_tt_rank):
@@ -28,7 +29,7 @@ def add_n(tt_objects, max_tt_rank):
   return prev_level[0]
 
 
-def reduce_sum_batch(tt_batch, max_tt_rank):
+def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
   """Sum of all TT-objects in the batch with rounding after each summation.
   
   
@@ -38,16 +39,29 @@ def reduce_sum_batch(tt_batch, max_tt_rank):
   Args:
     tt_batch: `TensorTrainBatch` object.
     max_tt_rank: a number, TT-rank for each individual rounding.
+    coef: tf.Tensor, its shape is either batch_size, or batch_size x N.
+      If coef is a vecotor of size batch_size, the result will
+      be (approximate) weighted sum.
+      If coef is a matrix of shape batch_size x N, the result will be
+      a `TensorTrainBatch` res such that
+        res[j] ~= sum_i coef[i, j] tt_batch[i]
 
   Returns:
-    A `TensorTrain` object representing element-wise sum of all the objects in
-    the batch.
+    If coefficients are absent or is a vector of numbers, returns
+      a `TensorTrain` object representing (approximate) element-wise sum of all
+      the objects in the batch, weighted if coef is provided.
+    If coefficients is a matrix, returns `TensorTrainBatch`.
   """
   ndims = tt_batch.ndims()
   left_tt_rank_dim = tt_batch.left_tt_rank_dim
   right_tt_rank_dim = tt_batch.right_tt_rank_dim
   shape = tt_batch.get_raw_shape()
   dtype = tt_batch.dtype
+
+  if coef is not None:
+    coef = tf.convert_to_tensor(coef)
+    assert len(coef.get_shape()) == 1
+    tt_batch = batch_ops.multiply_along_batch_dim(tt_batch, coef)
 
   prev_level = tt_batch
   while prev_level.batch_size > 1:
@@ -57,7 +71,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank):
       a_core = curr_orig_core[::2]
       b_core = curr_orig_core[1::2]
       if a_core.get_shape()[0] > b_core.get_shape()[0]:
-        # Not even number of elements in the batch, will have to add dummy
+        # Odd number of elements in the batch, will have to add dummy
         # TT-object with the tt-cores filled with zeros.
         zeros_shape = b_core.get_shape().as_list()
         zeros_shape[0] = 1

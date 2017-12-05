@@ -66,8 +66,8 @@ class ApproximateTest(tf.test.TestCase):
                                                   tt_rank=3,
                                                   batch_size=3)
       res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 9,
-                                                         [-1.2, 0, 12]))
-      res_desired = ops.full(desired(tt_batch, [-1.2, 0, 12]))
+                                                         [1.2, -0.2, 1]))
+      res_desired = ops.full(desired(tt_batch, [1.2, -0.2, 1]))
       res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
       self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
