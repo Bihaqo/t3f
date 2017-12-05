@@ -46,8 +46,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank):
   ndims = tt_batch.ndims()
   left_tt_rank_dim = tt_batch.left_tt_rank_dim
   right_tt_rank_dim = tt_batch.right_tt_rank_dim
-  tt_ranks = tt_batch.get_tt_ranks()
-  shape = tt_batch.get_shape().as_list()
+  shape = tt_batch.get_raw_shape()
   dtype = tt_batch.dtype
 
   prev_level = tt_batch
@@ -57,10 +56,12 @@ def reduce_sum_batch(tt_batch, max_tt_rank):
       curr_orig_core = prev_level.tt_cores[core_idx]
       a_core = curr_orig_core[::2]
       b_core = curr_orig_core[1::2]
-      if a_core.get_shape()[0] < b_core.get_shape()[0]:
+      if a_core.get_shape()[0] > b_core.get_shape()[0]:
         # Not even number of elements in the batch, will have to add dummy
         # TT-object with the tt-cores filled with zeros.
-        zeros = tf.zeros((1, b_core.get_shape().as_list()[1:]))
+        zeros_shape = b_core.get_shape().as_list()
+        zeros_shape[0] = 1
+        zeros = tf.zeros(zeros_shape, dtype)
         b_core = tf.concat((b_core, zeros), axis=0)
 
       if core_idx == 0:
@@ -68,16 +69,11 @@ def reduce_sum_batch(tt_batch, max_tt_rank):
       elif core_idx == ndims - 1:
         curr_sum_core = tf.concat((a_core, b_core), axis=left_tt_rank_dim)
       else:
-        upper_zeros = tf.zeros((tt_ranks[core_idx], shape[0][core_idx],
-                                shape[1][core_idx], tt_ranks[core_idx + 1]),
-                               dtype)
-        lower_zeros = tf.zeros((tt_ranks[core_idx], shape[0][core_idx],
-                                shape[1][core_idx], tt_ranks[core_idx + 1]),
-                               dtype)
-        upper = tf.concat((a_core, upper_zeros), axis=right_tt_rank_dim)
-        lower = tf.concat((lower_zeros, b_core), axis=right_tt_rank_dim)
+        zeros = tf.zeros(b_core.get_shape(), dtype)
+        upper = tf.concat((a_core, zeros), axis=right_tt_rank_dim)
+        lower = tf.concat((zeros, b_core), axis=right_tt_rank_dim)
         curr_sum_core = tf.concat((upper, lower), axis=left_tt_rank_dim)
       current_level_cores.append(curr_sum_core)
-    current_level = TensorTrainBatch(current_level, shape, tt_ranks)
+    current_level = TensorTrainBatch(current_level_cores, shape)
     prev_level = decompositions.round(current_level, max_tt_rank)
   return prev_level[0]
