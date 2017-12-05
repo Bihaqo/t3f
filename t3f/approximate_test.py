@@ -53,6 +53,24 @@ class ApproximateTest(tf.test.TestCase):
         res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
         self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
+  def testReduceSumBatchWeighted(self):
+    # Weighted sum of a batch of TT-tensors.
+
+    def desired(tt_batch, coef):
+      res = coef[0] * tt_batch[0]
+      for i in range(1, tt_batch.batch_size):
+        res += coef[i] * tt_batch[i]
+      return res
+    with self.test_session() as sess:
+      tt_batch = initializers.random_tensor_batch((4, 3, 5),
+                                                  tt_rank=3,
+                                                  batch_size=3)
+      res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 9,
+                                                         [-1.2, 0, 12]))
+      res_desired = ops.full(desired(tt_batch, [-1.2, 0, 12]))
+      res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
+      self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
+
 
 if __name__ == "__main__":
   tf.test.main()
