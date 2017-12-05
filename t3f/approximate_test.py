@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 from t3f import ops
@@ -68,6 +69,32 @@ class ApproximateTest(tf.test.TestCase):
       res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 9,
                                                          [1.2, -0.2, 1]))
       res_desired = ops.full(desired(tt_batch, [1.2, -0.2, 1]))
+      res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
+      self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
+
+  def testReduceSumBatchMultipleWeighted(self):
+    # Multiple weighted sums of a batch of TT-tensors.
+
+    def desired(tt_batch, coef):
+      res = coef[0] * tt_batch[0]
+      for i in range(1, tt_batch.batch_size):
+        res += coef[i] * tt_batch[i]
+      return res
+    with self.test_session() as sess:
+      tt_batch = initializers.random_tensor_batch((4, 3, 5),
+                                                  tt_rank=2,
+                                                  batch_size=5)
+      coef = [[1., 0.1],
+              [0.9, -0.2],
+              [0.3, 0.3],
+              [0.4, 0.2],
+              [0.5, 0.2]]
+      coef = np.array(coef)
+      res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 10,
+                                                         coef))
+      res_desired_1 = ops.full(desired(tt_batch, coef[:, 0]))
+      res_desired_2 = ops.full(desired(tt_batch, coef[:, 1]))
+      res_desired = tf.stack((res_desired_1, res_desired_2))
       res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
       self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
