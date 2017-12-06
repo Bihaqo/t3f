@@ -83,14 +83,12 @@ class ApproximateTest(tf.test.TestCase):
     with self.test_session() as sess:
       tt_batch = initializers.random_tensor_batch((4, 3, 5),
                                                   tt_rank=2,
-                                                  batch_size=5)
+                                                  batch_size=3)
       coef = [[1., 0.1],
               [0.9, -0.2],
-              [0.3, 0.3],
-              [0.4, 0.2],
-              [0.5, 0.2]]
-      coef = np.array(coef)
-      res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 10,
+              [0.3, 0.3]]
+      coef = np.array(coef).astype(np.float32)
+      res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 6,
                                                          coef))
       res_desired_1 = ops.full(desired(tt_batch, coef[:, 0]))
       res_desired_2 = ops.full(desired(tt_batch, coef[:, 1]))
