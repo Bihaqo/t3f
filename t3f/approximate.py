@@ -39,7 +39,6 @@ def add_n(tt_objects, max_tt_rank):
 def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
   """Sum of all TT-objects in the batch with rounding after each summation.
   
-  
   This version implements a slow-to-compile but fast-to-execute (at least on
   a GPU) version: summing in a binary tree order.
   I.e. it uses the following idea:
@@ -51,10 +50,10 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
     max_tt_rank: a number, TT-rank for each individual rounding.
     coef: tf.Tensor, its shape is either batch_size, or batch_size x N.
       If coef is a vecotor of size batch_size, the result will
-      be (approximate) weighted sum.
+        be (approximate) weighted sum.
       If coef is a matrix of shape batch_size x N, the result will be
-      a `TensorTrainBatch` res such that
-        res[j] ~= sum_i coef[i, j] tt_batch[i]
+        a `TensorTrainBatch` res containing N TT-object such that
+          res[j] ~= sum_i tt_batch[i] coef[i, j]
 
   Returns:
     If coefficients are absent or is a vector of numbers, returns
