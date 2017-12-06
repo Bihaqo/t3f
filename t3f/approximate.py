@@ -84,7 +84,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
       for core_idx in range(ndims):
         curr_core = tt_batch.tt_cores[core_idx]
         curr_shape = curr_core.get_shape().as_list()
-        new_shape = np.insert(curr_shape.copy(), 1, 1)
+        new_shape = np.insert(curr_shape, 1, 1)
         tiling = np.ones(len(new_shape))
         tiling[1] = output_size
         curr_core = tf.tile(tf.reshape(curr_core, new_shape), tiling)
@@ -96,7 +96,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
             shaped_coef = tf.expand_dims(shaped_coef, -1)
           curr_core = curr_core * shaped_coef
         # Merge the first two dimensions back into one.
-        raveled_shape = curr_shape.copy()
+        raveled_shape = np.array(curr_shape).copy()
         raveled_shape[0] *= output_size
         curr_core = tf.reshape(curr_core, raveled_shape)
         tt_batch_cores.append(curr_core)
@@ -116,7 +116,8 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
       curr_orig_core = prev_level.tt_cores[core_idx]
       if is_batch_output:
         # Split the first dimension into batch_size x N
-        unraveled_shape = curr_orig_core.get_shape().as_list().copy()
+        unraveled_shape = curr_orig_core.get_shape().as_list()
+        unraveled_shape = np.array(unraveled_shape).copy()
         unraveled_shape[0] /= output_size
         unraveled_shape = np.insert(unraveled_shape, 1, output_size)
         curr_orig_core = tf.reshape(curr_orig_core, unraveled_shape)
