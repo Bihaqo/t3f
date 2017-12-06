@@ -20,6 +20,9 @@ def add_n(tt_objects, max_tt_rank):
 
   Returns:
     Object of the same type as each input.
+  
+  See Also:
+    t3f.approximate.reduce_sum_batch
   """
   prev_level = tt_objects
   while len(prev_level) > 1:
@@ -58,6 +61,9 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
       a `TensorTrain` object representing (approximate) element-wise sum of all
       the objects in the batch, weighted if coef is provided.
     If coefficients is a matrix, returns `TensorTrainBatch`.
+  
+  See Also:
+    t3f.approximate.add_n
   """
   ndims = tt_batch.ndims()
   left_tt_rank_dim = tt_batch.left_tt_rank_dim
