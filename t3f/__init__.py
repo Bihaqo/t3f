@@ -55,6 +55,7 @@ from t3f.decompositions import round
 from t3f.decompositions import to_tt_matrix
 from t3f.decompositions import to_tt_tensor
 
+import t3f.approximate as approximate
 import t3f.kronecker as kronecker
 import t3f.utils as utils
 

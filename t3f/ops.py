@@ -1190,3 +1190,4 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
         new_cores.append(tf.multiply(core, exp_fact / fact_list[i]))
 
       return TensorTrainBatch(new_cores)
+
