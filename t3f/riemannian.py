@@ -515,6 +515,15 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     
   Returns:
     tf.tensor with the scalar product matrix.
+      
+  Complexity:
+      O(batch_size^2 d r^2 n), where
+    d is the number of TT-cores (projected_tt_vectors_1.ndims());
+    r is the largest TT-rank max(projected_tt_vectors_1.get_tt_rank())
+      (i.e. 2 * {the TT-rank of the object we projected vectors onto}.
+    and n is the size of the axis dimension, e.g.
+      for a tensor of size 4 x 4 x 4, n is 4;
+      for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12.
   """
   if not hasattr(projected_tt_vectors_1, 'projection_on') or \
       not hasattr(projected_tt_vectors_2, 'projection_on'):
