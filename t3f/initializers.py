@@ -3,6 +3,7 @@ import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
+import t3f.utils as utils
 
 
 def random_tensor(shape, tt_rank=2):
@@ -195,6 +196,8 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1):
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
+    contracted_shape = np.prod(shape, axis=0)
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(contracted_shape))
   # TODO: check that ints?
   shape = shape.astype(int)
   tt_rank = tt_rank.astype(int)
