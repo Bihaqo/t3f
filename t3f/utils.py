@@ -37,3 +37,26 @@ def replace_tf_svd_with_np_svd():
     return s, u, v
 
   tf.svd = my_svd
+
+
+def max_tt_ranks(raw_shape):
+  """Maximal TT-ranks for a TT-object of given shape.
+  
+  For example, a tensor of shape (2, 3, 5, 7) has maximal TT-ranks
+    (1, 2, 6, 7, 1)
+  making the TT-ranks larger will not increase flexibility.
+  
+  Args:
+    shape: an integer vector
+
+  Returns:
+    tt_ranks: an integer vector, maximal tt-rank for each dimension
+  """
+  d = raw_shape.size
+  tt_ranks = np.zeros(d + 1, dtype='int32')
+  tt_ranks[0] = 1
+  tt_ranks[d] = 1
+  left_to_right = np.cumprod(raw_shape)
+  right_to_left = np.cumprod(raw_shape[::-1])[::-1]
+  tt_ranks[1:-1] = np.minimum(left_to_right[:-1], right_to_left[1:])
+  return tt_ranks
