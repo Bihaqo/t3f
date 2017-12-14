@@ -6,7 +6,7 @@ from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import ops
 from t3f import initializers
 from t3f import variables
-import t3f.kronecker as kr
+from t3f import kronecker as kr
 
 class KroneckerTest(tf.test.TestCase):
 
