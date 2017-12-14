@@ -63,6 +63,9 @@ def max_tt_ranks(raw_shape):
     (1, 2, 6, 7, 1)
   making the TT-ranks larger will not increase flexibility.
   
+  If maximum TT-ranks result in integer overflows, it substitutes
+  the too-large-values with MAX_INT.
+  
   Args:
     shape: an integer vector
 

@@ -207,5 +207,4 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1):
     curr_core_shape = (batch_size, tt_rank[i], shape[0][i], shape[1][i],
                        tt_rank[i + 1])
     tt_cores[i] = tf.random_normal(curr_core_shape)
-
   return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)
