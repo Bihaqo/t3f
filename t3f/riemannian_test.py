@@ -148,7 +148,7 @@ class RiemannianTest(tf.test.TestCase):
     actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val)
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -170,7 +170,7 @@ class RiemannianTest(tf.test.TestCase):
     actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val)
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -192,7 +192,7 @@ class RiemannianTest(tf.test.TestCase):
     actual = ops.full(riemannian.add_n_projected((projected1, projected2)))
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val)
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -226,6 +226,25 @@ class RiemannianTest(tf.test.TestCase):
       # The arguments are projections on different tangent spaces.
       riemannian.add_n_projected((projected1, another_projected2),
                                  coef=[1.2, -2.0])
+
+  def testWeightedAddNProjectedBatch(self):
+    # Add several TT-batches from the same tangent space with coefs.
+    what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3)
+    what2 = initializers.random_tensor_batch((2, 3, 4), 1, batch_size=3)
+    where = initializers.random_tensor((2, 3, 4), 3)
+    projected1 = riemannian.project(what1, where)
+    projected2 = riemannian.project(what2, where)
+
+    desired_0 = ops.full(1.2 * projected1[0] + -2.0 * projected2[0])
+    desired_1 = ops.full(1.9 * projected1[1] + 2.0 * projected2[1])
+    desired_2 = ops.full(0.0 * projected1[2] + 1.0 * projected2[2])
+    desired = tf.stack((desired_0, desired_1, desired_2), axis=0)
+    actual = ops.full(riemannian.add_n_projected((projected1, projected2),
+                                                 coef=[[1.2, 1.9, 0.0],
+                                                       [-2.0, 2.0, 1.0]]))
+    with self.test_session() as sess:
+      desired_val, actual_val = sess.run((desired, actual))
+      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
 if __name__ == "__main__":
   tf.test.main()

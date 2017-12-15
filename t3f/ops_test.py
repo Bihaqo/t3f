@@ -165,6 +165,20 @@ class TTTensorTest(tf.test.TestCase):
         self.assertEqual(dtype, casted.dtype)
         self.assertTrue(dtype, casted_val.dtype)
 
+  def testCoreRenorm(self):
+      a = initializers.random_tensor(3 * (10,), tt_rank=7)
+      b = ops.renormalize_tt_cores(a)
+      var_list = [ops.full(a), ops.full(b)]
+      with self.test_session() as sess:
+          af, bf = sess.run(var_list)
+          b_cores = sess.run(b.tt_cores)
+          b_cores_norms = []
+          for cr in b_cores:
+              b_cores_norms.append(np.linalg.norm(cr))
+          self.assertAllClose(af, bf, atol=1e-5, rtol=1e-5)
+          self.assertAllClose(b_cores_norms, b_cores_norms[0]
+                              * np.ones((len(b_cores))))
+
 
 class TTMatrixTest(tf.test.TestCase):
 
@@ -341,9 +355,29 @@ class TTMatrixTest(tf.test.TestCase):
           self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                               atol=1e-5, rtol=1e-5)
 
+  def testQuadraticFormBatch(self):
+    # Test quadratic form for batch of tensors.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          b = initializers.random_matrix_batch((tensor_shape[0], None),
+                                               tt_rank=rank, batch_size=5)
+          c = initializers.random_matrix_batch((tensor_shape[1], None),
+                                               tt_rank=rank, batch_size=5)
+          res_actual = ops.quadratic_form(A, b, c)
+          vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
+          res_actual_val, A_val, b_val, c_val = sess.run(vars)
+          res_desired = np.diag(b_val[:, :, 0].dot(A_val).dot(c_val[:, :, 0].T))
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired),
+                              atol=1e-5, rtol=1e-5)
+
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
-    
+
     tt_mat = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2)
     tt_vec = initializers.random_matrix(((2, 3), None), tt_rank=2)
 
@@ -387,8 +421,8 @@ class TTMatrixTest(tf.test.TestCase):
 
 
   def testHalfKnownRanksTTMatmul(self):
-    # Tests tt_tt_matmul for the case  when one matrice has known ranks 
-    # and the other one doesn't    
+    # Tests tt_tt_matmul for the case  when one matrice has known ranks
+    # and the other one doesn't
     np.random.seed(1)
     K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
     K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
@@ -511,6 +545,15 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(res_actual_val, res_desired_val)
       self.assertAllClose(res_actual2_val, res_desired_val)
 
+  def testFrobeniusNormDifferentiableBatch(self):
+    with self.test_session() as sess:
+      tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+      norm_sq_diff = ops.frobenius_norm_squared(tt, differentiable=True)
+      variables = [norm_sq_diff,  ops.full(tt)]
+      norm_sq_diff_val, tt_full = sess.run(variables)
+      desired_norm = np.linalg.norm(tt_full.reshape((5, -1)), axis=1)**2
+      self.assertAllClose(norm_sq_diff_val, desired_norm, atol=1e-5, rtol=1e-5)
+
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
     with self.test_session() as sess:
@@ -526,6 +569,158 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                           rtol=1e-5)
 
+  def testMultiplyBatchByTensor(self):
+    tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+      res_desired = ops.full(tt_a) * ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyBatchByBatch(self):
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    res_actual = ops.full(ops.multiply(tt_a, tt_b))
+    res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+    res_desired = ops.full(tt_a) * ops.full(tt_b)
+    to_run = [res_actual, res_actual2, res_desired]
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+      res_desired = ops.full(tt_a) * ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyBroadcasting(self):
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    with self.test_session() as sess:
+      res_actual = ops.full(ops.multiply(tt_a, tt_b))
+      res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
+      res_desired = ops.full(tt_a) * ops.full(tt_b)
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val)
+      self.assertAllClose(res_actual2_val, res_desired_val)
+
+  def testMultiplyUnknownBatchSizeBroadcasting(self):
+    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    tt_a = TensorTrainBatch([c1, c2])
+    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=3, batch_size=1)
+    tt_c = initializers.random_tensor((3, 3), tt_rank=3)
+    res_ab = ops.full(ops.multiply(tt_a, tt_b))
+    res_ba = ops.full(ops.multiply(tt_b, tt_a))
+    res_ac = ops.full(ops.multiply(tt_a, tt_c))
+    res_ca = ops.full(ops.multiply(tt_c, tt_a))
+    res_desired_ab = ops.full(tt_a) * ops.full(tt_b)
+    res_desired_ac = ops.full(tt_a) * ops.full(tt_c)
+    to_run = [res_ab, res_ba, res_ac, res_ca, res_desired_ab, res_desired_ac]
+    feed_dict = {c1:np.random.rand(7, 1, 3, 2),
+                 c2:np.random.rand(7, 2, 3, 1)}
+    with self.test_session() as sess:
+      ab, ba, ac, ca, des_ab, des_ac = sess.run(to_run, feed_dict=feed_dict)
+      self.assertAllClose(ab, des_ab)
+      self.assertAllClose(ba, des_ab)
+      self.assertAllClose(ac, des_ac)
+      self.assertAllClose(ca, des_ac)
+
+  def testMultiplyTwoBatchesUnknownSize(self):
+    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    c3 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c4 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    tt_a = TensorTrainBatch([c1, c2])
+    tt_b = TensorTrainBatch([c3, c4])
+    res_ab = ops.full(ops.multiply(tt_a, tt_b))
+    res_ba = ops.full(ops.multiply(tt_b, tt_a))
+    res_desired = ops.full(tt_a) * ops.full(tt_b)
+    to_run = [res_ab, res_ba, res_desired]
+    feed_dict = {c1:np.random.rand(7, 1, 3, 2),
+                 c2:np.random.rand(7, 2, 3, 1),
+                 c3:np.random.rand(7, 1, 3, 2),
+                 c4:np.random.rand(7, 2, 3, 1)}
+
+    feed_dict_err = {c1:np.random.rand(7, 1, 3, 2),
+                     c2:np.random.rand(7, 2, 3, 1),
+                     c3:np.random.rand(1, 1, 3, 2),
+                     c4:np.random.rand(1, 2, 3, 1)}
+
+    with self.test_session() as sess:
+      ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
+      self.assertAllClose(ab_full, des_full)
+      self.assertAllClose(ba_full, des_full)
+      with self.assertRaises(tf.errors.InvalidArgumentError):
+        sess.run(to_run, feed_dict=feed_dict_err)
+
+  def testMultiplyUnknownSizeBatchAndBatch(self):
+    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
+    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=2, batch_size=8)
+    tt_a = TensorTrainBatch([c1, c2])
+    res_ab = ops.full(ops.multiply(tt_a, tt_b))
+    res_ba = ops.full(ops.multiply(tt_b, tt_a))
+    res_desired = ops.full(tt_a) * ops.full(tt_b)
+    to_run = [res_ab, res_ba, res_desired]
+    feed_dict = {c1:np.random.rand(8, 1, 3, 2),
+                 c2:np.random.rand(8, 2, 3, 1)}
+
+    feed_dict_err = {c1:np.random.rand(1, 1, 3, 2),
+                     c2:np.random.rand(1, 2, 3, 1)}
+
+    with self.test_session() as sess:
+      ab_full, ba_full, des_full = sess.run(to_run, feed_dict=feed_dict)
+      self.assertAllClose(ab_full, des_full)
+      self.assertAllClose(ba_full, des_full)
+      with self.assertRaises(tf.errors.InvalidArgumentError):
+        sess.run(to_run, feed_dict=feed_dict_err)
+
+  def testGatherND(self):
+    idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
+    pl_idx = tf.placeholder(tf.int32, [None, 3])
+    tt = initializers.random_tensor((3, 4, 5), tt_rank=2)
+    res_np = ops.gather_nd(tt, idx)
+    res_pl = ops.gather_nd(tt, pl_idx)
+    res_desired = tf.gather_nd(ops.full(tt), idx)
+    to_run = [res_np, res_pl, res_desired]
+    with self.test_session() as sess:
+      res_np_v, res_pl_v, des_v = sess.run(to_run, feed_dict={pl_idx: idx})
+      self.assertAllClose(res_np_v, des_v)
+      self.assertAllClose(res_pl_v, res_pl_v)
+
+  def testGatherNDBatch(self):
+    idx = [[0, 0, 0, 0], [1, 0, 1, 2], [0, 0, 1, 0]]
+    pl_idx = tf.placeholder(tf.int32, [None, 4])
+    tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=2)
+    res_np = ops.gather_nd(tt, idx)
+    res_pl = ops.gather_nd(tt, pl_idx)
+    res_desired = tf.gather_nd(ops.full(tt), idx)
+    to_run = [res_np, res_pl, res_desired]
+    with self.test_session() as sess:
+      res_np_v, res_pl_v, des_v = sess.run(to_run, feed_dict={pl_idx: idx})
+      self.assertAllClose(res_np_v, des_v)
+      self.assertAllClose(res_pl_v, res_pl_v)
+
+  def testCoreRenormBatch(self):
+      a = initializers.random_tensor_batch(3 * (10,), tt_rank=7, batch_size=5)
+      b = ops.renormalize_tt_cores(a)
+      var_list = [ops.full(a), ops.full(b)]
+
+      with self.test_session() as sess:
+          af, bf = sess.run(var_list)
+          b_cores = sess.run(b.tt_cores)
+          b_cores_norms = []
+          for cr in b_cores:
+              b_cores_norms.append(np.linalg.norm(cr))
+          self.assertAllClose(af, bf, atol=1e-5, rtol=1e-5)
+          self.assertAllClose(b_cores_norms, b_cores_norms[0]
+                              * np.ones((len(b_cores))))
 
 class TTMatrixTestBatch(tf.test.TestCase):
 
@@ -601,8 +796,9 @@ class TTMatrixTestBatch(tf.test.TestCase):
                               ops.full(tt_mat_2[0]))
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
-      self.assertAllClose(res_actual_val, res_desired_val)
-      self.assertAllClose(res_actual2_val, res_desired_val)
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5, rtol=1e-5)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-5,
+                          rtol=1e-5)
 
   def testTranspose(self):
     # Transpose a batch of TT-matrices.
