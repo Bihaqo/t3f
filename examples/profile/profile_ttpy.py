@@ -16,8 +16,8 @@ matvec_time = timeit.timeit("matrix * vec", globals=globals, number=1000) / 1000
 print('Multiplying a matrix by a vector takes %f seconds.' % matvec_time)
 logs['matvec_time'] = matvec_time
 
-matmul_time = timeit.timeit("matrix * matrix", globals=globals, number=1000) / 1000
-print('Multiplying %a matrix by a matrix takes %f seconds.' % (matmul_time))
+matmul_time = timeit.timeit("matrix * matrix", globals=globals, number=100) / 100
+print('Multiplying a matrix by a matrix takes %f seconds.' % matmul_time)
 logs['matmul_time'] = matmul_time
 
 norm_time = timeit.timeit("tt.tensor.norm(matrix.tt)", globals=globals,
