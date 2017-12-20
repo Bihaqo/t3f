@@ -31,6 +31,10 @@ sess.run(tf.global_variables_initializer())
 logs = {}
 
 matvec_op = t3f.matmul(one_matrix, one_vec).op
+# Warmup.
+timeit.timeit("sess.run(matvec_op)",
+              globals={'sess': sess, 'matvec_op': matvec_op},
+              number=10)
 matvec_time = timeit.timeit("sess.run(matvec_op)",
                             globals={'sess': sess, 'matvec_op': matvec_op},
                             number=100) / 100

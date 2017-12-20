@@ -12,6 +12,9 @@ globals = {'matrix': matrix, 'vec': vec, 'vec_100': vec_100, 'tens': tens,
 
 logs = {'lib': 'ttpy'}
 
+# Warmup
+timeit.timeit("matrix * vec", globals=globals, number=10)
+
 matvec_time = timeit.timeit("matrix * vec", globals=globals, number=1000) / 1000
 print('Multiplying a matrix by a vector takes %f seconds.' % matvec_time)
 logs['matvec_time'] = matvec_time
