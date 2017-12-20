@@ -26,6 +26,16 @@ def project_sum(what, where, weights=None):
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
+
+  Complexity:
+       O(d r_where^3 m) for orthogonalizing the TT-cores of where
+      +O(batch_size d r_what r_where n (r_what + r_where))
+    d is the number of TT-cores (what.ndims());
+    r_what is the largest TT-rank of what max(what.get_tt_rank())
+    r_where is the largest TT-rank of where
+    n is the size of the axis dimension of what and where e.g.
+      for a tensor of size 4 x 4 x 4, n is 4;
+      for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
   """
   # Always work with batch of TT objects for simplicity.
   what = shapes.expand_batch_dim(what)
@@ -202,6 +212,16 @@ def project(what, where):
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
+     
+  Complexity:
+       O(d r_where^3 m) for orthogonalizing the TT-cores of where
+      +O(batch_size d r_what r_where n (r_what + r_where))
+    d is the number of TT-cores (what.ndims());
+    r_what is the largest TT-rank of what max(what.get_tt_rank())
+    r_where is the largest TT-rank of where
+    n is the size of the axis dimension of what and where e.g.
+      for a tensor of size 4 x 4 x 4, n is 4;
+      for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
   """
 
   if not isinstance(where, TensorTrain):
