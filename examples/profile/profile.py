@@ -79,6 +79,14 @@ batch_norm_time = timeit.timeit("sess.run(batch_norm_op)",
 print('Computing the norm of %s takes %f seconds.' % (matrices, batch_norm_time))
 logs['batch_norm_time'] = batch_norm_time
 
+flatinner_op = t3f.flat_inner(one_vec, one_vec).op
+flatinner_time = timeit.timeit("sess.run(flatinner_op)",
+                            globals={'sess': sess, 'flatinner_op': flatinner_op},
+                            number=100) / 100
+print('Computing the dot product between %s and itself takes %f seconds.' %
+      (one_vec, flatinner_time))
+logs['flatinner_time'] = flatinner_time
+
 gram_op = t3f.gram_matrix(vecs).op
 gram_time = timeit.timeit("sess.run(gram_op)",
                             globals={'sess': sess, 'gram_op': gram_op},
