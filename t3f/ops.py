@@ -140,38 +140,102 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   is_a_batch = isinstance(tt_matrix_a, TensorTrainBatch)
   is_b_batch = isinstance(tt_matrix_b, TensorTrainBatch)
   is_res_batch = is_a_batch or is_b_batch
-  a_batch_str = 'o' if is_a_batch else ''
-  b_batch_str = 'o' if is_b_batch else ''
-  res_batch_str = 'o' if is_res_batch else ''
-  einsum_str = '{}aijb,{}cjkd->{}acikbd'.format(a_batch_str, b_batch_str,
-                                                res_batch_str)
-  result_cores = []
-  # TODO: name the operation and the resulting tensor.
+
+
+  def multiply_two_cores(a_core, b_core, a_core_left_rank, a_core_right_rank,
+                         b_core_left_rank, b_core_right_rank,
+                         output_mode_left, output_mode_right, sum_axis,
+                         batch_size=None):
+    base_output_shape = [a_core_left_rank * b_core_left_rank,
+                         output_mode_left, output_mode_right,
+                         a_core_right_rank * b_core_right_rank]
+    base_res_unfolded_shape = [a_core_left_rank, a_core_right_rank,
+                               output_mode_left, output_mode_right,
+                               b_core_left_rank, b_core_right_rank]
+    if not is_a_batch and not is_b_batch:
+      # Single TT-matrix x single TT-matrix
+      # left[a i j b] - > left[a b i j]
+      a_core = tf.transpose(a_core, [0, 3, 1, 2])
+      a_core = tf.reshape(a_core, [-1, sum_axis])
+      # right[c j k d] - > right[j k c d]
+      b_core = tf.transpose(b_core, [1, 2, 0, 3])
+      b_core = tf.reshape(b_core, [sum_axis, -1])
+      product = tf.matmul(a_core, b_core)
+      product = tf.reshape(product, base_res_unfolded_shape)
+      # a b i k c d -> a c i k b d
+      product = tf.transpose(product, [0, 4, 2, 3, 1, 5])
+      return tf.reshape(product, base_output_shape)
+    elif is_a_batch and is_b_batch:
+      # Batch by batch.
+      # left[o, a i j b] - > left[o, a b i j]
+      a_core = tf.transpose(a_core, [0, 1, 4, 2, 3])
+      a_core = tf.reshape(a_core, [batch_size, -1, sum_axis])
+      # right[o, c j k d] - > right[o, j k c d]
+      b_core = tf.transpose(b_core, [0, 2, 3, 1, 4])
+      b_core = tf.reshape(b_core, [batch_size, sum_axis, -1])
+      product = tf.matmul(a_core, b_core)
+      unfolded_shape = [batch_size] + base_res_unfolded_shape
+      product = tf.reshape(product, unfolded_shape)
+      # o a b i k c d -> o a c i k b d
+      product = tf.transpose(product, [0, 1, 5, 3, 4, 2, 6])
+      output_shape = [batch_size] + base_output_shape
+      return tf.reshape(product, output_shape)
+    else:
+      # Broadcasting: one of the argument is non-batch.
+      if is_a_batch:
+        # left[o, a i j b] - > left[o, a b i j]
+        a_core = tf.transpose(a_core, [0, 1, 4, 2, 3])
+        a_core = tf.reshape(a_core, [-1, sum_axis])
+        # right[c j k d] - > right[j k c d]
+        b_core = tf.transpose(b_core, [1, 2, 0, 3])
+        b_core = tf.reshape(b_core, [sum_axis, -1])
+        product = tf.matmul(a_core, b_core)
+        unfolded_shape = [batch_size] + base_res_unfolded_shape
+        product = tf.reshape(product, unfolded_shape)
+        # o a b i k c d -> o a c i k b d
+        product = tf.transpose(product, [0, 1, 5, 3, 4, 2, 6])
+        output_shape = [batch_size] + base_output_shape
+        return tf.reshape(product, output_shape)
+      elif is_b_batch:
+        # left[a i j b] - > left[a b i j]
+        a_core = tf.transpose(a_core, [0, 3, 1, 2])
+        a_core = tf.reshape(a_core, [-1, sum_axis])
+        # right[o, c j k d] - > right[j o k c d]
+        b_core = tf.transpose(b_core, [2, 0, 3, 1, 4])
+        b_core = tf.reshape(b_core, [sum_axis, -1])
+        product = tf.matmul(a_core, b_core)
+        unfolded_shape = [a_core_left_rank, a_core_right_rank,
+                          output_mode_left, output_mode_right, batch_size,
+                          b_core_left_rank, b_core_right_rank]
+        product = tf.reshape(product, unfolded_shape)
+        # a b i k o c d -> o a c i k b d
+        product = tf.transpose(product, [4, 0, 5, 2, 3, 1, 6])
+        output_shape = [batch_size] + base_output_shape
+        product = tf.reshape(product, output_shape)
+        return product
+
   a_shape = shapes.lazy_raw_shape(tt_matrix_a)
   a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
   b_shape = shapes.lazy_raw_shape(tt_matrix_b)
   b_ranks = shapes.lazy_tt_ranks(tt_matrix_b)
+  batch_size = None
   if is_res_batch:
     if is_a_batch:
       batch_size = shapes.lazy_batch_size(tt_matrix_a)
-    if is_b_batch:
+    elif is_b_batch:
       batch_size = shapes.lazy_batch_size(tt_matrix_b)
+
+  result_cores = []
+  # TODO: name the operation and the resulting tensor.
   for core_idx in range(ndims):
     a_core = tt_matrix_a.tt_cores[core_idx]
     b_core = tt_matrix_b.tt_cores[core_idx]
-    curr_res_core = tf.einsum(einsum_str, a_core, b_core)
-
-    res_left_rank = a_ranks[core_idx] * b_ranks[core_idx]
-    res_right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
-    left_mode = a_shape[0][core_idx]
-    right_mode = b_shape[1][core_idx]
-    if is_res_batch:
-      core_shape = (batch_size, res_left_rank, left_mode, right_mode, res_right_rank)
-    else:
-      core_shape = (res_left_rank, left_mode, right_mode,
-                    res_right_rank)
-    curr_res_core = tf.reshape(curr_res_core, core_shape)
-    result_cores.append(curr_res_core)
+    core = multiply_two_cores(a_core, b_core, a_ranks[core_idx],
+                              a_ranks[core_idx + 1], b_ranks[core_idx],
+                              b_ranks[core_idx + 1], a_shape[0][core_idx],
+                              b_shape[1][core_idx], b_shape[0][core_idx],
+                              batch_size)
+    result_cores.append(core)
 
   res_shape = (tt_matrix_a.get_raw_shape()[0], tt_matrix_b.get_raw_shape()[1])
   static_a_ranks = tt_matrix_a.get_tt_ranks()
