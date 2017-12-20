@@ -22,6 +22,10 @@ vecs = t3f.random_matrix_batch((shape, None), 10, batch_size=100)
 vecs = t3f.cast(vecs, tf.float64)
 one_vec = t3f.get_variable('one_vec', initializer=vecs[0])
 vecs = t3f.get_variable('vecs', initializer=vecs)
+vecs100 = t3f.random_matrix_batch((shape, None), 100, batch_size=100)
+vecs100 = t3f.cast(vecs100, tf.float64)
+one_vec100 = t3f.get_variable('one_vec100', initializer=vecs100[0])
+vecs100 = t3f.get_variable('vecs100', initializer=vecs100)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 logs = {}
@@ -101,6 +105,20 @@ batch_project_time = timeit.timeit("sess.run(batch_project_op)",
 print('Projecting %s on %s takes %f seconds.' % (vecs, one_vec,
                                                  batch_project_time))
 logs['batch_project_time'] = batch_project_time
+
+project100_op = t3f.project(one_vec100, one_vec).op
+project100_time = timeit.timeit("sess.run(project100_op)",
+                            globals={'sess': sess, 'project100_op': project100_op},
+                            number=100) / 100
+print('Projecting %s on %s takes %f seconds.' % (one_vec100, one_vec, project100_time))
+logs['project_rank100_time'] = project100_time
+
+batch_project100_op = t3f.project(vecs100, one_vec).op
+batch_project100_time = timeit.timeit("sess.run(batch_project100_op)",
+                            globals={'sess': sess, 'batch_project100_op': batch_project100_op},
+                            number=100) / 100
+print('Projecting %s on %s takes %f seconds.' % (vecs100, one_vec, batch_project100_time))
+logs['batch_project_rank100_time'] = batch_project100_time
 
 if args.file_path is not None:
   pickle.dump(logs, open(args.file_path, 'wb'))
