@@ -411,9 +411,9 @@ def ones_like(tt):
   """
   shape = shapes.lazy_raw_shape(tt)
   if tt.is_tt_matrix():
-    return initializers.matrix_ones(shape)
+    return matrix_ones(shape)
   else:
-    return initializers.tensor_ones(shape[0, :])
+    return tensor_ones(shape[0, :])
 
 
 def zeros_like(tt):
@@ -432,6 +432,6 @@ def zeros_like(tt):
   """
   shape = shapes.lazy_raw_shape(tt)
   if tt.is_tt_matrix():
-    return initializers.matrix_zeros(shape)
+    return matrix_zeros(shape)
   else:
-    return initializers.tensor_zeros(shape[0, :])
+    return tensor_zeros(shape[0, :])
