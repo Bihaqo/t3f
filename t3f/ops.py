@@ -6,7 +6,8 @@ from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import shapes
 from t3f import utils
 from t3f import decompositions
-
+from t3f import initializers
+from t3f import batch_ops
 
 # TODO: add complexities to the comments.
 
@@ -1191,3 +1192,44 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
 
       return TensorTrainBatch(new_cores)
 
+
+def ones_like(tt):
+  """Constructs t3f.ones with the shape of `tt`.
+
+  In the case when `tt` is TensorTrainBatch constructs t3f.ones with the shape
+  of a TensorTrain in `tt`.
+
+  Args:
+    tt: TensorTrain object
+
+  Returns:
+    TensorTrain object of the same shape as `tt` but with all entries equal to
+    1.
+
+  """
+  shape = shapes.lazy_raw_shape(tt)
+  if tt.is_tt_matrix():
+    return initializers.matrix_ones(shape)
+  else:
+    return initializers.tensor_ones(shape[0, :])
+
+
+def zeros_like(tt):
+  """Constructs t3f.zeros with the shape of `tt`.
+
+  In the case when `tt` is a TensorTrainBatch constructs t3f.zeros with
+  the shape of a TensorTrain in `tt`.
+
+  Args:
+    tt: TensorTrain object
+
+  Returns:
+    TensorTrain object of the same shape as `tt` but with all entries equal to
+    0.
+
+  """
+  shape = shapes.lazy_raw_shape(tt)
+  if tt.is_tt_matrix():
+    return initializers.matrix_zeros(shape)
+  else:
+    return initializers.tensor_zeros(shape[0, :])

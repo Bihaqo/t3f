@@ -179,6 +179,16 @@ class TTTensorTest(tf.test.TestCase):
           self.assertAllClose(b_cores_norms, b_cores_norms[0]
                               * np.ones((len(b_cores))))
 
+  def testOnesLikeAndZerosLike(self):
+    a = initializers.random_tensor([2, 3, 4])
+    b = ops.ones_like(a)
+    c = ops.zeros_like(a)
+    var_list = [ops.full(b), ops.full(c)]
+    with self.test_session() as sess:
+      bf, cf = sess.run(var_list)
+      self.assertAllClose(bf, np.ones((2, 3, 4)))
+      self.assertAllClose(cf, np.zeros((2, 3, 4)))
+
 
 class TTMatrixTest(tf.test.TestCase):
 

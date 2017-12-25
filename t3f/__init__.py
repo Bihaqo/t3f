@@ -17,6 +17,9 @@ from t3f.ops import quadratic_form
 from t3f.ops import transpose
 from t3f.ops import gather_nd
 from t3f.ops import renormalize_tt_cores
+from t3f.ops import ones_like
+from t3f.ops import zeros_like
+from t3f.ops import reduce_sum
 
 from t3f.batch_ops import concat_along_batch_dim
 from t3f.batch_ops import gram_matrix
@@ -27,6 +30,12 @@ from t3f.initializers import random_matrix
 from t3f.initializers import random_matrix_batch
 from t3f.initializers import random_tensor
 from t3f.initializers import random_tensor_batch
+from t3f.initializers import tensor_ones
+from t3f.initializers import tensor_zeros
+from t3f.initializers import matrix_ones
+from t3f.initializers import matrix_zeros
+from t3f.initializers import eye
+
 
 from t3f.regularizers import cores_regularizer
 from t3f.regularizers import l2_regularizer
