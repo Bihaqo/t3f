@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
-
+from t3f import shapes
 
 def tensor_ones(shape):
   """Generate TT-tensor of the given shape with all entries equal to 1.
