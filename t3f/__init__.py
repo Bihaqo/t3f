@@ -19,7 +19,6 @@ from t3f.ops import gather_nd
 from t3f.ops import renormalize_tt_cores
 from t3f.ops import ones_like
 from t3f.ops import zeros_like
-from t3f.ops import reduce_sum
 
 from t3f.batch_ops import concat_along_batch_dim
 from t3f.batch_ops import gram_matrix
