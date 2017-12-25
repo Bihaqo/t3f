@@ -7,7 +7,6 @@ from t3f import shapes
 from t3f import utils
 from t3f import decompositions
 from t3f import initializers
-from t3f import batch_ops
 
 # TODO: add complexities to the comments.
 
