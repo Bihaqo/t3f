@@ -38,6 +38,16 @@ class InitializersTest(tf.test.TestCase):
         eye_full = sess.run(ops.full(tt_eye))
         self.assertAllClose(eye_full, eye_desired)
 
+  def testOnesLikeAndZerosLike(self):
+    a = initializers.random_tensor([2, 3, 4])
+    b = ops.ones_like(a)
+    c = ops.zeros_like(a)
+    var_list = [ops.full(b), ops.full(c)]
+    with self.test_session() as sess:
+      bf, cf = sess.run(var_list)
+      self.assertAllClose(bf, np.ones((2, 3, 4)))
+      self.assertAllClose(cf, np.zeros((2, 3, 4)))
+
 
 if __name__ == "__main__":
   tf.test.main()

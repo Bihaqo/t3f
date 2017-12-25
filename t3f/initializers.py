@@ -393,3 +393,45 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1):
     tt_cores[i] = tf.random_normal(curr_core_shape)
 
   return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)
+
+
+def ones_like(tt):
+  """Constructs t3f.ones with the shape of `tt`.
+
+  In the case when `tt` is TensorTrainBatch constructs t3f.ones with the shape
+  of a TensorTrain in `tt`.
+
+  Args:
+    tt: TensorTrain object
+
+  Returns:
+    TensorTrain object of the same shape as `tt` but with all entries equal to
+    1.
+
+  """
+  shape = shapes.lazy_raw_shape(tt)
+  if tt.is_tt_matrix():
+    return initializers.matrix_ones(shape)
+  else:
+    return initializers.tensor_ones(shape[0, :])
+
+
+def zeros_like(tt):
+  """Constructs t3f.zeros with the shape of `tt`.
+
+  In the case when `tt` is a TensorTrainBatch constructs t3f.zeros with
+  the shape of a TensorTrain in `tt`.
+
+  Args:
+    tt: TensorTrain object
+
+  Returns:
+    TensorTrain object of the same shape as `tt` but with all entries equal to
+    0.
+
+  """
+  shape = shapes.lazy_raw_shape(tt)
+  if tt.is_tt_matrix():
+    return initializers.matrix_zeros(shape)
+  else:
+    return initializers.tensor_zeros(shape[0, :])
