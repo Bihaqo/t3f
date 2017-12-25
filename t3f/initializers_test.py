@@ -40,8 +40,8 @@ class InitializersTest(tf.test.TestCase):
 
   def testOnesLikeAndZerosLike(self):
     a = initializers.random_tensor([2, 3, 4])
-    b = ops.ones_like(a)
-    c = ops.zeros_like(a)
+    b = initializers.ones_like(a)
+    c = initializers.zeros_like(a)
     var_list = [ops.full(b), ops.full(c)]
     with self.test_session() as sess:
       bf, cf = sess.run(var_list)
