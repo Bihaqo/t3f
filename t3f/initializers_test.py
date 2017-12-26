@@ -47,6 +47,50 @@ class InitializersTest(tf.test.TestCase):
       bf, cf = sess.run(var_list)
       self.assertAllClose(bf, np.ones((2, 3, 4)))
       self.assertAllClose(cf, np.zeros((2, 3, 4)))
+    with self.assertRaises(ValueError):
+      initializers.ones_like(1)
+    with self.assertRaises(ValueError):
+      initializers.zeros_like(1)
+
+  def testRandomTensor(self):
+    shapes = [[1, -2], [1.1, 2]]
+    tt_ranks = [-1, 1.5, [-2, 3]]
+    for shape in shapes:
+      for ranks in tt_ranks:
+        with self.assertRaises(ValueError):
+          initializers.random_tensor(shape, tt_rank=ranks)
+
+  def testRandomMatrix(self):
+    shapes = [[[1, -2], None], [[1.1, 2], [3, 4]], [[1], [2, 3]],
+              [[1, 2], [3, 4]]]
+    tt_ranks = [-1, 1.5, [-2, 3]]
+    for shape in shapes:
+      for ranks in tt_ranks:
+        with self.assertRaises(ValueError):
+          initializers.random_matrix(shape, tt_rank=ranks)
+
+  def testRandomTensorBatch(self):
+    shapes = [[1, -2], [1.1, 2], [3, 4]]
+    tt_ranks = [-1, 1.5, [-2, 3], [7, 8]]
+    bs = [-1, 0.5]
+    for shape in shapes:
+      for ranks in tt_ranks:
+        for b in bs:
+          with self.assertRaises(ValueError):
+            initializers.random_tensor_batch(shape, tt_rank=ranks,
+                                             batch_size=b)
+
+  def testRandomMatrixBatch(self):
+    shapes = [[[1, -2], None], [[1.1, 2], [3, 4]], [[1], [2, 3]],
+              [[1, 2], [3, 4]]]
+    tt_ranks = [-1, 1.5, [-2, 3]]
+    bs = [-1, 0.5]
+    for shape in shapes:
+      for ranks in tt_ranks:
+        for b in bs:
+          with self.assertRaises(ValueError):
+            initializers.random_matrix_batch(shape, tt_rank=ranks,
+                                             batch_size=b)
 
 
 if __name__ == "__main__":

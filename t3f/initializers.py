@@ -3,6 +3,7 @@ import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
+from t3f.tensor_train_base import TensorTrainBase
 from t3f import shapes
 
 
@@ -450,11 +451,14 @@ def ones_like(tt):
     1.
 
   """
-  shape = shapes.lazy_raw_shape(tt)
-  if tt.is_tt_matrix():
-    return matrix_ones(shape)
+  if not isinstance(tt, TensorTrainBase):
+    raise ValueError("`tt` has to be a Tensor Train object")
   else:
-    return tensor_ones(shape[0, :])
+    shape = shapes.lazy_raw_shape(tt)
+    if tt.is_tt_matrix():
+      return matrix_ones(shape)
+    else:
+      return tensor_ones(shape[0, :])
 
 
 def zeros_like(tt):
@@ -471,8 +475,11 @@ def zeros_like(tt):
     0.
 
   """
-  shape = shapes.lazy_raw_shape(tt)
-  if tt.is_tt_matrix():
-    return matrix_zeros(shape)
+  if not isinstance(tt, TensorTrainBase):
+    raise ValueError("`tt` has to be a Tensor Train object")
   else:
-    return tensor_zeros(shape[0, :])
+    shape = shapes.lazy_raw_shape(tt)
+    if tt.is_tt_matrix():
+      return matrix_zeros(shape)
+    else:
+      return tensor_zeros(shape[0, :])

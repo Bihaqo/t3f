@@ -10,6 +10,7 @@ from t3f import initializers
 
 # TODO: add complexities to the comments.
 
+
 def full(tt):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
