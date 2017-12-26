@@ -47,12 +47,6 @@ print('TT-SVD for tensor of shape %s takes %f seconds.' % (tens.shape,
                                                            tt_svd_time))
 logs['tt_svd_time'] = tt_svd_time
 
-round_time = timeit.timeit("tt.vector.round(vec_100)", globals=globals,
-                           number=1000) / 1000
-print('Round for tensor of shape %s and rank 100 takes %f seconds.' % (vec_100,
-                                                                       tt_svd_time))
-logs['round_time'] = round_time
-
 project_time = timeit.timeit("riemannian.project(vec.tt, vec_100.tt)", globals=globals,
                              number=1000) / 1000
 print('Projecting a vector of rank 100 on a vector of rank 10 takes %f seconds.' % project_time)

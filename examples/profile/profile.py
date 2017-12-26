@@ -116,7 +116,7 @@ round_op = t3f.round(one_vec100, max_tt_rank=10).op
 round_time = timeit.timeit("sess.run(round_op)",
                             globals={'sess': sess, 'round_op': round_op},
                             number=100) / 100
-print('Rounding %s takes %f seconds.' % (one_vec100, round_time))
+print('Rounding %s takes %f seconds.' % (prev, round_time))
 logs['round_rime'] = round_time
 
 batch_round_op = t3f.round(vecs100, max_tt_rank=10).op
