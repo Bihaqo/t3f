@@ -55,7 +55,7 @@ def multiply_along_batch_dim(batch_tt, weights):
   Args:
     batch_tt: TensorTrainBatch object, TT-matrices or TT-tensors.
     weights: 1-D tf.Tensor (or something convertible to it like np.array) of size
-     tt.batch_sie with weights.
+     tt.batch_size with weights.
 
   Returns:
     TensorTrainBatch
