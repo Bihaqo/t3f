@@ -31,7 +31,8 @@ class InitializersTest(tf.test.TestCase):
     ones_desired = np.ones((24, 10))
     zeros_desired = np.zeros((24, 10))
 
-    bad_shapes = [[[-1, 2, 3], [3, 4, 6], [[1.5, 2, 4], [2, 5, 6]]]]
+    bad_shapes = [[[-1, 2, 3], [3, 4, 6]], [[1.5, 2, 4], [2, 5, 6]],
+                  [[1], [2, 3]]]
     with self.test_session() as sess:
       tt_ones_full = sess.run(ops.full(tt_ones))
       tt_zeros_full = sess.run(ops.full(tt_zeros))
