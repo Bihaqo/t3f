@@ -18,6 +18,11 @@ class InitializersTest(tf.test.TestCase):
       tt_zeros_full = sess.run(ops.full(tt_zeros))
       self.assertAllClose(tt_ones_full, ones_desired)
       self.assertAllClose(tt_zeros_full, zeros_desired)
+    bad_shapes = [[[2, 3]], [-1.0, 3]]
+    for shape in bad_shapes:
+      with self.assertRaises(ValueError):
+        initializers.tensor_ones(shape)
+        initializers.tensor_zeros(shape)
 
   def testMatrixOnesAndZeros(self):
     tt_ones = initializers.matrix_ones([[2, 3, 4], [1, 2, 5]])
@@ -25,11 +30,17 @@ class InitializersTest(tf.test.TestCase):
 
     ones_desired = np.ones((24, 10))
     zeros_desired = np.zeros((24, 10))
+
+    bad_shapes = [[[-1, 2, 3], [3, 4, 6], [[1.5, 2, 4], [2, 5, 6]]]]
     with self.test_session() as sess:
       tt_ones_full = sess.run(ops.full(tt_ones))
       tt_zeros_full = sess.run(ops.full(tt_zeros))
       self.assertAllClose(tt_ones_full, ones_desired)
       self.assertAllClose(tt_zeros_full, zeros_desired)
+    for shape in bad_shapes:
+      with self.assertRaises(ValueError):
+        initializers.matrix_ones(shape)
+        initializers.matrix_zeros(shape)
 
   def testEye(self):
       tt_eye = initializers.eye([4, 5, 6])
@@ -53,7 +64,7 @@ class InitializersTest(tf.test.TestCase):
       initializers.zeros_like(1)
 
   def testRandomTensor(self):
-    shapes = [[1, -2], [1.1, 2]]
+    shapes = [[1, -2], [1.1, 2], [3, 4]]
     tt_ranks = [-1, 1.5, [-2, 3]]
     for shape in shapes:
       for ranks in tt_ranks:
@@ -83,7 +94,7 @@ class InitializersTest(tf.test.TestCase):
   def testRandomMatrixBatch(self):
     shapes = [[[1, -2], None], [[1.1, 2], [3, 4]], [[1], [2, 3]],
               [[1, 2], [3, 4]]]
-    tt_ranks = [-1, 1.5, [-2, 3]]
+    tt_ranks = [-1, 1.5, [-2, 3], 5]
     bs = [-1, 0.5]
     for shape in shapes:
       for ranks in tt_ranks:
