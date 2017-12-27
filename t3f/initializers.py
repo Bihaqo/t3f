@@ -375,7 +375,7 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.):
         random_matrix_batch([[2, 2, 2], None])
       and
         random_matrix_batch([None, [2, 2, 2]])
-    will create a batch of one 8-element column and row vector correspondingly.
+      will create a batch of one 8-element column and row vector correspondingly.
     tt_rank: a number or a (d+1)-element array with ranks.
     batch_size: an integer.
     mean: a number, the mean of the normal distribution used for
