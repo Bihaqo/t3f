@@ -55,7 +55,7 @@ def multiply_along_batch_dim(batch_tt, weights):
   Args:
     batch_tt: TensorTrainBatch object, TT-matrices or TT-tensors.
     weights: 1-D tf.Tensor (or something convertible to it like np.array) of size
-     tt.batch_sie with weights. 
+     tt.batch_size with weights.
 
   Returns:
     TensorTrainBatch
@@ -74,7 +74,7 @@ def multiply_along_batch_dim(batch_tt, weights):
 
 
 def gram_matrix(tt_vectors, matrix=None):
-  """Computes Gramian matrix of a batch of TT-vecors.
+  """Computes Gramian matrix of a batch of TT-vectors.
 
   If matrix is None, computes
     res[i, j] = t3f.flat_inner(tt_vectors[i], tt_vectors[j]).
@@ -99,7 +99,7 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None):
 
   If matrix is None, computes
     res[i, j] = t3f.flat_inner(tt_1[i], tt_2[j]).
-    
+
   If matrix is present, computes
       res[i, j] = t3f.flat_inner(tt_1[i], t3f.matmul(matrix, tt_2[j]))
     or more shortly

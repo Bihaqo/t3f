@@ -6,9 +6,10 @@ from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import shapes
 from t3f import utils
 from t3f import decompositions
-
+from t3f import initializers
 
 # TODO: add complexities to the comments.
+
 
 def full(tt):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
@@ -1190,4 +1191,3 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
         new_cores.append(tf.multiply(core, exp_fact / fact_list[i]))
 
       return TensorTrainBatch(new_cores)
-
