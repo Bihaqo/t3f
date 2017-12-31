@@ -17,7 +17,7 @@ class TTDense(Layer):
         Args:
             row_dims: an array, shape of the matrix row index
             column_dims: an array, shape of the matrix column index
-            tt_ranks: array or a number, desired tt-rank of the TT-Matrix
+            tt_rank: a number, desired tt-rank of the TT-Matrix
             stddev: standard deviation of the normal distribution used for
                initialization.
             activation: string, specifies the activation function. Possible
@@ -43,8 +43,7 @@ class TTDense(Layer):
         super(TTDense, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        initializer = t3f.random_matrix(self.tt_shape, tt_rank=self.tt_rank,
-                                        stddev=self.stddev)
+        initializer = t3f.random_matrix_xavier(self.tt_shape, tt_rank=self.tt_rank)
         name = 'tt_matrix_{}'.format(TTDense.counter)
         self.W = t3f.get_variable(name, initializer=initializer)
         if self.bias:
