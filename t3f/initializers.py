@@ -544,8 +544,11 @@ def random_matrix_xavier(shape, tt_rank=2):
   n_in = np.prod(shape[0])
   n_out = np.prod(shape[1])
   lamb = 2.0 / (n_in + n_out)
-  # Empirically entries of TT-Matrix are approximately N(0, r^(d-1))
-  # We rescale it to obtain the Xavier variance 2 / (n_in + n_out)
+
+  # Empirically entries of TT-Matrix have variance r^(d-1)) and mean 0.
+  # We scale each TT-core to obtain the desired Xavier variance
+  # Var_xavier = 2 / (n_in + n_out)
+
   sigma = (lamb * tt_rank[1] ** (1.0 - num_dims)) ** (1.0 / (2 * num_dims))
   tt_rank = tt_rank.astype(int)
   # TODO: variable (name?) scope.
