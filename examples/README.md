@@ -9,4 +9,4 @@ TT-Matrices.
 
 - An example of solving a Tensor Completion problem using tensorflow optimizers
 
-- An example of Riemannian optimization for solving the approximation problem
+- An example of solving the Approximation problem using Riemannian optimization
