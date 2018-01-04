@@ -378,6 +378,7 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
       and
         matrix_batch_with_random_cores([None, [2, 2, 2]])
     will create a batch of one 8-element column and row vector correspondingly.
+    
     tt_rank: a number or a (d+1)-element array with ranks.
     batch_size: an integer.
     mean: a number, the mean of the normal distribution used for
