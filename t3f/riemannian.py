@@ -44,7 +44,9 @@ def project_sum(what, where, weights=None):
                      (where.get_raw_shape(),
                       what.get_raw_shape()))
 
-  if not where.dtype.is_compatible_with(what.dtype):
+  dtypes_compatible = (where.dtype.is_compatible_with(what.dtype) or
+                       what.dtype.is_compatible_with(where.dtype))
+  if not dtypes_compatible:
     raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
                      (where.dtype,
                       what.dtype))
@@ -214,8 +216,9 @@ def project(what, where):
                      'match, got %s and %s.' %
                      (where.get_raw_shape(),
                       what.get_raw_shape()))
-
-  if not where.dtype.is_compatible_with(what.dtype):
+  dtypes_compatible = (where.dtype.is_compatible_with(what.dtype) or
+                       what.dtype.is_compatible_with(where.dtype))
+  if not dtypes_compatible:
     raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
                      (where.dtype,
                       what.dtype))
@@ -377,7 +380,9 @@ def project_matmul(what, where, matrix):
                      (where.get_raw_shape(),
                       what.get_raw_shape()))
 
-  if not where.dtype.is_compatible_with(what.dtype):
+  dtypes_compatible = (where.dtype.is_compatible_with(what.dtype) or
+                       what.dtype.is_compatible_with(where.dtype))
+  if not dtypes_compatible:
     raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
                      (where.dtype,
                       what.dtype))
@@ -499,20 +504,20 @@ def project_matmul(what, where, matrix):
 def pairwise_flat_inner_projected(projected_tt_vectors_1,
                                   projected_tt_vectors_2):
   """Scalar products between two batches of TTs from the same tangent space.
-  
+
     res[i, j] = t3f.flat_inner(projected_tt_vectors_1[i], projected_tt_vectors_1[j]).
-  
+
   pairwise_flat_inner_projected(projected_tt_vectors_1, projected_tt_vectors_2)
   is equivalent to
     pairwise_flat_inner(projected_tt_vectors_1, projected_tt_vectors_2)
   , but works only on objects from the same tangent space and is much faster
-  than general pairwise_flat_inner. 
-  
+  than general pairwise_flat_inner.
+
   Args:
     projected_tt_vectors_1: TensorTrainBatch of tensors projected on the same
       tangent space as projected_tt_vectors_2.
     projected_tt_vectors_2: TensorTrainBatch.
-    
+
   Returns:
     tf.tensor with the scalar product matrix.
   """
