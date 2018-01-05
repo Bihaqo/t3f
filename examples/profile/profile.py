@@ -92,7 +92,7 @@ gram_time = timeit.timeit("sess.run(gram_op)",
                             globals={'sess': sess, 'gram_op': gram_op},
                             number=100) / 100
 print('Computing the gram matrix of %s takes %f seconds.' % (vecs, gram_time))
-logs['gram_time'] = gram_time
+logs['batch_gram_time'] = gram_time
 
 tens = tf.cast(tf.random_normal((10, 10, 10, 10)), tf.float64)
 tt_svd_op = t3f.to_tt_tensor(tens, max_tt_rank=10).op
