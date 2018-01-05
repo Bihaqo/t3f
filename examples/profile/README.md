@@ -11,7 +11,7 @@ Here are the numbers you can get on NVIDIA DGX-1 server with Tesla V100 GPU and 
  <img src="results.png" height="200">
 #TODO what time units?
 
-Note that by default TensorFlow has a very slow ```tf.transpose``` op for tensors of more than 5 dimensions, which affects the results a lot. To achieve the performance as described above, apply [the following patch](???) and [compile TensorFlow from sources](https://www.tensorflow.org/install/install_sources).
+Note that by default TensorFlow has a very slow ```tf.transpose``` op for tensors of more than 5 dimensions, which affects the results a lot. To achieve the performance as described above, apply [the following patch](https://github.com/tensorflow/tensorflow/pull/15893) and [compile TensorFlow from sources](https://www.tensorflow.org/install/install_sources).
 
 ## Comparing against TTPY
 To benchmark T3F against another library for Tensor Train decomposition [TTPY](github.com/oseledets/ttpy), install TTPY and run the following command in the bash shell
