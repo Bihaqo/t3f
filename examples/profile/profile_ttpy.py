@@ -34,18 +34,17 @@ norm_time = timeit.timeit("tt.tensor.norm(matrix.tt)", globals=globals,
 print('Computing the norm of a matrix takes %f seconds.' % norm_time)
 logs['norm_time'] = norm_time
 
-# Time for a Gram matrix of size 100 x 100.
-gram_time = 100 * 100 * timeit.timeit("tt.dot(vec.tt, vec.tt)", globals=globals,
-                          number=1000) / 1000
-print('Computing the Gram matrix of size 100 x 100 takes %f seconds.' % gram_time)
-logs['gram_time'] = gram_time
+# Time for a single dot product.
+flatinner_time = timeit.timeit("tt.dot(vec.tt, vec.tt)", globals=globals,
+                               number=1000) / 1000
+print('Computing dot product of a vector and itself takes %f seconds.' % flatinner_time)
+logs['flatinner_time'] = flatinner_time
 
 # Time for a Gram matrix x A x of size 100 x 100.
 mat_gram_time = 100 * 100 * timeit.timeit("tt.dot(vec.tt, (matrix * vec).tt)",
                                       globals=globals, number=100) / 100
 print('Computing the Gram matrix x A x of size 100 x 100 takes %f seconds.' % mat_gram_time)
-logs['mat_gram_time'] = mat_gram_time
-
+logs['batch_mat_gram_time'] = mat_gram_time
 
 tt_svd_time = timeit.timeit("tt.vector(tens)", globals=globals,
                             number=1000) / 1000
@@ -56,7 +55,7 @@ logs['tt_svd_time'] = tt_svd_time
 project_time = timeit.timeit("riemannian.project(vec.tt, vec_100.tt)", globals=globals,
                              number=1000) / 1000
 print('Projecting a vector of rank 100 on a vector of rank 10 takes %f seconds.' % project_time)
-logs['project_time'] = project_time
+logs['project_rank100_time'] = project_time
 
 round_time = timeit.timeit("tt.tensor.round(vec_100.tt, eps=0.0, rmax=10)", globals=globals,
                              number=1000) / 1000
