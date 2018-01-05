@@ -65,14 +65,14 @@ print('Multiplying %s by %s takes %f seconds.' % (one_matrix, matrices,
                                                  batch_matmul_time))
 logs['batch_matmul_time'] = batch_matmul_time
 
-norm_op = t3f.frobenius_norm(one_matrix).op
+norm_op = t3f.frobenius_norm(one_matrix, differentiable=True).op
 norm_time = timeit.timeit("sess.run(norm_op)",
                             globals={'sess': sess, 'norm_op': norm_op},
                             number=1000) / 1000
 print('Computing the norm of %s takes %f seconds.' % (one_matrix, norm_time))
 logs['norm_time'] = norm_time
 
-batch_norm_op = t3f.frobenius_norm(matrices).op
+batch_norm_op = t3f.frobenius_norm(matrices, differentiable=True).op
 batch_norm_time = timeit.timeit("sess.run(batch_norm_op)",
                             globals={'sess': sess, 'batch_norm_op': batch_norm_op},
                             number=1000) / 1000
