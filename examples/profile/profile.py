@@ -108,14 +108,14 @@ round_time = timeit.timeit("sess.run(round_op)",
                             globals={'sess': sess, 'round_op': round_op},
                             number=1000) / 1000
 print('Rounding %s takes %f seconds.' % (one_vec100, round_time))
-logs['round_rime'] = round_time
+logs['round_time'] = round_time
 
 batch_round_op = t3f.round(vecs100, max_tt_rank=10).op
 batch_round_time = timeit.timeit("sess.run(batch_round_op)",
                             globals={'sess': sess, 'batch_round_op': batch_round_op},
                             number=100) / 100
 print('Rounding %s takes %f seconds.' % (vecs100, batch_round_time))
-logs['batch_round_rime'] = batch_round_time
+logs['batch_round_time'] = batch_round_time
 
 project_op = t3f.project(one_vec, one_vec).op
 project_time = timeit.timeit("sess.run(project_op)",
