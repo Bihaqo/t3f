@@ -1,7 +1,13 @@
 import timeit
 import numpy as np
+import pickle
+import argparse
 import tt
 from tt.riemannian import riemannian
+
+parser = argparse.ArgumentParser(description='Measure execution time of various t3f operations.')
+parser.add_argument('--file_path', help='Path to the file to save logs.')
+args = parser.parse_args()
 
 matrix = tt.matrix(tt.rand(100, 10, 10))
 vec = tt.matrix(tt.rand(10, 10, 10), n=[10] * 10, m=[1] * 10)
@@ -56,3 +62,6 @@ round_time = timeit.timeit("tt.tensor.round(vec_100.tt, eps=0.0, rmax=10)", glob
                              number=1000) / 1000
 print('Rounding a vector of rank 100 to rank 10 takes %f seconds.' % round_time)
 logs['round_time'] = round_time
+
+if args.file_path is not None:
+  pickle.dump(logs, open(args.file_path, 'wb'))
