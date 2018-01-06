@@ -38,7 +38,9 @@ from t3f.initializers import matrix_zeros
 from t3f.initializers import eye
 from t3f.initializers import ones_like
 from t3f.initializers import zeros_like
-
+from t3f.initializers import glorot_initializer
+from t3f.initializers import he_initializer
+from t3f.initializers import lecun_initializer
 
 from t3f.regularizers import cores_regularizer
 from t3f.regularizers import l2_regularizer

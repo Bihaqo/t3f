@@ -7,6 +7,53 @@ from t3f.tensor_train_base import TensorTrainBase
 from t3f import shapes
 
 
+def _validate_input_parameters(**params):
+  """Internal function for validating input parameters
+  """
+
+  shape = params['shape']
+  if params['is_tensor']:
+    if len(shape.shape) != 1:
+      raise ValueError('shape should be 1d array')
+    if np.any(shape < 1):
+      raise ValueError('all elements in `shape` should be positive')
+    if not all(isinstance(sh, np.integer) for sh in shape):
+      raise ValueError('all elements in `shape` should be integers')
+  else:
+    if len(shape.shape) != 2:
+      raise ValueError('shape should be 2d array')
+    if shape[0].size != shape[1].size:
+      raise ValueError('shape[0] should have the same length as shape[1]')
+    if np.any(shape.flatten() < 1):
+      raise ValueError('all elements in `shape` should be positive')
+    if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
+      raise ValueError('all elements in `shape` should be integers')
+
+  if 'batch_size' in params:
+    batch_size = params['batch_size']
+    if not isinstance(batch_size, (int, np.integer)):
+      raise ValueError('`batch_size` should be integer')
+    if batch_size < 1:
+      raise ValueError('Batch size should be positive')
+  if 'tt_rank' in params:
+    tt_rank = params['tt_rank']
+    if tt_rank.size == 1:
+      if not isinstance(tt_rank[()], np.integer):
+        raise ValueError('`tt_rank` should be integer')
+    if tt_rank.size > 1:
+      if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
+        raise ValueError('all elements in `tt_rank` should be integers')
+    if np.any(tt_rank < 1):
+      raise ValueError('`rank` should be positive')
+
+    if params['is_tensor']:
+      if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
+        raise ValueError('`rank` array has inappropriate size')
+    else:
+      if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
+        raise ValueError('`rank` array has inappropriate size')
+
+
 def tensor_ones(shape):
   """Generate TT-tensor of the given shape with all entries equal to 1.
 
@@ -18,12 +65,7 @@ def tensor_ones(shape):
   """
 
   shape = np.array(shape)
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
+  _validate_input_parameters(is_tensor=True, shape=shape)
   num_dims = shape.size
   tt_rank = np.ones(num_dims + 1)
 
@@ -46,12 +88,7 @@ def tensor_zeros(shape):
   """
 
   shape = np.array(shape)
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
+  _validate_input_parameters(is_tensor=True, shape=shape)
   num_dims = shape.size
   tt_rank = np.ones(num_dims + 1)
   tt_cores = num_dims * [None]
@@ -74,13 +111,8 @@ def eye(shape):
     np.prod(shape) x np.prod(shape)
   """
   shape = np.array(shape)
-
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
+  # In this special case shape is in the same format as in the TT-tensor case
+  _validate_input_parameters(is_tensor=True, shape=shape)
 
   num_dims = shape.size
   tt_ranks = np.ones(num_dims + 1)
@@ -121,14 +153,8 @@ def matrix_ones(shape):
     shape[1] = np.ones(len(shape[0]))
   shape = np.array(shape)
 
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
+  _validate_input_parameters(is_tensor=False, shape=shape)
+
   num_dims = shape[0].size
   tt_rank = np.ones(shape[0].size + 1)
 
@@ -169,14 +195,7 @@ def matrix_zeros(shape):
     shape[1] = np.ones(len(shape[0]))
   shape = np.array(shape)
 
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
+  _validate_input_parameters(is_tensor=False, shape=shape)
   num_dims = shape[0].size
   tt_rank = np.ones(shape[0].size + 1)
 
@@ -209,22 +228,7 @@ def tensor_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.):
   # TODO: support None as a dimension.
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
+  _validate_input_parameters(is_tensor=True, shape=shape, tt_rank=tt_rank)
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
@@ -257,31 +261,13 @@ def tensor_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
   Returns:
     TensorTrainBatch containing TT-tensors
   """
-  # TODO: good distribution to init training.
+
   # TODO: support shape and tt_ranks as TensorShape?.
   # TODO: support None as a dimension.
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if batch_size < 1:
-    raise ValueError('Batch size should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-  if not isinstance(batch_size, (int, np.integer)):
-    raise ValueError('`batch_size` should be integer')
+  _validate_input_parameters(is_tensor=True, shape=shape, tt_rank=tt_rank,
+                             batch_size=batch_size)
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
@@ -330,24 +316,7 @@ def matrix_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.):
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank)
 
   num_dims = shape[0].size
   if tt_rank.size == 1:
@@ -378,7 +347,7 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
       and
         matrix_batch_with_random_cores([None, [2, 2, 2]])
     will create a batch of one 8-element column and row vector correspondingly.
-    
+
     tt_rank: a number or a (d+1)-element array with ranks.
     batch_size: an integer.
     mean: a number, the mean of the normal distribution used for
@@ -401,28 +370,8 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if batch_size < 1:
-    raise ValueError('Batch size should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-  if not isinstance(batch_size, (int, np.integer)):
-    raise ValueError('`batch_size` should be integer')
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank,
+                             batch_size=batch_size)
   num_dims = shape[0].size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
@@ -512,22 +461,7 @@ def random_tensor(shape, tt_rank=2, mean=0., stddev=1.):
   """
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
+  _validate_input_parameters(is_tensor=True, shape=shape, tt_rank=tt_rank)
 
   num_dims = shape.size
   if tt_rank.size == 1:
@@ -580,26 +514,8 @@ def random_tensor_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.):
   # TODO: support None as a dimension.
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 1:
-    raise ValueError('shape should be 1d array')
-  if np.any(shape < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if batch_size < 1:
-    raise ValueError('Batch size should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-  if not isinstance(batch_size, (int, np.integer)):
-    raise ValueError('`batch_size` should be integer')
+  _validate_input_parameters(is_tensor=True, shape=shape, tt_rank=tt_rank,
+                             batch_size=batch_size)
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
@@ -660,24 +576,8 @@ def random_matrix(shape, tt_rank=2, mean=0., stddev=1.):
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
+
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank)
 
   num_dims = shape[0].size
   if tt_rank.size == 1:
@@ -743,28 +643,8 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.):
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if batch_size < 1:
-    raise ValueError('Batch size should be positive')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-  if not isinstance(batch_size, (int, np.integer)):
-    raise ValueError('`batch_size` should be integer')
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank,
+                             batch_size=batch_size)
   num_dims = shape[0].size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
@@ -786,7 +666,7 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.):
     raise NotImplementedError('non-zero mean is not supported yet')
 
 
-def glorot(shape, tt_rank=2):
+def glorot_initializer(shape, tt_rank=2):
   """Constructs a random TT matrix with entrywise variance 2.0 / (n_in + n_out)
 
   Args:
@@ -794,9 +674,9 @@ def glorot(shape, tt_rank=2):
       shape[1] is the shape of the column index.
       shape[0] and shape[1] should have the same number of elements (d)
       Also supports omitting one of the dimensions for vectors, e.g.
-        glorot([[2, 2, 2], None])
+        glorot_initializer([[2, 2, 2], None])
       and
-        glorot([None, [2, 2, 2]])
+        glorot_initializer([None, [2, 2, 2]])
       will create an 8-element column and row vectors correspondingly.
     tt_rank: a number or a (d+1)-element array with ranks.
 
@@ -815,25 +695,7 @@ def glorot(shape, tt_rank=2):
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank)
   n_in = np.prod(shape[0])
   n_out = np.prod(shape[1])
   lamb = 2.0 / (n_in + n_out)
@@ -841,7 +703,7 @@ def glorot(shape, tt_rank=2):
   return random_matrix(shape, tt_rank=tt_rank, stddev=np.sqrt(lamb))
 
 
-def he(shape, tt_rank=2):
+def he_initializer(shape, tt_rank=2):
   """Constructs a random TT matrix with entrywise variance 2.0 / n_in
 
   Args:
@@ -849,9 +711,9 @@ def he(shape, tt_rank=2):
       shape[1] is the shape of the column index.
       shape[0] and shape[1] should have the same number of elements (d)
       Also supports omitting one of the dimensions for vectors, e.g.
-        he([[2, 2, 2], None])
+        he_initializer([[2, 2, 2], None])
       and
-        he([None, [2, 2, 2]])
+        he_initializer([None, [2, 2, 2]])
       will create an 8-element column and row vectors correspondingly.
     tt_rank: a number or a (d+1)-element array with ranks.
 
@@ -870,32 +732,14 @@ def he(shape, tt_rank=2):
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank)
   n_in = np.prod(shape[0])
   lamb = 2.0 / n_in
 
   return random_matrix(shape, tt_rank=tt_rank, stddev=np.sqrt(lamb))
 
 
-def lecun(shape, tt_rank=2):
+def lecun_initializer(shape, tt_rank=2):
   """Constructs a random TT matrix with entrywise variance 1.0 / n_in
 
   Args:
@@ -903,9 +747,9 @@ def lecun(shape, tt_rank=2):
       shape[1] is the shape of the column index.
       shape[0] and shape[1] should have the same number of elements (d)
       Also supports omitting one of the dimensions for vectors, e.g.
-        lecun([[2, 2, 2], None])
+        lecun_initializer([[2, 2, 2], None])
       and
-        lecun([None, [2, 2, 2]])
+        lecun_initializer([None, [2, 2, 2]])
       will create an 8-element column and row vectors correspondingly.
     tt_rank: a number or a (d+1)-element array with ranks.
 
@@ -924,26 +768,7 @@ def lecun(shape, tt_rank=2):
     shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
   tt_rank = np.array(tt_rank)
-  if len(shape.shape) != 2:
-    raise ValueError('shape should be 2d array')
-  if shape[0].size != shape[1].size:
-    raise ValueError('shape[0] should have the same length as shape[1]')
-  if np.any(shape.flatten() < 1):
-    raise ValueError('all elements in `shape` should be positive')
-  if np.any(tt_rank < 1):
-    raise ValueError('`rank` should be positive')
-  if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-    raise ValueError('`rank` array has inappropriate size')
-  if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-    raise ValueError('all elements in `shape` should be integers')
-  if tt_rank.size == 1:
-    if not isinstance(tt_rank[()], np.integer):
-      raise ValueError('`tt_rank` should be integer')
-  if tt_rank.size > 1:
-    if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-      raise ValueError('all elements in `tt_rank` should be integers')
-
+  _validate_input_parameters(is_tensor=False, shape=shape, tt_rank=tt_rank)
   n_in = np.prod(shape[0])
   lamb = 1.0 / n_in
-
   return random_matrix(shape, tt_rank=tt_rank, stddev=np.sqrt(lamb))

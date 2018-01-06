@@ -45,14 +45,14 @@ class TTDense(Layer):
 
     def build(self, input_shape):
         if self.init == 'glorot':
-            initializer = t3f.initializers.glorot(self.tt_shape,
-                                                  tt_rank=self.tt_rank)
-        elif self.init == 'he':
-            initializer = t3f.initializers.he(self.tt_shape,
-                                              tt_rank=self.tt_rank)
-        elif self.init == 'lecun':
-            initializer = t3f.initializers.lecun(self.tt_shape,
+            initializer = t3f.glorot_initializer(self.tt_shape,
                                                  tt_rank=self.tt_rank)
+        elif self.init == 'he':
+            initializer = t3f.he_initializer(self.tt_shape,
+                                             tt_rank=self.tt_rank)
+        elif self.init == 'lecun':
+            initializer = t3f.lecun_initializer(self.tt_shape,
+                                                tt_rank=self.tt_rank)
         else:
             raise ValueError('Unknown init "%s", only %s are supported'
                              % (self.init, inits))

@@ -147,7 +147,7 @@ class InitializersTest(tf.test.TestCase):
     bad_cases = zip(shapes, tt_ranks)
     for case in bad_cases:
       with self.assertRaises(ValueError):
-        initializers.glorot(case[0], tt_rank=case[1])
+        initializers.glorot_initializer(case[0], tt_rank=case[1])
 
   def testHe(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
@@ -158,7 +158,7 @@ class InitializersTest(tf.test.TestCase):
     bad_cases = zip(shapes, tt_ranks)
     for case in bad_cases:
       with self.assertRaises(ValueError):
-        initializers.he(case[0], tt_rank=case[1])
+        initializers.he_initializer(case[0], tt_rank=case[1])
 
   def testLecun(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
@@ -169,7 +169,7 @@ class InitializersTest(tf.test.TestCase):
     bad_cases = zip(shapes, tt_ranks)
     for case in bad_cases:
       with self.assertRaises(ValueError):
-        initializers.lecun(case[0], tt_rank=case[1])
+        initializers.lecun_initializer(case[0], tt_rank=case[1])
 
 
 if __name__ == "__main__":
