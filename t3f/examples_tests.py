@@ -28,7 +28,7 @@ class ExamplesTest(tf.test.TestCase):
     # Inner product (sum of products of all elements).
     a = t3f.random_tensor((3, 2, 2), tt_rank=3)
     b = t3f.random_tensor((3, 2, 2), tt_rank=4)
-    inner_prod = t3f.tt_tt_flat_inner(a, b)
+    inner_prod = t3f.flat_inner(a, b)
     A = t3f.random_matrix(((3, 2, 2), (2, 3, 3)), tt_rank=3)
     b = t3f.random_matrix(((2, 3, 3), None), tt_rank=3)
     # Matrix-by-vector
