@@ -110,6 +110,12 @@ def restore_all_saved(sess, path):
   restorer.restore(sess, path)
 ```
 
+# Benchmarking
+Here are the results im ms of benchmarking T3F on CPU and GPU and comparing against the [TTPY library](https://github.com/oseledets/ttpy)
+<img src="examples/profile/results.png" height="200">
+
+For more details see ```examples/profile``` folder.
+
 # Tests
 ```bash
 nosetests  --logging-level=WARNING
