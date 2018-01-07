@@ -15,7 +15,7 @@ The timing is reported in ms and in the batch case it's time per object (e.g. it
 Note that by default TensorFlow has a very slow ```tf.transpose``` op for tensors of more than 5 dimensions, which affects the results a lot. To achieve the performance as described above, apply [the following patch](https://github.com/tensorflow/tensorflow/pull/15893) and [compile TensorFlow from sources](https://www.tensorflow.org/install/install_sources).
 
 ## Comparing against TTPY
-To benchmark T3F against another library for Tensor Train decomposition [TTPY](github.com/oseledets/ttpy), install TTPY and run the following command in the bash shell
+To benchmark T3F against another library for Tensor Train decomposition [TTPY](https://github.com/oseledets/ttpy), install TTPY and run the following command in the bash shell
 ```bash
 python profile_ttpy.py --file_path logs_ttpy.py
 ```
