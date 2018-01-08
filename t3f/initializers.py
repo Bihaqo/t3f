@@ -7,51 +7,66 @@ from t3f.tensor_train_base import TensorTrainBase
 from t3f import shapes
 
 
-def _validate_input_parameters(**params):
+def _validate_input_parameters(is_tensor, shape, **params):
   """Internal function for validating input parameters
+
+  Args:
+    is_tensor: bool, determines whether we attempt to construct a TT-tensor or
+      a TT-matrix (needed for the correct shape checks).
+    shape: array, the desired shape of the generated TT object
+    params: optional, possible values:
+      batch_size: int, for constructing batches
+      tt_rank: array or int, desired TT-ranks
   """
 
-  shape = params['shape']
-  if params['is_tensor']:
+  if is_tensor:
     if len(shape.shape) != 1:
-      raise ValueError('shape should be 1d array')
+      raise ValueError('shape should be 1d array, got %a' % shape)
     if np.any(shape < 1):
-      raise ValueError('all elements in `shape` should be positive')
+      raise ValueError('all elements in `shape` should be positive, got %a' %
+                       shape)
     if not all(isinstance(sh, np.integer) for sh in shape):
-      raise ValueError('all elements in `shape` should be integers')
+      raise ValueError('all elements in `shape` should be integers, got %a' %
+                       shape)
   else:
     if len(shape.shape) != 2:
-      raise ValueError('shape should be 2d array')
+      raise ValueError('shape should be 2d array, got %a' % shape)
     if shape[0].size != shape[1].size:
-      raise ValueError('shape[0] should have the same length as shape[1]')
+      raise ValueError('shape[0] should have the same length as shape[1], but'
+                       'got %d and %d' % (shape[0].size, shape[1].size))
     if np.any(shape.flatten() < 1):
-      raise ValueError('all elements in `shape` should be positive')
+      raise ValueError('all elements in `shape` should be positive, got %a' %
+                       shape)
     if not all(isinstance(sh, np.integer) for sh in shape.flatten()):
-      raise ValueError('all elements in `shape` should be integers')
+      raise ValueError('all elements in `shape` should be integers, got %a' %
+                       shape)
 
   if 'batch_size' in params:
     batch_size = params['batch_size']
     if not isinstance(batch_size, (int, np.integer)):
-      raise ValueError('`batch_size` should be integer')
+      raise ValueError('`batch_size` should be integer, got %f' % batch_size)
     if batch_size < 1:
-      raise ValueError('Batch size should be positive')
+      raise ValueError('Batch size should be positive, got %d' % batch_size)
   if 'tt_rank' in params:
     tt_rank = params['tt_rank']
     if tt_rank.size == 1:
       if not isinstance(tt_rank[()], np.integer):
-        raise ValueError('`tt_rank` should be integer')
+        raise ValueError('`tt_rank` should be integer, got %f' % tt_rank[()])
     if tt_rank.size > 1:
       if not all(isinstance(tt_r, np.integer) for tt_r in tt_rank):
-        raise ValueError('all elements in `tt_rank` should be integers')
+        raise ValueError('all elements in `tt_rank` should be integers, got'
+                         ' %a' % tt_rank)
     if np.any(tt_rank < 1):
-      raise ValueError('`rank` should be positive')
+      raise ValueError('`tt_rank` should be positive, got %a' % tt_rank)
 
-    if params['is_tensor']:
+    if is_tensor:
       if tt_rank.size != 1 and tt_rank.size != (shape.size + 1):
-        raise ValueError('`rank` array has inappropriate size')
+        raise ValueError('`tt_rank` array has inappropriate size, expected'
+                         '1 or %d, got %d' % (shape.size + 1, tt_rank.size))
     else:
       if tt_rank.size != 1 and tt_rank.size != (shape[0].size + 1):
-        raise ValueError('`rank` array has inappropriate size')
+        raise ValueError('`tt_rank` array has inappropriate size, expected'
+                         '1 or %d, got %d' % (shape[0].size + 1, tt_rank.size))
 
 
 def tensor_ones(shape):
