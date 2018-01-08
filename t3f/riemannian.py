@@ -26,6 +26,16 @@ def project_sum(what, where, weights=None):
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
+
+  Complexity:
+       O(d r_where^3 m) for orthogonalizing the TT-cores of where
+      +O(batch_size d r_what r_where n (r_what + r_where))
+    d is the number of TT-cores (what.ndims());
+    r_what is the largest TT-rank of what max(what.get_tt_rank())
+    r_where is the largest TT-rank of where
+    n is the size of the axis dimension of what and where e.g.
+      for a tensor of size 4 x 4 x 4, n is 4;
+      for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
   """
   # Always work with batch of TT objects for simplicity.
   what = shapes.expand_batch_dim(what)
@@ -204,6 +214,16 @@ def project(what, where):
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
+     
+  Complexity:
+       O(d r_where^3 m) for orthogonalizing the TT-cores of where
+      +O(batch_size d r_what r_where n (r_what + r_where))
+    d is the number of TT-cores (what.ndims());
+    r_what is the largest TT-rank of what max(what.get_tt_rank())
+    r_where is the largest TT-rank of where
+    n is the size of the axis dimension of what and where e.g.
+      for a tensor of size 4 x 4 x 4, n is 4;
+      for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
   """
 
   if not isinstance(where, TensorTrain):
@@ -367,6 +387,14 @@ def project_matmul(what, where, matrix):
 
   Returns:
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
+      
+  Complexity:
+       O(d r_where^3 m) for orthogonalizing the TT-cores of where
+      +O(batch_size d R r_what r_where (n r_what + n m R + m r_where))
+    d is the number of TT-cores (what.ndims());
+    r_what is the largest TT-rank of what max(what.get_tt_rank())
+    r_where is the largest TT-rank of where
+    matrix is of TT-rank R and of raw-shape (m, m, ..., m) x (n, n, ..., n).
   """
 
   if not isinstance(where, TensorTrain):
@@ -520,6 +548,15 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
 
   Returns:
     tf.tensor with the scalar product matrix.
+      
+  Complexity:
+      O(batch_size^2 d r^2 n), where
+    d is the number of TT-cores (projected_tt_vectors_1.ndims());
+    r is the largest TT-rank max(projected_tt_vectors_1.get_tt_rank())
+      (i.e. 2 * {the TT-rank of the object we projected vectors onto}.
+    and n is the size of the axis dimension, e.g.
+      for a tensor of size 4 x 4 x 4, n is 4;
+      for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12.
   """
   if not hasattr(projected_tt_vectors_1, 'projection_on') or \
       not hasattr(projected_tt_vectors_2, 'projection_on'):
