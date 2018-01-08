@@ -1,8 +1,9 @@
-import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-import ops
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import ops
+
 
 def determinant(kron_a):
   """Computes the determinant of a given Kronecker-factorized matrix. 
@@ -10,12 +11,13 @@ def determinant(kron_a):
   Note, that this method can suffer from overflow.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). 
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). 
   
   Returns:
-    Number, the determinant of the given matrix.
+    A number or a Tensor with numbers for each element in the batch.
+    The determinant of the given matrix.
 
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
@@ -38,12 +40,16 @@ def determinant(kron_a):
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
       
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   pows = tf.cast(tf.reduce_prod(i_shapes), kron_a.dtype)
   cores = kron_a.tt_cores
   det = 1
   for core_idx in range(kron_a.ndims()):
     core = cores[core_idx]
-    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    if is_batch:
+      core_det = tf.matrix_determinant(core[:, 0, :, :, 0])
+    else:
+      core_det = tf.matrix_determinant(core[0, :, :, 0])
     core_pow = pows / i_shapes[core_idx].value
 
     det *= tf.pow(core_det, core_pow)
@@ -54,12 +60,13 @@ def slog_determinant(kron_a):
   """Computes the sign and log-det of a given Kronecker-factorized matrix.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square).
-
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). 
+  
   Returns:
-    Two numbers, sign of the determinant and the log-determinant of the given 
+    Two number or two Tensor with numbers for each element in the batch.
+    Sign of the determinant and the log-determinant of the given 
     matrix. If the determinant is zero, then sign will be 0 and logdet will be
     -Inf. In all cases, the determinant is equal to sign * np.exp(logdet).
 
@@ -83,33 +90,39 @@ def slog_determinant(kron_a):
     if i_shapes != j_shapes:
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
+
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   pows = tf.cast(tf.reduce_prod(i_shapes), kron_a.dtype)
-                                                          
   logdet = 0.
   det_sign = 1.
+
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    if is_batch:
+      core_det = tf.matrix_determinant(core[:, 0, :, :, 0])
+    else:
+      core_det = tf.matrix_determinant(core[0, :, :, 0])
     core_abs_det = tf.abs(core_det)
     core_det_sign = tf.sign(core_det)
     core_pow = pows / i_shapes[core_idx].value
     logdet += tf.log(core_abs_det) * core_pow
     det_sign *= core_det_sign**(core_pow)
-  
-  
   return det_sign, logdet
+
 
 def inv(kron_a):
   """Computes the inverse of a given Kronecker-factorized matrix.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). All the cores
-    must be invertable.
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). 
 
   Returns:
-    `TensorTrain` object, containing a TT-matrix of size N x N. 
+    `TensorTrain` object containing a TT-matrix of size N x N if the argument is
+      `TensorTrain`
+    `TensorTrainBatch` object, containing TT-matrices of size N x N if the 
+      argument is `TensorTrainBatch`  
   
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
@@ -132,27 +145,40 @@ def inv(kron_a):
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
 
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   inv_cores = []
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    core_inv = tf.matrix_inverse(core[0, :, :, 0])
-    inv_cores.append(tf.expand_dims(tf.expand_dims(core_inv, 0), -1))
+    if is_batch:
+      core_inv = tf.matrix_inverse(core[:, 0, :, :, 0])
+      core_inv = tf.expand_dims(tf.expand_dims(core_inv, 1), -1)
+    else:
+      core_inv = tf.matrix_inverse(core[0, :, :, 0])
+      core_inv = tf.expand_dims(tf.expand_dims(core_inv, 0), -1)
+    inv_cores.append(core_inv)
 
   res_ranks = kron_a.get_tt_ranks() 
   res_shape = kron_a.get_raw_shape()
-  return TensorTrain(inv_cores, res_shape, res_ranks) 
+  if is_batch:
+    return TensorTrainBatch(inv_cores, res_shape, res_ranks) 
+  else:
+    return TensorTrain(inv_cores, res_shape, res_ranks) 
+
 
 def cholesky(kron_a):
   """Computes the Cholesky decomposition of a given Kronecker-factorized matrix.
 
   Args:
-    kron_a: `TensorTrain` object containing a matrix of size N x N, 
-    factorized into a Kronecker product of square matrices (all 
-    tt-ranks are 1 and all tt-cores are square). All the cores
-    must be symmetric positive-definite.
+    kron_a: `TensorTrain` or `TensorTrainBatch` object containing a matrix or a
+    batch of matrices of size N x N, factorized into a Kronecker product of 
+    square matrices (all tt-ranks are 1 and all tt-cores are square). All the 
+    cores must be symmetric positive-definite.
 
   Returns:
-    `TensorTrain` object, containing a TT-matrix of size N x N. 
+    `TensorTrain` object containing a TT-matrix of size N x N if the argument is
+      `TensorTrain`
+    `TensorTrainBatch` object, containing TT-matrices of size N x N if the 
+      argument is `TensorTrainBatch`  
     
   Raises:
     ValueError if the tt-cores of the provided matrix are not square,
@@ -174,23 +200,34 @@ def cholesky(kron_a):
     if i_shapes != j_shapes:
       raise ValueError('The argument should be a Kronecker product of square '
                        'matrices (tt-cores must be square)')
+
+  is_batch = isinstance(kron_a, TensorTrainBatch)
   cho_cores = []
+
   for core_idx in range(kron_a.ndims()):
     core = kron_a.tt_cores[core_idx]
-    core_cho = tf.cholesky(core[0, :, :, 0])
-    cho_cores.append(tf.expand_dims(tf.expand_dims(core_cho, 0), -1))
+    if is_batch:
+      core_cho = tf.cholesky(core[:, 0, :, :, 0])
+      core_cho = tf.expand_dims(tf.expand_dims(core_cho, 1), -1)
+    else:
+      core_cho = tf.cholesky(core[0, :, :, 0])
+      core_cho = tf.expand_dims(tf.expand_dims(core_cho, 0), -1)
+    cho_cores.append(core_cho)
 
   res_ranks = kron_a.get_tt_ranks() 
   res_shape = kron_a.get_raw_shape()
-  return TensorTrain(cho_cores, res_shape, res_ranks) 
+  if is_batch:
+    return TensorTrainBatch(cho_cores, res_shape, res_ranks) 
+  else:
+    return TensorTrain(cho_cores, res_shape, res_ranks) 
 
 
 def _is_kron(tt_a):
   """Returns True if the argument is a Kronecker product matrix.
 
   Args:
-    tt_a: `TensorTrain` object
-
+    t_a: `TensorTrain` or `TensorTrainBatch` object.
+    
   Returns:
     bool
   """

@@ -1,10 +1,9 @@
-import numbers
 import numpy as np
 import tensorflow as tf
 
-from tensor_train_base import TensorTrainBase
-from tensor_train import TensorTrain
-import shapes
+from t3f.tensor_train_base import TensorTrainBase
+from t3f.tensor_train import TensorTrain
+from t3f import shapes
 
 
 class TensorTrainBatch(TensorTrainBase):
@@ -21,6 +20,8 @@ class TensorTrainBatch(TensorTrainBase):
   @@graph
   @@ndims
   @@get_tt_ranks
+  @@left_tt_rank_dim
+  @@right_tt_rank_dim
   @@is_tt_matrix
   @@is_variable
   @@eval
@@ -28,11 +29,12 @@ class TensorTrainBatch(TensorTrainBase):
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, batch_size=None,
                convert_to_tensors=True):
-    """Creates a `TensorTrain`.
+    """Creates a `TensorTrainBatch`.
 
     Args:
-      tt_cores: A tuple of 3d or 4d tensor-like objects of shape
-        `[r_k-1, n_k, r_k]`.
+      tt_cores: A tuple of 4d or 5d tensor-like objects of shape
+        `[batch_size, r_k-1, n_k, r_k]` or
+        `[batch_size, r_k-1, n_k, m_k, r_k]`
         Tensor-like can be numpy array, tf.Tensor, of tf.Variable
       batch_size: number of elements in the batch. If None, tries to infer from
         the TT-cores (not always possible even if it should be, e.g. if ranks
@@ -106,17 +108,40 @@ class TensorTrainBatch(TensorTrainBase):
     """The number of elements or None if not known."""
     return self._batch_size
 
+  @property
+  def left_tt_rank_dim(self):
+    """The dimension of the left TT-rank in each TT-core."""
+    return 1
+
+  @property
+  def right_tt_rank_dim(self):
+    """The dimension of the right TT-rank in each TT-core."""
+    if self.is_tt_matrix():
+      # The dimensions of each TT-core are
+      # [batch_idx, left_rank, n, m, right_rank]
+      return 4
+    else:
+      # The dimensions of each TT-core are
+      # [batch_idx, left_rank, n, right_rank]
+      return 3
+
   def __str__(self):
     """A string describing the TensorTrainBatch, its TT-rank and shape."""
     shape = self.get_shape()
     tt_ranks = self.get_tt_ranks()
 
+    if self.batch_size is None:
+        batch_size_str = '(?)'
+    else:
+        batch_size_str = str(self.batch_size)
+
     if self.is_tt_matrix():
       raw_shape = self.get_raw_shape()
       type_str = 'TT-matrix variables' if self.is_variable() else 'TT-matrices'
-      return "A %d element batch of %s of size %d x %d, underlying tensor " \
-             "shape: %s x %s, TT-ranks: %s" % (self.batch_size, type_str,
-                                               shape[0], shape[1],
+
+      return "A %s element batch of %s of size %d x %d, underlying tensor " \
+             "shape: %s x %s, TT-ranks: %s" % (batch_size_str, type_str,
+                                               shape[1], shape[2],
                                                raw_shape[0], raw_shape[1],
                                                tt_ranks)
     else:
@@ -124,8 +149,17 @@ class TensorTrainBatch(TensorTrainBase):
         type_str = 'Tensor Train variables'
       else:
         type_str = 'Tensor Trains'
-      return "A %d element batch of %s of shape %s, TT-ranks: %s" % \
-             (self.batch_size, type_str, shape, tt_ranks)
+      return "A %s element batch of %s of shape %s, TT-ranks: %s" % \
+             (batch_size_str, type_str, shape[1:], tt_ranks)
+
+  @staticmethod
+  def _do_collapse_dim(slice_spec):
+    # Returns true if slice_spec is specified exactly and we want to collapse
+    # the corresponding axis, i.e. return an object with less dims. To be used
+    # in indexing functions.
+    # If its a actual slice, nothing to collapse. Otherwise (a number or
+    # a tf.Tensor) want to collapse.
+    return not isinstance(slice_spec, slice)
 
   def _batch_dim_getitem(self, element_spec):
     """__getitem__ when provided only one (batch) index.
@@ -137,9 +171,7 @@ class TensorTrainBatch(TensorTrainBase):
 
     # This object index is specified exactly and we want to collapse the
     # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
-    do_collapse_batch_dim = isinstance(element_spec, numbers.Number)
-    if not isinstance(element_spec, slice) and not do_collapse_batch_dim:
-      raise ValueError('Expected just 1 index, got %s' % element_spec)
+    do_collapse_batch_dim = self._do_collapse_dim(element_spec)
 
     new_tt_cores = []
     for core_idx in range(self.ndims()):
@@ -170,7 +202,7 @@ class TensorTrainBatch(TensorTrainBase):
                                                         len(slice_spec)))
     # This object index is specified exactly and we want to collapse the
     # batch_size axis, i.e. return a TensorTrain instead of a TensorTrainBatch.
-    do_collapse_batch_dim = isinstance(slice_spec[0], numbers.Number)
+    do_collapse_batch_dim = self._do_collapse_dim(slice_spec[0])
     remainder = None
     new_tt_cores = []
     for core_idx in range(self.ndims()):
@@ -179,8 +211,7 @@ class TensorTrainBatch(TensorTrainBase):
         raise NotImplementedError
       else:
         sliced_core = curr_core[slice_spec[0], :, slice_spec[core_idx + 1], :]
-        do_collapse_curr_dim = isinstance(slice_spec[core_idx + 1],
-                                          numbers.Number)
+        do_collapse_curr_dim = self._do_collapse_dim(slice_spec[core_idx + 1])
         if do_collapse_curr_dim:
           # This index is specified exactly and we want to collapse this axis.
           if remainder is None:
@@ -240,9 +271,12 @@ class TensorTrainBatch(TensorTrainBase):
       `TensorTrainBatch` or `TensorTrain` depending on whether the first
       (batch) dim was specified as a range or as a number.
     """
-    new_tt_cores = []
-    slice_only_batch_dim = isinstance(slice_spec, slice) or \
-                           isinstance(slice_spec, numbers.Number)
+    try:
+      slice_only_batch_dim = len(slice_spec) == 1
+    except TypeError:
+      # The argument is not iterable, so it's a single slice, or a number, or a
+      # tf.Tensor with a number.
+      slice_only_batch_dim = True
 
     if slice_only_batch_dim:
       # Indexing only for the batch_size axis, e.g. a[1:3].

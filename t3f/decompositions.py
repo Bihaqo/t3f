@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
-import shapes
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import shapes
 
 
 def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
@@ -411,6 +411,18 @@ def _orthogonalize_tt_cores_left_to_right(tt):
     tt: TenosorTrain or a TensorTrainBatch.
   Returns:
     The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
+  
+  Complexity:
+    for a single TT-object:
+      O(d r^3 n)
+    for a batch of TT-objects:
+      O(batch_size d r^3 n)
+    where
+      d is the number of TT-cores (tt.ndims());
+      r is the largest TT-rank of tt max(tt.get_tt_rank())
+      n is the size of the axis dimension, e.g.
+        for a tensor of size 4 x 4 x 4, n is 4;
+        for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12 
   """
   # Left to right orthogonalization.
   ndims = tt.ndims()

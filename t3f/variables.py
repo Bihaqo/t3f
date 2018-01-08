@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-from tensor_train_batch import TensorTrainBatch
+from t3f.tensor_train import TensorTrain
+from t3f.tensor_train_batch import TensorTrainBatch
 
 
 def get_variable(name,
@@ -49,8 +49,13 @@ def get_variable(name,
   # TODO: support validate shape: check that the tensor dimensions are correct,
   # but ignore the ranks.
   # TODO: add validate ranks flag.
+
+  reuse = tf.get_variable_scope().reuse
+  if not reuse and initializer is None:
+    raise ValueError('Scope reuse is False and initializer is not provided.')
+
   variable_cores = []
-  if initializer is None:
+  if reuse:
     # Find an existing variable in the collection.
     path = tf.get_variable_scope().name
     if path != '' and path[-1] != '/':
