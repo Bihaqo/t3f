@@ -21,11 +21,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Manually import all the relevant function in __init__ and avoid importing internal tools.
 - gather_nd for gathering several elements from a TT-objects at once.
 - Overload operations to support `a - b`, `a + -b`, `0.4 * a`.
-
-
+- Add complexities of some functions into the docstrings.
 
 ### Changed
-- Speed improvements (in particular to quadratic form, ).
+- Speed improvements (in particular to quadratic_form).
 - Bug fixes.
 - Multiplication by a number uniformly multiplies all cores (improved stability for large tensors).
 - Better test coverage.
