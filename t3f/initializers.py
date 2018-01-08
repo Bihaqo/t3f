@@ -162,10 +162,10 @@ def matrix_ones(shape):
   shape = list(shape)
   # In case shape represents a vector, e.g. [None, [2, 2, 2]]
   if shape[0] is None:
-    shape[0] = np.ones(len(shape[1]))
+    shape[0] = np.ones(len(shape[1]), dtype=int)
   # In case shape represents a vector, e.g. [[2, 2, 2], None]
   if shape[1] is None:
-    shape[1] = np.ones(len(shape[0]))
+    shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
 
   _validate_input_parameters(is_tensor=False, shape=shape)
@@ -204,10 +204,10 @@ def matrix_zeros(shape):
   shape = list(shape)
   # In case shape represents a vector, e.g. [None, [2, 2, 2]]
   if shape[0] is None:
-    shape[0] = np.ones(len(shape[1]))
+    shape[0] = np.ones(len(shape[1]), dtype=int)
   # In case shape represents a vector, e.g. [[2, 2, 2], None]
   if shape[1] is None:
-    shape[1] = np.ones(len(shape[0]))
+    shape[1] = np.ones(len(shape[0]), dtype=int)
   shape = np.array(shape)
 
   _validate_input_parameters(is_tensor=False, shape=shape)
