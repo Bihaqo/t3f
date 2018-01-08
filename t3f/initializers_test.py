@@ -18,10 +18,11 @@ class InitializersTest(tf.test.TestCase):
       tt_zeros_full = sess.run(ops.full(tt_zeros))
       self.assertAllClose(tt_ones_full, ones_desired)
       self.assertAllClose(tt_zeros_full, zeros_desired)
-    bad_shapes = [[[2, 3]], [-1.0, 3]]
+    bad_shapes = [[[2, 3]], [-1, 3], [0.1, 4]]
     for shape in bad_shapes:
       with self.assertRaises(ValueError):
         initializers.tensor_ones(shape)
+      with self.assertRaises(ValueError):
         initializers.tensor_zeros(shape)
 
   def testMatrixOnesAndZeros(self):
@@ -32,7 +33,7 @@ class InitializersTest(tf.test.TestCase):
     zeros_desired = np.zeros((24, 10))
 
     bad_shapes = [[[-1, 2, 3], [3, 4, 6]], [[1.5, 2, 4], [2, 5, 6]],
-                  [[1], [2, 3]]]
+                  [[1], [2, 3]], [2, 3, 4]]
     with self.test_session() as sess:
       tt_ones_full = sess.run(ops.full(tt_ones))
       tt_zeros_full = sess.run(ops.full(tt_zeros))
@@ -41,6 +42,7 @@ class InitializersTest(tf.test.TestCase):
     for shape in bad_shapes:
       with self.assertRaises(ValueError):
         initializers.matrix_ones(shape)
+      with self.assertRaises(ValueError):
         initializers.matrix_zeros(shape)
 
   def testEye(self):
@@ -49,6 +51,10 @@ class InitializersTest(tf.test.TestCase):
       with self.test_session() as sess:
         eye_full = sess.run(ops.full(tt_eye))
         self.assertAllClose(eye_full, eye_desired)
+      bad_shapes = [[[2, 3]], [-1, 3], [0.1, 4]]
+      for shape in bad_shapes:
+        with self.assertRaises(ValueError):
+          initializers.eye(shape)
 
   def testOnesLikeAndZerosLike(self):
     a = initializers.random_tensor([2, 3, 4])
@@ -65,44 +71,105 @@ class InitializersTest(tf.test.TestCase):
       initializers.zeros_like(1)
 
   def testRandomTensor(self):
-    shapes = [[1, -2], [1.1, 2], [3, 4]]
-    tt_ranks = [-1, 1.5, [-2, 3]]
-    for shape in shapes:
-      for ranks in tt_ranks:
-        with self.assertRaises(ValueError):
-          initializers.random_tensor(shape, tt_rank=ranks)
+    shapes = [[3, 4], [3, 4], [3, 4], [3, 4], [1, -2], [1.1, 2], [[3, 4]]]
+    tt_ranks = [-2, 1.5, [2, 3, 4, 5], [1.5], 2, 2, 2]
+    bad_cases = zip(shapes, tt_ranks)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.random_tensor(case[0], tt_rank=case[1])
+
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.tensor_with_random_cores(case[0], tt_rank=case[1])
+
+    with self.assertRaises(NotImplementedError):
+      initializers.random_tensor([1, 2], mean=1.0)
 
   def testRandomMatrix(self):
-    shapes = [[[1, -2], None], [[1.1, 2], [3, 4]], [[1], [2, 3]],
-              [[1, 2], [3, 4]]]
-    tt_ranks = [-1, 1.5, [-2, 3]]
-    for shape in shapes:
-      for ranks in tt_ranks:
-        with self.assertRaises(ValueError):
-          initializers.random_matrix(shape, tt_rank=ranks)
+    shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
+              [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]]]
+    tt_ranks = [2, 2, 2, 2, -1, [[[1]]], [2.5, 3]]
+    bad_cases = zip(shapes, tt_ranks)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.random_matrix(case[0], tt_rank=case[1])
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.matrix_with_random_cores(case[0], tt_rank=case[1])
+    with self.assertRaises(NotImplementedError):
+        initializers.random_matrix([[2, 3, 4], [1, 2, 3]], mean=1.0)
 
   def testRandomTensorBatch(self):
-    shapes = [[1, -2], [1.1, 2], [3, 4]]
-    tt_ranks = [-1, 1.5, [-2, 3], [7, 8]]
-    bs = [-1, 0.5]
-    for shape in shapes:
-      for ranks in tt_ranks:
-        for b in bs:
-          with self.assertRaises(ValueError):
-            initializers.random_tensor_batch(shape, tt_rank=ranks,
-                                             batch_size=b)
+    shapes = [[3, 4], [3, 4], [3, 4], [3, 4], [1, -2], [1.1, 2], [[3, 4]],
+              [1, 2], [3, 4]]
+    tt_ranks = [-2, 1.5, [2, 3, 4, 5], [1.5], 2, 2, 2, 2, 2]
+    bs = [1] * 7 + [-1] + [0.5]
+    bad_cases = zip(shapes, tt_ranks, bs)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.random_tensor_batch(case[0], tt_rank=case[1],
+                                         batch_size=case[2])
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.tensor_batch_with_random_cores(case[0], tt_rank=case[1],
+                                                    batch_size=case[2])
+    with self.assertRaises(NotImplementedError):
+        initializers.random_tensor_batch([1, 2, 3], mean=1.0)
 
   def testRandomMatrixBatch(self):
-    shapes = [[[1, -2], None], [[1.1, 2], [3, 4]], [[1], [2, 3]],
-              [[1, 2], [3, 4]]]
-    tt_ranks = [-1, 1.5, [-2, 3], 5]
-    bs = [-1, 0.5]
-    for shape in shapes:
-      for ranks in tt_ranks:
-        for b in bs:
-          with self.assertRaises(ValueError):
-            initializers.random_matrix_batch(shape, tt_rank=ranks,
-                                             batch_size=b)
+    shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
+              [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]]]
+    tt_ranks = [2, 2, 2, 2, -1, [[[1]]], [2.5, 3], 2, 2]
+    bs = 7 * [1] + [-1] + [0.5]
+    bad_cases = zip(shapes, tt_ranks, bs)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.random_matrix_batch(case[0], tt_rank=case[1],
+                                         batch_size=case[2])
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.matrix_batch_with_random_cores(case[0], tt_rank=case[1],
+                                                    batch_size=case[2])
+    with self.assertRaises(NotImplementedError):
+      initializers.random_matrix_batch([[1, 2, 3], [1, 2, 3]], mean=1.0)
+
+  def testGlorot(self):
+    shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
+              [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]]]
+    tt_ranks = [2, 2, 2, 2, -1, [[[1]]], [2.5, 3]]
+    bad_cases = zip(shapes, tt_ranks)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.glorot_initializer(case[0], tt_rank=case[1])
+
+  def testHe(self):
+    shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
+              [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]]]
+    tt_ranks = [2, 2, 2, 2, -1, [[[1]]], [2.5, 3]]
+    bad_cases = zip(shapes, tt_ranks)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.he_initializer(case[0], tt_rank=case[1])
+
+  def testLecun(self):
+    shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
+              [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
+              [[1, 2, 3], [1, 2, 3]]]
+    tt_ranks = [2, 2, 2, 2, -1, [[[1]]], [2.5, 3]]
+    bad_cases = zip(shapes, tt_ranks)
+    for case in bad_cases:
+      with self.assertRaises(ValueError):
+        initializers.lecun_initializer(case[0], tt_rank=case[1])
 
 
 if __name__ == "__main__":
