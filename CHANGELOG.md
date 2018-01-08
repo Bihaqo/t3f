@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - gather_nd for gathering several elements from a TT-objects at once.
 - Overload operations to support `a - b`, `a + -b`, `0.4 * a`.
 - Add complexities of some functions into the docstrings.
+- Glorot, He, LeCun initializers for TT-matrices
 
 ### Changed
 - Speed improvements (in particular to quadratic_form).
