@@ -71,6 +71,17 @@ matvec2 = t3f.matmul(A, b_dense)
 # More examples
 For more examples (e.g. how to build neural networks or how to do Riemannian optimization) see ```examples``` folder.
 
+# Citing
+If you use T3F in your research work, we kindly ask you to cite [the paper](https://arxiv.org/abs/1801.01928) describing this library
+```
+@article{novikov2018tensor,
+  title={Tensor Train decomposition on TensorFlow (T3F)},
+  author={Novikov, Alexander and Izmailov, Pavel and Khrulkov, Valentin and Figurnov, Michael and Oseledets, Ivan},
+  journal={arXiv preprint arXiv:1801.01928},
+  year={2018}
+}
+```
+
 # Benchmarking
 Here are the results im ms of benchmarking T3F on CPU and GPU and comparing against the [TTPY library](https://github.com/oseledets/ttpy)
 <img src="examples/profile/results.png" height="200">
