@@ -1028,6 +1028,15 @@ def quadratic_form(A, b, c):
   Raises:
     ValueError if the arguments are not TT-matrices or if the shapes are
       not consistent.
+  
+  Complexity:
+       O(batch_size r_A r_c r_b n d (r_b + r_A n + r_c))
+    d is the number of TT-cores (A.ndims());
+    r_A is the largest TT-rank of A max(A.get_tt_rank())
+    n is the size of the axis dimensions e.g.
+      if b and c are tensors of shape (3, 3, 3),
+      A is a 27 x 27 matrix of tensor shape (3, 3, 3) x (3, 3, 3)
+      then n is 3
   """
   if not isinstance(A, TensorTrainBase) or not A.is_tt_matrix():
     raise ValueError('The arguments should be a TT-matrix.')
