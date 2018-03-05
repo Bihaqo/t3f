@@ -2,13 +2,7 @@ import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
-
-eager_mode_supported = False
-try:
-    from tensorflow.python.eager import context
-    eager_mode_supported = True
-except ImportError:
-    pass
+from t3f import utils
 
 
 def get_variable(name,
@@ -62,12 +56,8 @@ def get_variable(name,
     raise ValueError('Scope reuse is False and initializer is not provided.')
 
   variable_cores = []
-  in_eager_mode = False
-  if eager_mode_supported:
-    if context.in_eager_mode():
-      in_eager_mode = True
 
-  if reuse and not in_eager_mode:
+  if reuse and not utils.in_eager_mode():
     # Find an existing variable in the collection.
     path = tf.get_variable_scope().name
     if path != '' and path[-1] != '/':
