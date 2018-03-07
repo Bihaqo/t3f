@@ -40,7 +40,7 @@ def replace_tf_svd_with_np_svd():
 
 
 def in_eager_mode():
-  """Checks whether tensorflow eager mode as avaialable and active."""
+  """Checks whether tensorflow eager mode is avaialable and active."""
   try:
       from tensorflow.python.eager import context
       return context.in_eager_mode()
