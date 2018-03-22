@@ -6,9 +6,10 @@ from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import shapes
 from t3f import utils
 from t3f import decompositions
-
+from t3f import initializers
 
 # TODO: add complexities to the comments.
+
 
 def full(tt):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
@@ -314,7 +315,7 @@ def tt_tt_flat_inner(tt_a, tt_b):
   """Inner product between two TT-tensors or TT-matrices along all axis.
 
   The shapes of tt_a and tt_b should coincide.
-
+  
   Args:
     tt_a: `TensorTrain` or `TensorTrainBatch` object
     tt_b: `TensorTrain` or `TensorTrainBatch` object
@@ -327,6 +328,17 @@ def tt_tt_flat_inner(tt_a, tt_b):
     ValueError if the arguments are not `TensorTrain` objects, have different
       number of TT-cores, different underlying shape, or if you are trying to
       compute inner product between a TT-matrix and a TT-tensor.
+      
+  Complexity:
+    Multiplying two single TT-objects is O(d r^3 n) where d is the number of
+      TT-cores (tt_a.ndims()), r is the largest TT-rank
+        max(tt_a.get_tt_rank(), tt_b.get_tt_rank())
+      and n is the size of the axis dimension, e.g.
+        for a tensor of size 4 x 4 x 4, n is 4;
+        for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
+      A more precise complexity is O(d r1 r2 n max(r1, r2)) where
+        r1 is the largest TT-rank of tt_a and r2 is the largest TT-rank of tt_b.
+    The complexity of this operation for batch input is O(batch_size d r^3 n).
   """
   if not isinstance(tt_a, TensorTrainBase) or not isinstance(tt_b,
                                                              TensorTrainBase):
@@ -1016,6 +1028,15 @@ def quadratic_form(A, b, c):
   Raises:
     ValueError if the arguments are not TT-matrices or if the shapes are
       not consistent.
+  
+  Complexity:
+       O(batch_size r_A r_c r_b n d (r_b + r_A n + r_c))
+    d is the number of TT-cores (A.ndims());
+    r_A is the largest TT-rank of A max(A.get_tt_rank())
+    n is the size of the axis dimensions e.g.
+      if b and c are tensors of shape (3, 3, 3),
+      A is a 27 x 27 matrix of tensor shape (3, 3, 3) x (3, 3, 3)
+      then n is 3
   """
   if not isinstance(A, TensorTrainBase) or not A.is_tt_matrix():
     raise ValueError('The arguments should be a TT-matrix.')
@@ -1190,4 +1211,3 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
         new_cores.append(tf.multiply(core, exp_fact / fact_list[i]))
 
       return TensorTrainBatch(new_cores)
-

@@ -55,7 +55,7 @@ def multiply_along_batch_dim(batch_tt, weights):
   Args:
     batch_tt: TensorTrainBatch object, TT-matrices or TT-tensors.
     weights: 1-D tf.Tensor (or something convertible to it like np.array) of size
-     tt.batch_sie with weights. 
+     tt.batch_size with weights.
 
   Returns:
     TensorTrainBatch
@@ -74,7 +74,7 @@ def multiply_along_batch_dim(batch_tt, weights):
 
 
 def gram_matrix(tt_vectors, matrix=None):
-  """Computes Gramian matrix of a batch of TT-vecors.
+  """Computes Gramian matrix of a batch of TT-vectors.
 
   If matrix is None, computes
     res[i, j] = t3f.flat_inner(tt_vectors[i], tt_vectors[j]).
@@ -90,6 +90,20 @@ def gram_matrix(tt_vectors, matrix=None):
 
   Returns:
     tf.tensor with the Gram matrix.
+      
+  Complexity:
+    If the matrix is not present, the complexity is O(batch_size^2 d r^3 n)
+      where d is the number of
+      TT-cores (tt_vectors.ndims()), r is the largest TT-rank
+        max(tt_vectors.get_tt_rank())
+      and n is the size of the axis dimension, e.g.
+        for a tensor of size 4 x 4 x 4, n is 4;
+        for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
+    If the matrix of TT-rank R is present, the complexity is
+        O(batch_size^2 d R r^2 n (r + nR))
+      where the matrix is of raw-shape (n, n, ..., n) x (n, n, ..., n);
+      r is the TT-rank of vectors tt_vectors;
+      R is the TT-rank of the matrix.
   """
   return pairwise_flat_inner(tt_vectors, tt_vectors, matrix)
 
@@ -99,7 +113,7 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None):
 
   If matrix is None, computes
     res[i, j] = t3f.flat_inner(tt_1[i], tt_2[j]).
-    
+
   If matrix is present, computes
       res[i, j] = t3f.flat_inner(tt_1[i], t3f.matmul(matrix, tt_2[j]))
     or more shortly
@@ -113,6 +127,25 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None):
 
   Returns:
     tf.tensor with the matrix of pairwise scalar products (flat inners).
+      
+  Complexity:
+    If the matrix is not present, the complexity is O(batch_size^2 d r^3 n)
+      where d is the number of
+      TT-cores (tt_vectors.ndims()), r is the largest TT-rank
+        max(tt_vectors.get_tt_rank())
+      and n is the size of the axis dimension, e.g.
+        for a tensor of size 4 x 4 x 4, n is 4;
+        for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
+      A more precise complexity is
+        O(batch_size^2 d r1 r2 n max(r1, r2))
+      where r1 is the largest TT-rank of tt_a
+      and r2 is the largest TT-rank of tt_b.
+    If the matrix is present, the complexity is
+        O(batch_size^2 d R r1 r2 (n r1 + n m R + m r2))
+      where
+      the matrix is of raw-shape (n, n, ..., n) x (m, m, ..., m) and TT-rank R;
+      tt_1 is of shape (n, n, ..., n) and is of the TT-rank r1;
+      tt_2 is of shape (m, m, ..., m) and is of the TT-rank r2;
   """
   ndims = tt_1.ndims()
   if matrix is None:

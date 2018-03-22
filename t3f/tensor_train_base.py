@@ -151,6 +151,28 @@ class TensorTrainBase(object):
     from t3f import ops
     return ops.add(self, other)
 
+  def __sub__(self, other):
+    """Returns a TensorTrain corresponding to element-wise difference tt_a - tt_b.
+
+    Supports broadcasting (e.g. you can subtract TensorTrainBatch and
+    TensorTrain).
+    Just calls t3f.add(self, (-1) * other), see its documentation for details.
+    """
+    # TODO: ugly.
+    # We can't import ops in the beginning since it creates cyclic dependencies.
+    from t3f import ops
+    return ops.add(self, ops.multiply(other, -1.))
+
+  def __neg__(self):
+    """Returns a TensorTrain corresponding to element-wise negative -tt_a.
+
+    Just calls t3f.multiply(self, -1.), see its documentation for details.
+    """
+    # TODO: ugly.
+    # We can't import ops in the beginning since it creates cyclic dependencies.
+    from t3f import ops
+    return ops.multiply(self, -1.)
+
   def __mul__(self, other):
     """Returns a TensorTrain corresponding to element-wise product tt_a * tt_b.
 

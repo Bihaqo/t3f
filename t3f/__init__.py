@@ -23,10 +23,24 @@ from t3f.batch_ops import gram_matrix
 from t3f.batch_ops import multiply_along_batch_dim
 from t3f.batch_ops import pairwise_flat_inner
 
-from t3f.initializers import random_matrix
-from t3f.initializers import random_matrix_batch
+from t3f.initializers import matrix_with_random_cores
+from t3f.initializers import matrix_batch_with_random_cores
+from t3f.initializers import tensor_with_random_cores
+from t3f.initializers import tensor_batch_with_random_cores
 from t3f.initializers import random_tensor
 from t3f.initializers import random_tensor_batch
+from t3f.initializers import random_matrix
+from t3f.initializers import random_matrix_batch
+from t3f.initializers import tensor_ones
+from t3f.initializers import tensor_zeros
+from t3f.initializers import matrix_ones
+from t3f.initializers import matrix_zeros
+from t3f.initializers import eye
+from t3f.initializers import ones_like
+from t3f.initializers import zeros_like
+from t3f.initializers import glorot_initializer
+from t3f.initializers import he_initializer
+from t3f.initializers import lecun_initializer
 
 from t3f.regularizers import cores_regularizer
 from t3f.regularizers import l2_regularizer

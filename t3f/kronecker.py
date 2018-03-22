@@ -1,9 +1,9 @@
-import numpy as np
 import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import ops
+
 
 def determinant(kron_a):
   """Computes the determinant of a given Kronecker-factorized matrix. 
@@ -109,6 +109,7 @@ def slog_determinant(kron_a):
     det_sign *= core_det_sign**(core_pow)
   return det_sign, logdet
 
+
 def inv(kron_a):
   """Computes the inverse of a given Kronecker-factorized matrix.
 
@@ -162,6 +163,7 @@ def inv(kron_a):
     return TensorTrainBatch(inv_cores, res_shape, res_ranks) 
   else:
     return TensorTrain(inv_cores, res_shape, res_ranks) 
+
 
 def cholesky(kron_a):
   """Computes the Cholesky decomposition of a given Kronecker-factorized matrix.
