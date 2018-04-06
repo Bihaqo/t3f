@@ -5,19 +5,6 @@ import tensorflow as tf
 # TODO: check the methods of _TensorLike
 class TensorTrainBase(object):
   """An abstract class that represents a collection of Tensor Train cores.
-  ```
-  @@__init__
-  @@get_raw_shape
-  @@get_shape
-  @@tt_cores
-  @@dtype
-  @@name
-  @@graph
-  @@ndims
-  @@get_tt_ranks
-  @@is_tt_matrix
-  @@is_variable
-  @@eval
   """
 
   def __init__(self, tt_cores):
