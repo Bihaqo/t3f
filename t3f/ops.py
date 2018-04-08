@@ -928,14 +928,28 @@ def frobenius_norm_squared(tt, differentiable=False):
       running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str),
                                tt.tt_cores[0], tt.tt_cores[0])
 
-    for core_idx in range(1, tt.ndims()):
+    # for core_idx in range(1, tt.ndims()):
+    #   curr_core = tt.tt_cores[core_idx]
+    #   if tt.is_tt_matrix():
+    #     running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+    #                              running_prod, curr_core, curr_core)
+    #   else:
+    #     running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
+    #                              running_prod, curr_core, curr_core)
+    #
+    def body(running_prod, core_idx):
       curr_core = tt.tt_cores[core_idx]
       if tt.is_tt_matrix():
         running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
-                                 running_prod, curr_core, curr_core)
+                                     running_prod, curr_core, curr_core)
       else:
         running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
                                  running_prod, curr_core, curr_core)
+      return running_prod, core_idx + 1
+
+    running_prod, _ = tf.while_loop(lambda _, i: i < tt.ndims(), body,
+                                    (running_prod, 1), shape_invariants=None)
+
 
     return tf.squeeze(running_prod, [-1, -2])
 
