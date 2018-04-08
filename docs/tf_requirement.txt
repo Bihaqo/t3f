@@ -4,4 +4,4 @@
 # the docs with readthedocs.org: they fetch a fresh version of the
 # library on each build and it doesn't import properly without tensorflow
 # being installed.
-tensorflow>=1.0
+tensorflow>=1.0,<=1.5
