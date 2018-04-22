@@ -1,3 +1,4 @@
+from functools import reduce
 import numpy as np
 import tensorflow as tf
 
@@ -30,9 +31,11 @@ class TensorTrainBase(object):
     """
     raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
+      # Use python prod instead of np.prod to avoid overflows.
+      prod_f = lambda arr: reduce(lambda x, y: x*y, arr)
       # TODO: as list is not available if shape is partly known.
-      m = np.prod(raw_shape[0].as_list())
-      n = np.prod(raw_shape[1].as_list())
+      m = prod_f(raw_shape[0].as_list())
+      n = prod_f(raw_shape[1].as_list())
       return tf.TensorShape((m, n))
     else:
       return raw_shape[0]
