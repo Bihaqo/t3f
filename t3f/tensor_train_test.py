@@ -137,11 +137,8 @@ class TensorTrainTest(tf.test.TestCase):
   def testShapeOverflow(self):
     large_shape = [10] * 20
     matrix = initializers.matrix_zeros([large_shape, large_shape])
-    try:
-      shape = matrix.get_shape()
-      self.assertEqual([10 ** 20, 10 ** 20], shape)
-    except ValueError:
-      self.fail('Integer overflow')
+    shape = matrix.get_shape()
+    self.assertEqual([10 ** 20, 10 ** 20], shape)
 
 if __name__ == "__main__":
   tf.test.main()
