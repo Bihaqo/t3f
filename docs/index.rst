@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to t3f documentation!
-===============================
+=============================
 
 Module contents
 ---------------
@@ -24,10 +24,17 @@ t3f\.utils module
     :show-inheritance:
 
 t3f\.kronecker module
------------------
+---------------------
 
 .. automodule:: t3f.kronecker
     :members:
     :undoc-members:
     :show-inheritance:
 
+t3f\.approximate module
+-----------------------
+
+.. automodule:: t3f.approximate
+    :members:
+    :undoc-members:
+    :show-inheritance:

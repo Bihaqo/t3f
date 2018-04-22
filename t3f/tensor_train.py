@@ -8,21 +8,6 @@ class TensorTrain(TensorTrainBase):
   """Represents a Tensor Train object (a TT-tensor or TT-matrix).
 
   t3f represents a Tensor Train object as a tuple of TT-cores.
-  ```
-  @@__init__
-  @@get_raw_shape
-  @@get_shape
-  @@tt_cores
-  @@dtype
-  @@name
-  @@graph
-  @@ndims
-  @@get_tt_ranks
-  @@left_tt_rank_dim
-  @@right_tt_rank_dim
-  @@is_tt_matrix
-  @@is_variable
-  @@eval
   """
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, convert_to_tensors=True):

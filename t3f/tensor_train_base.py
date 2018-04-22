@@ -1,3 +1,4 @@
+from functools import reduce
 import numpy as np
 import tensorflow as tf
 
@@ -5,19 +6,6 @@ import tensorflow as tf
 # TODO: check the methods of _TensorLike
 class TensorTrainBase(object):
   """An abstract class that represents a collection of Tensor Train cores.
-  ```
-  @@__init__
-  @@get_raw_shape
-  @@get_shape
-  @@tt_cores
-  @@dtype
-  @@name
-  @@graph
-  @@ndims
-  @@get_tt_ranks
-  @@is_tt_matrix
-  @@is_variable
-  @@eval
   """
 
   def __init__(self, tt_cores):
@@ -43,9 +31,11 @@ class TensorTrainBase(object):
     """
     raw_shape = self.get_raw_shape()
     if self.is_tt_matrix():
+      # Use python prod instead of np.prod to avoid overflows.
+      prod_f = lambda arr: reduce(lambda x, y: x*y, arr)
       # TODO: as list is not available if shape is partly known.
-      m = np.prod(raw_shape[0].as_list())
-      n = np.prod(raw_shape[1].as_list())
+      m = prod_f(raw_shape[0].as_list())
+      n = prod_f(raw_shape[1].as_list())
       return tf.TensorShape((m, n))
     else:
       return raw_shape[0]
