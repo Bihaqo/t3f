@@ -36,7 +36,7 @@ class TensorTrain(TensorTrainBase):
     tt_cores = list(tt_cores)
     if convert_to_tensors:
       # TODO: what does this namescope do?
-      with tf.name_scope("TensorTrain", tt_cores):
+      with tf.name_scope("TensorTrain", values=tt_cores):
         for i in range(len(tt_cores)):
           name = "core%d" % i
           tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
