@@ -11,21 +11,23 @@ from t3f import initializers
 # TODO: add complexities to the comments.
 
 
-def full(tt):
+def full(tt, name='tt_to_full'):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object.
+    name: string, name of the Op.
 
   Returns:
     tf.Tensor.
   """
-  if isinstance(tt, TensorTrainBatch):
-    # Batch of Tensor Trains.
-    return _full_tt_batch(tt)
-  else:
-    # TensorTrain object (not batch).
-    return _full_tt(tt)
+  with tf.name_scope(name, tt.tt_cores):
+    if isinstance(tt, TensorTrainBatch):
+      # Batch of Tensor Trains.
+      return _full_tt_batch(tt)
+    else:
+      # TensorTrain object (not batch).
+      return _full_tt(tt)
 
 
 def _full_tt(tt):
