@@ -11,7 +11,7 @@ from t3f import initializers
 # TODO: add complexities to the comments.
 
 
-def full(tt, name='tt_to_full'):
+def full(tt, name='tt_to_dense'):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
   Args:
