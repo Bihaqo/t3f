@@ -21,7 +21,7 @@ def full(tt, name='tt_to_dense'):
   Returns:
     tf.Tensor.
   """
-  with tf.name_scope(name, tt.tt_cores):
+  with tf.name_scope(name, values=tt.tt_cores):
     if isinstance(tt, TensorTrainBatch):
       # Batch of Tensor Trains.
       return _full_tt_batch(tt)
@@ -300,19 +300,19 @@ def matmul(a, b, name='matmul'):
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
-    with tf.name_scope(name, a.tt_cores + b.tt_cores):
+    with tf.name_scope(name, values=a.tt_cores+b.tt_cores):
       return tt_tt_matmul(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
-    with tf.name_scope(name, a.tt_cores + [b]):
+    with tf.name_scope(name, values=a.tt_cores+[b]):
       return tt_dense_matmul(a, b)
   elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, [a] + b.tt_cores):
+    with tf.name_scope(name, values=[a]+b.tt_cores):
       return dense_tt_matmul(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
-    with tf.name_scope(name, a.tt_cores + [b]):
+    with tf.name_scope(name, values=a.tt_cores+[b]):
       return tt_sparse_matmul(a, b)
   elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, [a] + b.tt_cores):
+    with tf.name_scope(name, values=[a]+b.tt_cores):
       return sparse_tt_matmul(a, b)
   else:
     raise ValueError('Argument types are not supported in matmul: %s x %s' %
@@ -522,19 +522,19 @@ def flat_inner(a, b, name='flat_inner'):
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
-    with tf.name_scope(name, a.tt_cores + b.tt_cores):
+    with tf.name_scope(name, values=a.tt_cores+b.tt_cores):
       return tt_tt_flat_inner(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
-    with tf.name_scope(name, a.tt_cores + [b]):
+    with tf.name_scope(name, values=a.tt_cores+[b]):
       return tt_dense_flat_inner(a, b)
   elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, [a] + b.tt_cores):
+    with tf.name_scope(name, values=[a]+b.tt_cores):
       return dense_tt_flat_inner(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
-    with tf.name_scope(name, a.tt_cores + [b]):
+    with tf.name_scope(name, values=a.tt_cores+[b]):
       return tt_sparse_flat_inner(a, b)
   elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, [a] + b.tt_cores):
+    with tf.name_scope(name, values=[a]+b.tt_cores):
       return sparse_tt_flat_inner(a, b)
   else:
     raise ValueError('Argument types are not supported in flat_inner: %s x %s' %
@@ -719,7 +719,7 @@ def add(tt_a, tt_b, name='add'):
     raise ValueError('The batch sizes are different and not 1, broadcasting is '
                      'not available.')
 
-  with tf.name_scope(name, values=tt_a.tt_cores + tt_b.tt_cores):
+  with tf.name_scope(name, values=tt_a.tt_cores+tt_b.tt_cores):
     is_a_batch = isinstance(tt_a, TensorTrainBatch)
     is_b_batch = isinstance(tt_b, TensorTrainBatch)
     is_batch_case = is_a_batch or is_b_batch
