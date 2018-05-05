@@ -303,16 +303,16 @@ def matmul(a, b, name='matmul'):
     with tf.name_scope(name, values=a.tt_cores+b.tt_cores):
       return tt_tt_matmul(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
-    with tf.name_scope(name, values=a.tt_cores+[b]):
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
       return tt_dense_matmul(a, b)
   elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, values=[a]+b.tt_cores):
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
       return dense_tt_matmul(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
-    with tf.name_scope(name, values=a.tt_cores+[b]):
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
       return tt_sparse_matmul(a, b)
   elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, values=[a]+b.tt_cores):
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
       return sparse_tt_matmul(a, b)
   else:
     raise ValueError('Argument types are not supported in matmul: %s x %s' %
@@ -525,16 +525,16 @@ def flat_inner(a, b, name='flat_inner'):
     with tf.name_scope(name, values=a.tt_cores+b.tt_cores):
       return tt_tt_flat_inner(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
-    with tf.name_scope(name, values=a.tt_cores+[b]):
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
       return tt_dense_flat_inner(a, b)
   elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, values=[a]+b.tt_cores):
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
       return dense_tt_flat_inner(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
-    with tf.name_scope(name, values=a.tt_cores+[b]):
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
       return tt_sparse_flat_inner(a, b)
   elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
-    with tf.name_scope(name, values=[a]+b.tt_cores):
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
       return sparse_tt_flat_inner(a, b)
   else:
     raise ValueError('Argument types are not supported in flat_inner: %s x %s' %
@@ -779,7 +779,7 @@ def multiply(tt_left, right, name='multiply'):
   is_batch_case = is_left_batch or is_right_batch
   ndims = tt_left.ndims()
   if not isinstance(right, TensorTrainBase):
-    with tf.name_scope(name, values=tt_left.tt_cores+[right]):
+    with tf.name_scope(name, values=tt_left.tt_cores+(right,)):
       # Assume right is a number, not TensorTrain.
       # To squash right uniformly across TT-cores we pull its absolute value
       # and raise to the power 1/ndims. First TT-core is multiplied by the sign
@@ -1167,7 +1167,7 @@ def gather_nd(tt, indices, name='gather_nd'):
     ValueError if `indices` have wrong shape.
     NotImplementedError if `tt` is a TT-matrix.
   """
-  with tf.name_scope(name, values=tt.tt_cores+[indices]):
+  with tf.name_scope(name, values=tt.tt_cores+(indices,)):
     if tt.is_tt_matrix():
       raise NotImplementedError('gather_nd doesnt support TT-matrices yet '
                                 '(got %s)' % tt)
