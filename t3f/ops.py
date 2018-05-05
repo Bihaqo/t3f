@@ -915,11 +915,11 @@ def multiply(tt_left, right, name='multiply'):
       combined_ranks = zip(tt_left.get_tt_ranks(), right.get_tt_ranks())
       out_ranks = [a * b for a, b in combined_ranks]
 
-    if not is_batch_case:
-      return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
-    else:
-      return TensorTrainBatch(tt_cores, tt_left.get_raw_shape(), out_ranks,
-                              batch_size=out_batch_size)
+  if not is_batch_case:
+    return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
+  else:
+    return TensorTrainBatch(tt_cores, tt_left.get_raw_shape(), out_ranks,
+                            batch_size=out_batch_size)
 
 def frobenius_norm_squared(tt, differentiable=False,
                            name='frobenius_norm_squared'):
