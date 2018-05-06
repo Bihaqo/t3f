@@ -149,7 +149,6 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   einsum_str = '{}aijb,{}cjkd->{}acikbd'.format(a_batch_str, b_batch_str,
                                                 res_batch_str)
   result_cores = []
-  # TODO: name the operation and the resulting tensor.
   a_shape = shapes.lazy_raw_shape(tt_matrix_a)
   a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
   b_shape = shapes.lazy_raw_shape(tt_matrix_b)
@@ -387,7 +386,6 @@ def tt_tt_flat_inner(tt_a, tt_b):
   # if both arguments are TT-tensors, then it is
   # res = tf.einsum('aib,cid->bd', a_core, b_core)
   res = tf.einsum(init_einsum_str, a_core, b_core)
-  # TODO: name the operation and the resulting tensor.
 
   einsum_str = '{3}ac,{1}a{0}b,{2}c{0}d->{3}bd'.format(axes_str, a_batch_str,
                                                        b_batch_str,
