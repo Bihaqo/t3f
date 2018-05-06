@@ -11,7 +11,7 @@ from t3f import initializers
 # TODO: add complexities to the comments.
 
 
-def full(tt, name='tt_to_dense'):
+def full(tt, name='t3f_full'):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
   Args:
@@ -275,7 +275,7 @@ def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
   raise NotImplementedError
 
 
-def matmul(a, b, name='matmul'):
+def matmul(a, b, name='t3f_matmul'):
   """Multiplies two matrices that can be TT-, dense, or sparse.
 
   Note that multiplication of two TT-matrices returns a TT-matrix with much
@@ -503,7 +503,7 @@ def sparse_tt_flat_inner(sparse_a, tt_b):
   raise NotImplementedError
 
 
-def flat_inner(a, b, name='flat_inner'):
+def flat_inner(a, b, name='t3f_flat_inner'):
   """Inner product along all axis.
 
   The shapes of a and b should coincide.
@@ -685,7 +685,7 @@ def _add_batch_matrix_cores(tt_a, tt_b):
   return tt_cores, batch_size
 
 
-def add(tt_a, tt_b, name='add'):
+def add(tt_a, tt_b, name='t3f_add'):
   """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
 
   The shapes of tt_a and tt_b should coincide.
@@ -748,7 +748,7 @@ def add(tt_a, tt_b, name='add'):
       return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
-def multiply(tt_left, right, name='multiply'):
+def multiply(tt_left, right, name='t3f_multiply'):
   """Returns a TensorTrain corresponding to element-wise product tt_left * right.
 
   Supports broadcasting:
@@ -922,7 +922,7 @@ def multiply(tt_left, right, name='multiply'):
                             batch_size=out_batch_size)
 
 def frobenius_norm_squared(tt, differentiable=False,
-                           name='frobenius_norm_squared'):
+                           name='t3f_frobenius_norm_squared'):
   """Frobenius norm squared of `TensorTrain` or of each TT in `TensorTrainBatch`.
 
   Frobenius norm squared is the sum of squares of all elements in a tensor.
@@ -976,7 +976,7 @@ def frobenius_norm_squared(tt, differentiable=False,
 
 
 def frobenius_norm(tt, epsilon=1e-5, differentiable=False,
-                   name='frobenius_norm'):
+                   name='t3f_frobenius_norm'):
   """Frobenius norm of `TensorTrain` or of each TT in `TensorTrainBatch`
 
   Frobenius norm is the sqrt of the sum of squares of all elements in a tensor.
@@ -999,7 +999,7 @@ def frobenius_norm(tt, epsilon=1e-5, differentiable=False,
     return tf.sqrt(frobenius_norm_squared(tt, differentiable) + epsilon)
 
 
-def transpose(tt_matrix, name='transpose'):
+def transpose(tt_matrix, name='t3f_transpose'):
   """Transpose a TT-matrix or a batch of TT-matrices.
 
   Args:
@@ -1038,7 +1038,7 @@ def transpose(tt_matrix, name='transpose'):
                               batch_size)
 
 
-def quadratic_form(A, b, c, name='quadratic_form'):
+def quadratic_form(A, b, c, name='t3f_quadratic_form'):
   """Quadratic form b^t A c; A is a TT-matrix, b and c can be batches.
 
   Args:
@@ -1113,7 +1113,7 @@ def quadratic_form(A, b, c, name='quadratic_form'):
     return tf.squeeze(res)
 
 
-def cast(tt, dtype, name='cast'):
+def cast(tt, dtype, name='t3f_cast'):
   """Casts a tt-tensor to a new type.
 
   Args:
@@ -1141,7 +1141,7 @@ def cast(tt, dtype, name='cast'):
                        'or TensorTrainBatch.' % tt)
 
 
-def gather_nd(tt, indices, name='gather_nd'):
+def gather_nd(tt, indices, name='t3f_gather_nd'):
   """out[i] = tt[indices[i, 0], indices[i, 1], ...]
 
   Equivalent to
@@ -1199,7 +1199,7 @@ def gather_nd(tt, indices, name='gather_nd'):
     return tt_elements
 
 
-def renormalize_tt_cores(tt, epsilon=1e-8, name='renormalize_tt_cores'):
+def renormalize_tt_cores(tt, epsilon=1e-8, name='t3f_renormalize_tt_cores'):
     """Renormalizes TT-cores to make them of the same Frobenius norm.
 
     Doesn't change the tensor represented by `tt` object, but renormalizes the
