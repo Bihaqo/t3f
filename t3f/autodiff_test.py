@@ -29,9 +29,8 @@ class AutodiffTest(tf.test.TestCase):
       return ops.quadratic_form(A, x, x)
 
     actual2 = ops.full(autodiff.gradients(func2, x))
-    projected_vector = riemannian.project(z, x)
-    hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
-    desired2 = ops.full(riemannian.project(hessian_by_vector, x))
+    grad = ops.matmul(ops.transpose(A) + A, x)
+    desired2 = ops.full(riemannian.project(grad, x))
     with self.test_session() as sess:
       actual_v2, desired_v2 = sess.run([actual2, desired2])
       np.testing.assert_allclose(actual_v2, desired_v2, rtol=1e-4)
