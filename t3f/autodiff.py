@@ -211,6 +211,9 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
     where P_x is projection onto the tangent space of TT at point x and
     d^2f/dx^2 is the Hessian of the function.
 
+    Note that the true hessian also includes the manifold curvature term
+    which is ignored here.
+
     Warning: this is experimental feature and it may not work for some function,
     e.g. ones that include QR or SVD decomposition (t3f.project, t3f.round) or
     for functions that work with TT-cores directly (in contrast to working with
