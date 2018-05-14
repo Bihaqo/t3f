@@ -7,6 +7,7 @@ import decompositions
 import riemannian
 
 
+# TODO: move to riemannian.
 def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
   """Convert an element of the tangent space to deltas representation.
 
@@ -53,6 +54,7 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
   return deltas
 
 
+# TODO: move to riemannian.
 def deltas_to_tangent_space(deltas, tt, left=None, right=None,
                             name='t3f_deltas_to_tangent_space'):
   """Converts deltas representation of tangent space vector to TensorTrain object.
