@@ -191,6 +191,9 @@ def gradients(func, x, name='t3f_gradients'):
   Returns:
       `TensorTrain`, projection of the gradient df/dx onto the tangent space at
       point x.
+
+  See also:
+      t3f.hessian_vector_product
   """
   with tf.name_scope(name, values=x.tt_cores):
     left = decompositions.orthogonalize_tt_cores(x)
@@ -232,6 +235,9 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
     Returns:
         `TensorTrain`, projection of the gradient df/dx onto the tangent space at
         point x.
+
+    See also:
+        t3f.gradients
     """
   all_cores = list(x.tt_cores) + list(vector.tt_cores)
   with tf.name_scope(name, values=all_cores):
