@@ -16,14 +16,14 @@ class AutodiffTest(tf.test.TestCase):
     x = initializers.random_matrix(([5] * 3, None))
     z = initializers.random_matrix(([5] * 3, None))
 
-    def func(x):
+    def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
 
-    actual = ops.full(autodiff.gradients(func, x))
-    desired = ops.full(ops.flat_inner(x, w) * riemannian.project(w, x))
+    actual1 = ops.full(autodiff.gradients(func1, x))
+    desired1 = ops.full(ops.flat_inner(x, w) * riemannian.project(w, x))
     with self.test_session() as sess:
-      actual_v, desired_v = sess.run([actual, desired])
-      np.testing.assert_allclose(actual_v, desired_v, rtol=1e-4)
+      actual1_v, desired1_v = sess.run([actual1, desired1])
+      np.testing.assert_allclose(actual1_v, desired1_v, rtol=1e-4)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
@@ -34,6 +34,37 @@ class AutodiffTest(tf.test.TestCase):
     with self.test_session() as sess:
       actual_v2, desired_v2 = sess.run([actual2, desired2])
       np.testing.assert_allclose(actual_v2, desired_v2, rtol=1e-4)
+
+  def testHessianVectorProduct(self):
+    w = initializers.random_matrix(([5] * 3, None))
+    A = initializers.random_matrix(([5] * 3, [5] * 3))
+    x = initializers.random_matrix(([5] * 3, None))
+    z = initializers.random_matrix(([5] * 3, None))
+    projected_vector = ops.full(riemannian.project(z, x))
+
+    def func1(x):
+      return 0.5 * ops.flat_inner(x, w) ** 2
+
+    actual1 = ops.full(autodiff.hessian_vector_product(func1, x, z))
+    # Grad: <x, w> w
+    # Hessian: <x, w> w w.T
+    w_full = ops.full(w)
+    hessian = ops.flat_inner(w, x) * tf.matmul(w_full, tf.transpose(w_full))
+    desired1 = tf.matmul(hessian, projected_vector)
+    with self.test_session() as sess:
+      actual1_v, desired1_v = sess.run([actual1, desired1])
+      np.testing.assert_allclose(actual1_v, desired1_v, rtol=1e-4)
+
+    def func2(x):
+      return ops.quadratic_form(A, x, x)
+
+    actual2 = ops.full(autodiff.hessian_vector_product(func2, x, z))
+    projected_vector = riemannian.project(z, x)
+    hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
+    desired2 = ops.full(riemannian.project(hessian_by_vector, x))
+    with self.test_session() as sess:
+      actual2_v, desired2_v = sess.run([actual2, desired2])
+      np.testing.assert_allclose(actual2_v, desired2_v, rtol=1e-3)
 
 
 if __name__ == "__main__":
