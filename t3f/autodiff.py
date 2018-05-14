@@ -238,17 +238,17 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     vector_projected = riemannian.project(vector, x)
-    vector_projected = riemannain.expand_batch_dim(vector_projected)
+    vector_projected = shapes.expand_batch_dim(vector_projected)
     vector_projected.projection_on = x
 
     def new_f(new_x):
-      grad = _riemannian_grad(func, x, new_x, left, right)
-      grad = batch_ops.expand_batch_dim(grad)
+      grad = _gradients(func, x, new_x, left, right)
+      grad = shapes.expand_batch_dim(grad)
       # TODO: durty hack.
       grad.projection_on = x
       return riemannian.pairwise_flat_inner_projected(grad, vector_projected)[0, 0]
 
-    return riemannian_grad(new_f, x)
+    return gradients(new_f, x)
 
 
 def _block_diag_hessian_vector_product(func, x, vector):
