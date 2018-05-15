@@ -153,9 +153,9 @@ def _gradients(func, x, x_projection, left, right):
       else:
         curr_grad = cores_grad[i][r1:, :, :r2]
     if i < x.ndims() - 1:
-      proj = (tf.eye(r1 * n) - q @ tf.transpose(q))
-      # TODO: multiply faster.
-      delta = proj @ tf.reshape(curr_grad, (-1, r2))
+      delta = curr_grad
+      delta = tf.reshape(delta, (-1, r2))
+      delta -= tf.matmul(q, tf.matmul(tf.transpose(q), delta))
       delta = tf.reshape(delta, left.tt_cores[i].shape)
     else:
       delta = curr_grad
