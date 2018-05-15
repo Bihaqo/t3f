@@ -1,10 +1,10 @@
 import tensorflow as tf
 
-from tensor_train import TensorTrain
-import shapes
-import batch_ops
-import decompositions
-import riemannian
+from t3f.tensor_train import TensorTrain
+from t3f import shapes
+from t3f import batch_ops
+from t3f import decompositions
+from t3f import riemannian
 
 
 # TODO: move to riemannian.
