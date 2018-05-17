@@ -3,6 +3,7 @@ import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
+import t3f.utils as utils
 from t3f.tensor_train_base import TensorTrainBase
 from t3f import shapes
 
@@ -247,8 +248,8 @@ def tensor_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.):
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-    tt_rank = np.insert(tt_rank, 0, 1)
-    tt_rank = np.append(tt_rank, 1)
+    tt_rank = np.concatenate([[1], tt_rank, [1]])
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(shape))
 
   tt_rank = tt_rank.astype(int)
   # TODO: variable (name?) scope.
@@ -286,8 +287,8 @@ def tensor_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-    tt_rank = np.insert(tt_rank, 0, 1)
-    tt_rank = np.append(tt_rank, 1)
+    tt_rank = np.concatenate([[1], tt_rank, [1]])
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(shape))
   tt_rank = tt_rank.astype(int)
   # TODO: variable (name?) scope.
   tt_cores = [None] * num_dims
@@ -337,6 +338,8 @@ def matrix_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.):
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
+    contracted_shape = np.prod(shape, axis=0)
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(contracted_shape))
 
   tt_rank = tt_rank.astype(int)
   # TODO: variable (name?) scope.
@@ -391,6 +394,9 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
+    contracted_shape = np.prod(shape, axis=0)
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(contracted_shape))
+  # TODO: check that ints?
   shape = shape.astype(int)
   tt_rank = tt_rank.astype(int)
   # TODO: variable (name?) scope.
@@ -481,8 +487,8 @@ def random_tensor(shape, tt_rank=2, mean=0., stddev=1.):
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-    tt_rank = np.insert(tt_rank, 0, 1)
-    tt_rank = np.append(tt_rank, 1)
+    tt_rank = np.concatenate([[1], tt_rank, [1]])
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(shape))
 
   tt_rank = tt_rank.astype(int)
 
@@ -534,8 +540,8 @@ def random_tensor_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.):
   num_dims = shape.size
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
-    tt_rank = np.insert(tt_rank, 0, 1)
-    tt_rank = np.append(tt_rank, 1)
+    tt_rank = np.concatenate([[1], tt_rank, [1]])
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(shape))
   tt_rank = tt_rank.astype(int)
 
   cr_exponent = -1.0 / (2 * num_dims)
@@ -598,6 +604,8 @@ def random_matrix(shape, tt_rank=2, mean=0., stddev=1.):
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
+    contracted_shape = np.prod(shape, axis=0)
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(contracted_shape))
 
   tt_rank = tt_rank.astype(int)
   var = np.prod(tt_rank)
@@ -664,6 +672,8 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.):
   if tt_rank.size == 1:
     tt_rank = tt_rank * np.ones(num_dims - 1)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
+    contracted_shape = np.prod(shape, axis=0)
+    tt_rank = np.minimum(tt_rank, utils.max_tt_ranks(contracted_shape))
 
   shape = shape.astype(int)
   tt_rank = tt_rank.astype(int)
