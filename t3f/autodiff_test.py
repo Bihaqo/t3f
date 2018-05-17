@@ -44,20 +44,20 @@ class AutodiffTest(tf.test.TestCase):
 
     def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
+    # Grad: <x, w> w
+    # Hessian: w w.T
+    # Hessian by vector: w <w, P_x z>
 
     actual1 = ops.full(autodiff.hessian_vector_product(func1, x, z))
-    # Grad: <x, w> w
-    # Hessian: <x, w> w w.T
-    w_full = ops.full(w)
-    hessian = ops.flat_inner(w, x) * tf.matmul(w_full, tf.transpose(w_full))
-    desired1 = tf.matmul(hessian, projected_vector)
+    desired1 = riemannian.project(ops.flat_inner(z, w) * w, x)
+    desired1 = ops.full(desired1)
     with self.test_session() as sess:
       actual1_v, desired1_v = sess.run([actual1, desired1])
       np.testing.assert_allclose(actual1_v, desired1_v, rtol=1e-4)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
-
+    # Hessian of <x, Ax> is A + A.T
     actual2 = ops.full(autodiff.hessian_vector_product(func2, x, z))
     projected_vector = riemannian.project(z, x)
     hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
