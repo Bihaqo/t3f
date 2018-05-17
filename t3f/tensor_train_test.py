@@ -134,5 +134,11 @@ class TensorTrainTest(tf.test.TestCase):
       desired, actual = sess.run([desired, actual], {start: 1, end: 3})
       self.assertAllClose(desired, actual)
 
+  def testShapeOverflow(self):
+    large_shape = [10] * 20
+    matrix = initializers.matrix_zeros([large_shape, large_shape])
+    shape = matrix.get_shape()
+    self.assertEqual([10 ** 20, 10 ** 20], shape)
+
 if __name__ == "__main__":
   tf.test.main()

@@ -81,3 +81,12 @@ def max_tt_ranks(raw_shape):
   right_to_left = robust_cumprod(raw_shape[::-1])[::-1]
   tt_ranks[1:-1] = np.minimum(left_to_right[:-1], right_to_left[1:])
   return tt_ranks
+
+
+def in_eager_mode():
+  """Checks whether tensorflow eager mode is avaialable and active."""
+  try:
+      from tensorflow.python.eager import context
+      return context.in_eager_mode()
+  except ImportError:
+      return False
