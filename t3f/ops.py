@@ -315,7 +315,7 @@ def tt_tt_flat_inner(tt_a, tt_b):
   """Inner product between two TT-tensors or TT-matrices along all axis.
 
   The shapes of tt_a and tt_b should coincide.
-  
+
   Args:
     tt_a: `TensorTrain` or `TensorTrainBatch` object
     tt_b: `TensorTrain` or `TensorTrainBatch` object
@@ -328,7 +328,7 @@ def tt_tt_flat_inner(tt_a, tt_b):
     ValueError if the arguments are not `TensorTrain` objects, have different
       number of TT-cores, different underlying shape, or if you are trying to
       compute inner product between a TT-matrix and a TT-tensor.
-      
+
   Complexity:
     Multiplying two single TT-objects is O(d r^3 n) where d is the number of
       TT-cores (tt_a.ndims()), r is the largest TT-rank
@@ -1028,7 +1028,7 @@ def quadratic_form(A, b, c):
   Raises:
     ValueError if the arguments are not TT-matrices or if the shapes are
       not consistent.
-  
+
   Complexity:
        O(batch_size r_A r_c r_b n d (r_b + r_A n + r_c))
     d is the number of TT-cores (A.ndims());
@@ -1148,7 +1148,7 @@ def gather_nd(tt, indices):
       raise ValueError('The last dimension of indices (%d) should have '
                        'the same size as the number of dimensions in the tt '
                        'object (%d).' % (indices.get_shape()[-1], tt.ndims()))
-  tt_elements = tf.ones(tf.shape(indices)[:-1])
+  tt_elements = tf.ones(tf.shape(indices)[:-1], dtype=tt.dtype)
   tt_elements = tf.reshape(tt_elements, (-1, 1, 1))
   for core_idx in range(tt.ndims()):
     curr_core = tt.tt_cores[core_idx]
