@@ -138,7 +138,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
   # Raises ValueError if ndims is not defined.
   d = static_shape.__len__()
   max_tt_rank = np.array(max_tt_rank).astype(np.int32)
-  if max_tt_rank < 1:
+  if np.any(max_tt_rank < 1):
     raise ValueError('Maximum TT-rank should be greater or equal to 1.')
   if epsilon is not None and epsilon < 0:
     raise ValueError('Epsilon should be non-negative.')
