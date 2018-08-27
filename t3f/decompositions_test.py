@@ -62,42 +62,32 @@ class DecompositionsTest(tf.test.TestCase):
     with self.test_session():
       self.assertAllClose(vec, ops.full(tt_vec).eval())
 
- 
-  def testTTCompositeRank(self):
-    # Test if a composite rank (list of ranks) can be used for decomposition
-    np_tensor = np.random.rand(2,3,3,1)
-    tf_tensor = tf.constant(np_tensor)
-
-    tt_ranks = [1,2,3,3,1]
-    tt_tensor = decompositions.to_tt_tensor(tf_tensor, max_tt_rank = tt_ranks)
-    with self.test_session():
-      self.assertAllClose(np_tensor, ops.full(tt_tensor).eval())
-
   def testTTCompositeRankTensor(self):
-    # Test if a composite rank (list of ranks) can be used for decomposition for tensor
+    # Test if a composite rank (list of ranks) can be used for decomposition
+    # for tensor.
     np.random.seed(1)
-    np_tensor = np.random.rand(2,3,3,1)
+    np_tensor = np.random.rand(2, 3, 3, 1)
     tf_tensor = tf.constant(np_tensor)
 
-    tt_ranks = [1,2,3,3,1]
-    tt_tensor = decompositions.to_tt_tensor(tf_tensor, max_tt_rank = tt_ranks)
+    tt_ranks = [1, 2, 3, 3, 1]
+    tt_tensor = decompositions.to_tt_tensor(tf_tensor, max_tt_rank=tt_ranks)
     with self.test_session():
       self.assertAllClose(np_tensor, ops.full(tt_tensor).eval())
 
   def testTTCompositeRankMatrix(self):
-    # Test if a composite rank (list of ranks) can be used for decomposition for a matrix
+    # Test if a composite rank (list of ranks) can be used for decomposition
+    # for a matrix.
     inp_shape = (2, 3, 3, 2)
     out_shape = (1, 2, 2, 1)
     np.random.seed(1)
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
     mat = mat.astype(np.float32)
     tf_mat = tf.constant(mat)
-    tt_ranks = [10,20,30,40,30]
+    tt_ranks = [10, 20, 30, 40, 30]
     tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
                                          max_tt_rank=tt_ranks)
     with self.test_session():
       self.assertAllClose(mat, ops.full(tt_mat).eval(), atol=1e-5, rtol=1e-5)
-
       
   def testTTMatrix(self):
     # Convert a np.prod(out_shape) x np.prod(in_shape) matrix into TT-matrix
@@ -108,7 +98,8 @@ class DecompositionsTest(tf.test.TestCase):
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
     mat = mat.astype(np.float32)
     tf_mat = tf.constant(mat)
-    tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape), max_tt_rank=90)
+    tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
+                                         max_tt_rank=90)
     with self.test_session():
       # TODO: why so bad accuracy?
       self.assertAllClose(mat, ops.full(tt_mat).eval(), atol=1e-5, rtol=1e-5)
