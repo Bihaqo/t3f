@@ -1,40 +1,11 @@
-.. t3f documentation master file, created by
-   sphinx-quickstart on Sun Mar 12 10:06:09 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to t3f documentation!
+t3f - library for working with tensor train decomposition built on top of TensorFlow
 =============================
 
-Module contents
----------------
+Hi!
 
-.. automodule:: t3f
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
+    :maxdepth: 1
+    :caption: Getting started
 
-
-t3f\.utils module
------------------
-
-.. automodule:: t3f.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-t3f\.kronecker module
----------------------
-
-.. automodule:: t3f.kronecker
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-t3f\.approximate module
------------------------
-
-.. automodule:: t3f.approximate
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    installation
+    api
