@@ -8,13 +8,13 @@ from t3f import shapes
 from t3f import initializers
 
 
-class TTTensorTest(tf.test.TestCase):
+class _TTTensorTest():
 
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(10, rank).astype(np.float32)
-      b = np.random.rand(rank, 9).astype(np.float32)
+      a = np.random.rand(10, rank).astype(self.np_dtype)
+      b = np.random.rand(rank, 9).astype(self.np_dtype)
       tt_cores = (a.reshape(1, 10, rank), b.reshape(rank, 9, 1))
       desired = np.dot(a, b)
       with self.test_session():
@@ -25,9 +25,9 @@ class TTTensorTest(tf.test.TestCase):
   def testFullTensor3d(self):
     np.random.seed(1)
     for rank_1 in [1, 2]:
-      a = np.random.rand(10, rank_1).astype(np.float32)
-      b = np.random.rand(rank_1, 9, 3).astype(np.float32)
-      c = np.random.rand(3, 8).astype(np.float32)
+      a = np.random.rand(10, rank_1).astype(self.np_dtype)
+      b = np.random.rand(rank_1, 9, 3).astype(self.np_dtype)
+      c = np.random.rand(3, 8).astype(self.np_dtype)
       tt_cores = (a.reshape(1, 10, rank_1), b, c.reshape((3, 8, 1)))
       # Basically do full by hand.
       desired = a.dot(b.reshape((rank_1, -1)))
@@ -69,10 +69,11 @@ class TTTensorTest(tf.test.TestCase):
         for rank in rank_list:
           for num_elements in [1, 10]:
             tt_1 = initializers.random_tensor(shape, tt_rank=rank)
-            sparse_flat_indices = np.random.choice(np.prod(shape), num_elements).astype(int)
+            sparse_flat_indices = np.random.choice(np.prod(shape), num_elements)
+            sparse_flat_indices = sparse_flat_indices.astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, shape)
             sparse_indices = np.vstack(sparse_indices).transpose()
-            values = np.random.randn(num_elements).astype(np.float32)
+            values = np.random.randn(num_elements).astype(self.np_dtype)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
                                        dense_shape=shape)
             res_actual = ops.flat_inner(tt_1, sparse_2)
@@ -144,11 +145,10 @@ class TTTensorTest(tf.test.TestCase):
     tt_x = initializers.random_tensor((2, 3, 2), tt_rank=2)
 
     with self.test_session() as sess:
-      for dtype in [tf.float16, tf.float32, tf.float64]:
-        casted = ops.cast(tt_x, dtype)
-        casted_val = sess.run(ops.full(casted))
-        self.assertEqual(dtype, casted.dtype)
-        self.assertTrue(dtype, casted_val.dtype)
+      casted = ops.cast(tt_x, self.tf_dtype)
+      casted_val = sess.run(ops.full(casted))
+      self.assertEqual(self.tf_dtype, casted.dtype)
+      self.assertTrue(self.tf_dtype, casted_val.dtype)
 
   def testCastIntFloat(self):
     # Tests cast function from int to float for tensors.
@@ -159,11 +159,10 @@ class TTTensorTest(tf.test.TestCase):
     tt_int = TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
 
     with self.test_session() as sess:
-      for dtype in [tf.float16, tf.float32, tf.float64]:
-        casted = ops.cast(tt_int, dtype)
-        casted_val = sess.run(ops.full(casted))
-        self.assertEqual(dtype, casted.dtype)
-        self.assertTrue(dtype, casted_val.dtype)
+      casted = ops.cast(tt_int, self.tf_dtype)
+      casted_val = sess.run(ops.full(casted))
+      self.assertEqual(self.tf_dtype, casted.dtype)
+      self.assertTrue(self.tf_dtype, casted_val.dtype)
 
   def testCoreRenorm(self):
       a = initializers.random_tensor(3 * (10,), tt_rank=7)
@@ -180,13 +179,13 @@ class TTTensorTest(tf.test.TestCase):
                               * np.ones((len(b_cores))))
 
 
-class TTMatrixTest(tf.test.TestCase):
+class _TTMatrixTest():
 
   def testFullMatrix2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(2, 3, rank).astype(np.float32)
-      b = np.random.rand(rank, 4, 5).astype(np.float32)
+      a = np.random.rand(2, 3, rank).astype(self.np_dtype)
+      b = np.random.rand(rank, 4, 5).astype(self.np_dtype)
       tt_cores = (a.reshape(1, 2, 3, rank), b.reshape((rank, 4, 5, 1)))
       # Basically do full by hand.
       desired = a.reshape((-1, rank)).dot(b.reshape((rank, -1)))
@@ -201,9 +200,9 @@ class TTMatrixTest(tf.test.TestCase):
   def testFullMatrix3d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(2, 3, rank).astype(np.float32)
-      b = np.random.rand(rank, 4, 5, rank).astype(np.float32)
-      c = np.random.rand(rank, 2, 2).astype(np.float32)
+      a = np.random.rand(2, 3, rank).astype(self.np_dtype)
+      b = np.random.rand(rank, 4, 5, rank).astype(self.np_dtype)
+      c = np.random.rand(rank, 2, 2).astype(self.np_dtype)
       tt_cores = (a.reshape(1, 2, 3, rank), b.reshape(rank, 4, 5, rank),
                   c.reshape(rank, 2, 2, 1))
       # Basically do full by hand.
@@ -237,7 +236,7 @@ class TTMatrixTest(tf.test.TestCase):
     inp_shape = (2, 3, 4)
     out_shape = (3, 4, 3)
     np.random.seed(1)
-    vec = np.random.rand(np.prod(inp_shape), 1).astype(np.float32)
+    vec = np.random.rand(np.prod(inp_shape), 1).astype(self.np_dtype)
     with self.test_session() as sess:
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
@@ -252,7 +251,8 @@ class TTMatrixTest(tf.test.TestCase):
     inp_shape = (3, 3, 3, 3)
     out_shape = (3, 3, 3, 3)
     np.random.seed(1)
-    mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape)).astype(np.float32)
+    mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
+    mat = mat.astype(self.np_dtype)
     with self.test_session() as sess:
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
@@ -296,7 +296,7 @@ class TTMatrixTest(tf.test.TestCase):
             sparse_flat_indices = sparse_flat_indices.astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, matrix_shape)
             sparse_indices = np.vstack(sparse_indices).transpose()
-            values = np.random.randn(num_elements).astype(np.float32)
+            values = np.random.randn(num_elements).astype(self.np_dtype)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
                                        dense_shape=matrix_shape)
             res_actual = ops.flat_inner(tt_1, sparse_2)
@@ -383,11 +383,10 @@ class TTMatrixTest(tf.test.TestCase):
 
     with self.test_session() as sess:
       for tt in [tt_mat, tt_vec]:
-        for dtype in [tf.float16, tf.float32, tf.float64]:
-          casted = ops.cast(tt, dtype)
-          casted_val = sess.run(ops.full(casted))
-          self.assertEqual(dtype, casted.dtype)
-          self.assertTrue(dtype, casted_val.dtype)
+        casted = ops.cast(tt, self.tf_dtype)
+        casted_val = sess.run(ops.full(casted))
+        self.assertEqual(self.tf_dtype, casted.dtype)
+        self.assertTrue(self.tf_dtype, casted_val.dtype)
 
   def testCastIntFloat(self):
     # Tests cast function from int to float for matrices.
@@ -398,16 +397,15 @@ class TTMatrixTest(tf.test.TestCase):
     tt_int = TensorTrain([K_1, K_2, K_3], tt_ranks=[1, 2, 2, 1])
 
     with self.test_session() as sess:
-      for dtype in [tf.float16, tf.float32, tf.float64]:
-        casted = ops.cast(tt_int, dtype)
-        casted_val = sess.run(ops.full(casted))
-        self.assertEqual(dtype, casted.dtype)
-        self.assertTrue(dtype, casted_val.dtype)
+      casted = ops.cast(tt_int, self.tf_dtype)
+      casted_val = sess.run(ops.full(casted))
+      self.assertEqual(self.tf_dtype, casted.dtype)
+      self.assertTrue(self.tf_dtype, casted_val.dtype)
 
   def testUnknownRanksTTMatmul(self):
     # Tests tt_tt_matmul for matrices with unknown ranks
-    K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
-    K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
+    K_1 = tf.placeholder(self.tf_dtype, (1, 2, 2, None))
+    K_2 = tf.placeholder(self.tf_dtype, (None, 3, 3, 1))
     tt_mat = TensorTrain([K_1, K_2])
     res_actual = ops.full(ops.matmul(tt_mat, tt_mat))
     res_desired = tf.matmul(ops.full(tt_mat), ops.full(tt_mat))
@@ -424,8 +422,8 @@ class TTMatrixTest(tf.test.TestCase):
     # Tests tt_tt_matmul for the case  when one matrice has known ranks
     # and the other one doesn't
     np.random.seed(1)
-    K_1 = tf.placeholder(tf.float32, (1, 2, 2, None))
-    K_2 = tf.placeholder(tf.float32, (None, 3, 3, 1))
+    K_1 = tf.placeholder(self.tf_dtype, (1, 2, 2, None))
+    K_2 = tf.placeholder(self.tf_dtype, (None, 3, 3, 1))
     tt_mat_known_ranks = TensorTrain([K_1, K_2], tt_ranks=[1, 3, 1])
     tt_mat = TensorTrain([K_1, K_2])
     res_actual = ops.full(ops.matmul(tt_mat_known_ranks, tt_mat))
@@ -439,13 +437,13 @@ class TTMatrixTest(tf.test.TestCase):
       self.assertAllClose(res_desired_val, res_actual_val)
 
 
-class TTTensorBatchTest(tf.test.TestCase):
+class _TTTensorBatchTest():
 
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(3, 10, rank).astype(np.float32)
-      b = np.random.rand(3, rank, 9).astype(np.float32)
+      a = np.random.rand(3, 10, rank).astype(self.np_dtype)
+      b = np.random.rand(3, rank, 9).astype(self.np_dtype)
       tt_cores = (a.reshape(3, 1, 10, rank), b.reshape(3, rank, 9, 1))
       desired = np.einsum('oib,obj->oij', a, b)
       with self.test_session():
@@ -456,9 +454,9 @@ class TTTensorBatchTest(tf.test.TestCase):
   def testFullTensor3d(self):
     np.random.seed(1)
     for rank_1 in [1, 2]:
-      a = np.random.rand(3, 10, rank_1).astype(np.float32)
-      b = np.random.rand(3, rank_1, 9, 3).astype(np.float32)
-      c = np.random.rand(3, 3, 8).astype(np.float32)
+      a = np.random.rand(3, 10, rank_1).astype(self.np_dtype)
+      b = np.random.rand(3, rank_1, 9, 3).astype(self.np_dtype)
+      c = np.random.rand(3, 3, 8).astype(self.np_dtype)
       tt_cores = (a.reshape(3, 1, 10, rank_1), b, c.reshape((3, 3, 8, 1)))
       # Basically do full by hand.
       desired = np.einsum('oia,oajb,obk->oijk', a, b, c)
@@ -610,8 +608,8 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testMultiplyUnknownBatchSizeBroadcasting(self):
-    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
-    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    c1 = tf.placeholder(self.tf_dtype, [None, 1, 3, 2])
+    c2 = tf.placeholder(self.tf_dtype, [None, 2, 3, 1])
     tt_a = TensorTrainBatch([c1, c2])
     tt_b = initializers.random_tensor_batch((3, 3), tt_rank=3, batch_size=1)
     tt_c = initializers.random_tensor((3, 3), tt_rank=3)
@@ -632,10 +630,10 @@ class TTTensorBatchTest(tf.test.TestCase):
       self.assertAllClose(ca, des_ac)
 
   def testMultiplyTwoBatchesUnknownSize(self):
-    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
-    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
-    c3 = tf.placeholder(tf.float32, [None, 1, 3, 2])
-    c4 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    c1 = tf.placeholder(self.tf_dtype, [None, 1, 3, 2])
+    c2 = tf.placeholder(self.tf_dtype, [None, 2, 3, 1])
+    c3 = tf.placeholder(self.tf_dtype, [None, 1, 3, 2])
+    c4 = tf.placeholder(self.tf_dtype, [None, 2, 3, 1])
     tt_a = TensorTrainBatch([c1, c2])
     tt_b = TensorTrainBatch([c3, c4])
     res_ab = ops.full(ops.multiply(tt_a, tt_b))
@@ -660,8 +658,8 @@ class TTTensorBatchTest(tf.test.TestCase):
         sess.run(to_run, feed_dict=feed_dict_err)
 
   def testMultiplyUnknownSizeBatchAndBatch(self):
-    c1 = tf.placeholder(tf.float32, [None, 1, 3, 2])
-    c2 = tf.placeholder(tf.float32, [None, 2, 3, 1])
+    c1 = tf.placeholder(self.tf_dtype, [None, 1, 3, 2])
+    c2 = tf.placeholder(self.tf_dtype, [None, 2, 3, 1])
     tt_b = initializers.random_tensor_batch((3, 3), tt_rank=2, batch_size=8)
     tt_a = TensorTrainBatch([c1, c2])
     res_ab = ops.full(ops.multiply(tt_a, tt_b))
@@ -722,13 +720,13 @@ class TTTensorBatchTest(tf.test.TestCase):
           self.assertAllClose(b_cores_norms, b_cores_norms[0]
                               * np.ones((len(b_cores))))
 
-class TTMatrixTestBatch(tf.test.TestCase):
+class _TTMatrixTestBatch():
 
   def testFullMatrix2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(3, 2, 3, rank).astype(np.float32)
-      b = np.random.rand(3, rank, 4, 5).astype(np.float32)
+      a = np.random.rand(3, 2, 3, rank).astype(self.np_dtype)
+      b = np.random.rand(3, rank, 4, 5).astype(self.np_dtype)
       tt_cores = (a.reshape(3, 1, 2, 3, rank), b.reshape((3, rank, 4, 5, 1)))
       # Basically do full by hand.
       desired = np.einsum('oijb,obkl->oijkl', a, b)
@@ -743,9 +741,9 @@ class TTMatrixTestBatch(tf.test.TestCase):
   def testFullMatrix3d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(3, 2, 3, rank).astype(np.float32)
-      b = np.random.rand(3, rank, 4, 5, rank).astype(np.float32)
-      c = np.random.rand(3, rank, 2, 2).astype(np.float32)
+      a = np.random.rand(3, 2, 3, rank).astype(self.np_dtype)
+      b = np.random.rand(3, rank, 4, 5, rank).astype(self.np_dtype)
+      c = np.random.rand(3, rank, 2, 2).astype(self.np_dtype)
       tt_cores = (a.reshape(3, 1, 2, 3, rank), b.reshape(3, rank, 4, 5, rank),
                   c.reshape(3, rank, 2, 2, 1))
       # Basically do full by hand.
@@ -844,11 +842,10 @@ class TTMatrixTestBatch(tf.test.TestCase):
                                               batch_size=3)
 
     with self.test_session() as sess:
-      for dtype in [tf.float16, tf.float32, tf.float64]:
-        casted = ops.cast(tt_mat, dtype)
-        casted_val = sess.run(ops.full(casted))
-        self.assertEqual(dtype, casted.dtype)
-        self.assertTrue(dtype, casted_val.dtype)
+      casted = ops.cast(tt_mat, self.tf_dtype)
+      casted_val = sess.run(ops.full(casted))
+      self.assertEqual(self.tf_dtype, casted.dtype)
+      self.assertTrue(self.tf_dtype, casted_val.dtype)
 
   def testCastIntFloat(self):
     # Tests cast function from int to float for matrices.
@@ -860,21 +857,60 @@ class TTMatrixTestBatch(tf.test.TestCase):
     tt_int_batch = shapes.expand_batch_dim(tt_int)
 
     with self.test_session() as sess:
-      for dtype in [tf.float16, tf.float32, tf.float64]:
-        casted = ops.cast(tt_int_batch, dtype)
-        casted_val = sess.run(ops.full(casted))
-        self.assertEqual(dtype, casted.dtype)
-        self.assertTrue(dtype, casted_val.dtype)
+      casted = ops.cast(tt_int_batch, self.tf_dtype)
+      casted_val = sess.run(ops.full(casted))
+      self.assertEqual(self.tf_dtype, casted.dtype)
+      self.assertTrue(self.tf_dtype, casted_val.dtype)
 
 
 def _random_sparse(shape, non_zeros):
   sparse_flat_indices = np.random.choice(np.prod(shape), non_zeros).astype(int)
   sparse_indices = np.unravel_index(sparse_flat_indices, shape)
   sparse_indices = np.vstack(sparse_indices).transpose()
-  values = np.random.randn(non_zeros).astype(np.float32)
+  values = np.random.randn(non_zeros).astype(self.np_dtype)
   sparse = tf.SparseTensor(indices=sparse_indices, values=values,
                              dense_shape=shape)
   return sparse
+
+
+class TTTensorTestFloat32(tf.test.TestCase, _TTTensorTest):
+  np_dtype = np.float32
+  tf_dtype = tf.float32
+
+
+class TTTensorTestFloat64(tf.test.TestCase, _TTTensorTest):
+  np_dtype = np.float64
+  tf_dtype = tf.float64
+
+
+class TTMatrixTestFloat32(tf.test.TestCase, _TTMatrixTest):
+  np_dtype = np.float32
+  tf_dtype = tf.float32
+
+
+class TTMatrixTestFloat64(tf.test.TestCase, _TTMatrixTest):
+  np_dtype = np.float64
+  tf_dtype = tf.float64
+
+
+class TTTensorBatchTestFloat32(tf.test.TestCase, _TTTensorBatchTest):
+  np_dtype = np.float32
+  tf_dtype = tf.float32
+
+
+class TTTensorBatchTestFloat64(tf.test.TestCase, _TTTensorBatchTest):
+  np_dtype = np.float64
+  tf_dtype = tf.float64
+
+class TTMatrixTestBatchFloat32(tf.test.TestCase, _TTMatrixTestBatch):
+  np_dtype = np.float32
+  tf_dtype = tf.float32
+
+
+class TTMatrixTestBatchFloat64(tf.test.TestCase, _TTMatrixTestBatch):
+  np_dtype = np.float64
+  tf_dtype = tf.float64
+
 
 if __name__ == "__main__":
   tf.test.main()
