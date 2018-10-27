@@ -68,7 +68,8 @@ class _TTTensorTest():
       for shape in shape_list:
         for rank in rank_list:
           for num_elements in [1, 10]:
-            tt_1 = initializers.random_tensor(shape, tt_rank=rank)
+            tt_1 = initializers.random_tensor(shape, tt_rank=rank,
+                                              dtype=self.tf_dtype)
             sparse_flat_indices = np.random.choice(np.prod(shape), num_elements)
             sparse_flat_indices = sparse_flat_indices.astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, shape)
