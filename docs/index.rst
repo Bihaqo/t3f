@@ -14,4 +14,5 @@ t3f is implemented on top of TensorFlow which gives it a few nice properties:
     :caption: Getting started
 
     installation
+    quick_start
     api
