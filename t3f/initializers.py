@@ -437,9 +437,9 @@ def ones_like(tt):
   else:
     shape = shapes.lazy_raw_shape(tt)
     if tt.is_tt_matrix():
-      return matrix_ones(shape)
+      return matrix_ones(shape, dtype=tt.dtype)
     else:
-      return tensor_ones(shape[0, :])
+      return tensor_ones(shape[0, :], dtype=tt.dtype)
 
 
 def zeros_like(tt):
@@ -461,9 +461,9 @@ def zeros_like(tt):
   else:
     shape = shapes.lazy_raw_shape(tt)
     if tt.is_tt_matrix():
-      return matrix_zeros(shape)
+      return matrix_zeros(shape, dtype=tt.dtype)
     else:
-      return tensor_zeros(shape[0, :])
+      return tensor_zeros(shape[0, :], dtype=tt.dtype)
 
 
 def random_tensor(shape, tt_rank=2, mean=0., stddev=1., dtype=tf.float32):
