@@ -47,8 +47,10 @@ class _TTTensorTest():
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt_1 = initializers.random_tensor(shape, tt_rank=rank)
-          tt_2 = initializers.random_tensor(shape, tt_rank=rank)
+          tt_1 = initializers.random_tensor(shape, tt_rank=rank,
+                                            dtype=self.tf_dtype)
+          tt_2 = initializers.random_tensor(shape, tt_rank=rank,
+                                            dtype=self.tf_dtype)
           res_actual = ops.flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
@@ -84,8 +86,10 @@ class _TTTensorTest():
 
   def testAdd(self):
     # Sum two TT-tensors.
-    tt_a = initializers.random_tensor((2, 1, 3, 4), tt_rank=2)
-    tt_b = initializers.random_tensor((2, 1, 3, 4), tt_rank=[1, 2, 4, 3, 1])
+    tt_a = initializers.random_tensor((2, 1, 3, 4), tt_rank=2,
+                                      dtype=self.tf_dtype)
+    tt_b = initializers.random_tensor((2, 1, 3, 4), tt_rank=[1, 2, 4, 3, 1],
+                                      dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_a + tt_b)
@@ -97,8 +101,10 @@ class _TTTensorTest():
 
   def testMultiply(self):
     # Multiply two TT-tensors.
-    tt_a = initializers.random_tensor((1, 2, 3, 4), tt_rank=2)
-    tt_b = initializers.random_tensor((1, 2, 3, 4), tt_rank=[1, 1, 4, 3, 1])
+    tt_a = initializers.random_tensor((1, 2, 3, 4), tt_rank=2,
+                                      dtype=self.tf_dtype)
+    tt_b = initializers.random_tensor((1, 2, 3, 4), tt_rank=[1, 1, 4, 3, 1],
+                                      dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.multiply(tt_a, tt_b))
       res_actual2 = ops.full(tt_a * tt_b)
@@ -110,7 +116,8 @@ class _TTTensorTest():
 
   def testMultiplyByNumber(self):
     # Multiply a tensor by a number.
-    tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1))
+    tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1),
+                                    dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.multiply(tt, 4))
       res_actual2 = ops.full(4.0 * tt)
@@ -129,7 +136,8 @@ class _TTTensorTest():
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt = initializers.random_tensor(shape, tt_rank=rank)
+          tt = initializers.random_tensor(shape, tt_rank=rank,
+                                          dtype=self.tf_dtype)
           norm_sq_actual = ops.frobenius_norm_squared(tt)
           norm_actual = ops.frobenius_norm(tt)
           vars = [norm_sq_actual, norm_actual, ops.full(tt)]
@@ -166,7 +174,8 @@ class _TTTensorTest():
       self.assertTrue(self.tf_dtype, casted_val.dtype)
 
   def testCoreRenorm(self):
-      a = initializers.random_tensor(3 * (10,), tt_rank=7)
+      a = initializers.random_tensor(3 * (10,), tt_rank=7,
+                                     dtype=self.tf_dtype)
       b = ops.renormalize_tt_cores(a)
       var_list = [ops.full(a), ops.full(b)]
       with self.test_session() as sess:
@@ -223,8 +232,10 @@ class _TTMatrixTest():
     sum_shape = (4, 3, 5)
     right_shape = (4, 4, 4)
     with self.test_session() as sess:
-      tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3)
-      tt_mat_2 = initializers.random_matrix((sum_shape, right_shape))
+      tt_mat_1 = initializers.random_matrix((left_shape, sum_shape), tt_rank=3,
+                                            dtype=self.tf_dtype)
+      tt_mat_2 = initializers.random_matrix((sum_shape, right_shape),
+                                            dtype=self.tf_dtype)
       res_actual = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
@@ -241,7 +252,8 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
-      tt_mat = initializers.random_matrix((out_shape, inp_shape))
+      tt_mat = initializers.random_matrix((out_shape, inp_shape),
+                                          dtype=self.tf_dtype)
       res_actual = ops.matmul(tt_mat, tf_vec)
       res_desired = tf.matmul(ops.full(tt_mat), tf_vec)
       res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
@@ -257,7 +269,8 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
-      tt_vec = initializers.random_matrix((inp_shape, None))
+      tt_vec = initializers.random_matrix((inp_shape, None),
+                                          dtype=self.tf_dtype)
       res_actual = ops.matmul(tf_mat, tt_vec)
       res_desired = tf.matmul(tf_mat, ops.full(tt_vec))
       res_actual_val, res_desired_val = sess.run([res_actual, res_desired])
@@ -271,8 +284,10 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       for shape in shape_list:
         for rank in rank_list:
-          tt_1 = initializers.random_matrix(shape, tt_rank=rank)
-          tt_2 = initializers.random_matrix(shape, tt_rank=rank)
+          tt_1 = initializers.random_matrix(shape, tt_rank=rank,
+                                            dtype=self.tf_dtype)
+          tt_2 = initializers.random_matrix(shape, tt_rank=rank,
+                                            dtype=self.tf_dtype)
           res_actual = ops.flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (-1, 1))
@@ -291,7 +306,8 @@ class _TTMatrixTest():
       for tensor_shape in shape_list:
         for rank in rank_list:
           for num_elements in [1, 9]:
-            tt_1 = initializers.random_matrix(tensor_shape, tt_rank=rank)
+            tt_1 = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                              dtype=self.tf_dtype)
             matrix_shape = np.prod(tensor_shape[0]), np.prod(tensor_shape[1])
             sparse_flat_indices = np.random.choice(np.prod(matrix_shape), num_elements)
             sparse_flat_indices = sparse_flat_indices.astype(int)
@@ -313,7 +329,8 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       for tensor_shape in shape_list:
         for rank in rank_list:
-          tt = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          tt = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                          dtype=self.tf_dtype)
           norm_sq_actual = ops.frobenius_norm_squared(tt)
           norm_actual = ops.frobenius_norm(tt)
           vars = [norm_sq_actual, norm_actual, ops.full(tt)]
@@ -333,7 +350,8 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       for tensor_shape in shape_list:
         for rank in rank_list:
-          tt = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          tt = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                          dtype=self.tf_dtype)
           res_actual = ops.full(ops.transpose(tt))
           res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
           self.assertAllClose(tt_val.transpose(), res_actual_val)
@@ -346,9 +364,12 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       for tensor_shape in shape_list:
         for rank in rank_list:
-          A = initializers.random_matrix(tensor_shape, tt_rank=rank)
-          b = initializers.random_matrix((tensor_shape[0], None), tt_rank=rank)
-          c = initializers.random_matrix((tensor_shape[1], None), tt_rank=rank)
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                         dtype=self.tf_dtype)
+          b = initializers.random_matrix((tensor_shape[0], None), tt_rank=rank,
+                                         dtype=self.tf_dtype)
+          c = initializers.random_matrix((tensor_shape[1], None), tt_rank=rank,
+                                         dtype=self.tf_dtype)
           res_actual = ops.quadratic_form(A, b, c)
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
@@ -364,11 +385,14 @@ class _TTMatrixTest():
     with self.test_session() as sess:
       for tensor_shape in shape_list:
         for rank in rank_list:
-          A = initializers.random_matrix(tensor_shape, tt_rank=rank)
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                         dtype=self.tf_dtype)
           b = initializers.random_matrix_batch((tensor_shape[0], None),
-                                               tt_rank=rank, batch_size=5)
+                                               tt_rank=rank, batch_size=5,
+                                               dtype=self.tf_dtype)
           c = initializers.random_matrix_batch((tensor_shape[1], None),
-                                               tt_rank=rank, batch_size=5)
+                                               tt_rank=rank, batch_size=5,
+                                               dtype=self.tf_dtype)
           res_actual = ops.quadratic_form(A, b, c)
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
@@ -475,9 +499,11 @@ class _TTTensorBatchTest():
       for shape in shape_list:
         for rank in rank_list:
           tt_1 = initializers.random_tensor_batch(shape, tt_rank=rank,
-                                                  batch_size=2)
+                                                  batch_size=2,
+                                                  dtype=self.tf_dtype)
           tt_2 = initializers.random_tensor_batch(shape, tt_rank=rank,
-                                                  batch_size=2)
+                                                  batch_size=2,
+                                                  dtype=self.tf_dtype)
           res_actual = ops.flat_inner(tt_1, tt_2)
           tt_1_full = tf.reshape(ops.full(tt_1), (2, 1, -1))
           tt_2_full = tf.reshape(ops.full(tt_2), (2, -1, 1))
@@ -487,8 +513,10 @@ class _TTTensorBatchTest():
 
   def testFlatInnerTTTensbyTTTensBroadcasting(self):
     # Inner product between two batch TT-tensors with broadcasting.
-    tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=1)
-    tt_2 = initializers.random_tensor_batch((2, 3, 4), batch_size=3)
+    tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=1,
+                                            dtype=self.tf_dtype)
+    tt_2 = initializers.random_tensor_batch((2, 3, 4), batch_size=3,
+                                            dtype=self.tf_dtype)
     res_actual_1 = ops.flat_inner(tt_1, tt_2)
     res_actual_2 = ops.flat_inner(tt_2, tt_1)
     res_desired = tf.einsum('ijk,oijk->o', ops.full(tt_1[0]), ops.full(tt_2))
@@ -505,9 +533,10 @@ class _TTTensorBatchTest():
 
   def testAddSameBatchSize(self):
     # Sum two TT-tensors with the same batch size.
-    tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=3)
+    tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=3,
+                                            dtype=self.tf_dtype)
     tt_b = initializers.random_tensor_batch((2, 1, 4), tt_rank=[1, 2, 4, 1],
-                                            batch_size=3)
+                                            batch_size=3, dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_a + tt_b)
@@ -519,9 +548,10 @@ class _TTTensorBatchTest():
 
   def testAddBroadcasting(self):
     # Sum two TT-tensors with broadcasting.
-    tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=1)
+    tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=1,
+                                            dtype=self.tf_dtype)
     tt_b = initializers.random_tensor_batch((2, 1, 4), tt_rank=[1, 2, 4, 1],
-                                            batch_size=3)
+                                            batch_size=3, dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_b + tt_a)
@@ -534,7 +564,7 @@ class _TTTensorBatchTest():
   def testMultiplyByNumber(self):
     # Multiply batch of tensors by a number.
     tt = initializers.random_tensor_batch((1, 2, 3), tt_rank=(1, 2, 3, 1),
-                                          batch_size=3)
+                                          batch_size=3, dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.multiply(tt, 4))
       res_actual2 = ops.full(4.0 * tt)
@@ -546,7 +576,8 @@ class _TTTensorBatchTest():
 
   def testFrobeniusNormDifferentiableBatch(self):
     with self.test_session() as sess:
-      tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+      tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
+                                            dtype=self.tf_dtype)
       norm_sq_diff = ops.frobenius_norm_squared(tt, differentiable=True)
       variables = [norm_sq_diff, ops.full(tt)]
       norm_sq_diff_val, tt_full = sess.run(variables)
@@ -556,7 +587,8 @@ class _TTTensorBatchTest():
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
     with self.test_session() as sess:
-      tt = initializers.tensor_batch_with_random_cores((2, 1, 3), batch_size=3)
+      tt = initializers.tensor_batch_with_random_cores((2, 1, 3), batch_size=3,
+                                                       dtype=self.tf_dtype)
       norm_sq_actual = ops.frobenius_norm_squared(tt)
       norm_actual = ops.frobenius_norm(tt)
       vars = [norm_sq_actual, norm_actual, ops.full(tt)]
@@ -569,8 +601,9 @@ class _TTTensorBatchTest():
                           rtol=1e-5)
 
   def testMultiplyBatchByTensor(self):
-    tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2)
-    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2, dtype=self.tf_dtype)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
+                                            dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.multiply(tt_a, tt_b))
       res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
@@ -581,8 +614,10 @@ class _TTTensorBatchTest():
       self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testMultiplyBatchByBatch(self):
-    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
-    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
+                                            dtype=self.tf_dtype)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
+                                            dtype=self.tf_dtype)
     res_actual = ops.full(ops.multiply(tt_a, tt_b))
     res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
     res_desired = ops.full(tt_a) * ops.full(tt_b)
@@ -597,8 +632,10 @@ class _TTTensorBatchTest():
       self.assertAllClose(res_actual2_val, res_desired_val)
 
   def testMultiplyBroadcasting(self):
-    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1)
-    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5)
+    tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1,
+                                            dtype=self.tf_dtype)
+    tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
+                                            dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.multiply(tt_a, tt_b))
       res_actual2 = ops.full(ops.multiply(tt_b, tt_a))
@@ -612,8 +649,10 @@ class _TTTensorBatchTest():
     c1 = tf.placeholder(self.tf_dtype, [None, 1, 3, 2])
     c2 = tf.placeholder(self.tf_dtype, [None, 2, 3, 1])
     tt_a = TensorTrainBatch([c1, c2])
-    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=3, batch_size=1)
-    tt_c = initializers.random_tensor((3, 3), tt_rank=3)
+    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=3, batch_size=1,
+                                            dtype=self.tf_dtype)
+    tt_c = initializers.random_tensor((3, 3), tt_rank=3,
+                                      dtype=self.tf_dtype)
     res_ab = ops.full(ops.multiply(tt_a, tt_b))
     res_ba = ops.full(ops.multiply(tt_b, tt_a))
     res_ac = ops.full(ops.multiply(tt_a, tt_c))
@@ -661,7 +700,8 @@ class _TTTensorBatchTest():
   def testMultiplyUnknownSizeBatchAndBatch(self):
     c1 = tf.placeholder(self.tf_dtype, [None, 1, 3, 2])
     c2 = tf.placeholder(self.tf_dtype, [None, 2, 3, 1])
-    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=2, batch_size=8)
+    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=2, batch_size=8,
+                                            dtype=self.tf_dtype)
     tt_a = TensorTrainBatch([c1, c2])
     res_ab = ops.full(ops.multiply(tt_a, tt_b))
     res_ba = ops.full(ops.multiply(tt_b, tt_a))
@@ -683,7 +723,7 @@ class _TTTensorBatchTest():
   def testGatherND(self):
     idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
     pl_idx = tf.placeholder(tf.int32, [None, 3])
-    tt = initializers.random_tensor((3, 4, 5), tt_rank=2)
+    tt = initializers.random_tensor((3, 4, 5), tt_rank=2, dtype=self.tf_dtype)
     res_np = ops.gather_nd(tt, idx)
     res_pl = ops.gather_nd(tt, pl_idx)
     res_desired = tf.gather_nd(ops.full(tt), idx)
@@ -696,7 +736,8 @@ class _TTTensorBatchTest():
   def testGatherNDBatch(self):
     idx = [[0, 0, 0, 0], [1, 0, 1, 2], [0, 0, 1, 0]]
     pl_idx = tf.placeholder(tf.int32, [None, 4])
-    tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=2)
+    tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=2,
+                                          dtype=self.tf_dtype)
     res_np = ops.gather_nd(tt, idx)
     res_pl = ops.gather_nd(tt, pl_idx)
     res_desired = tf.gather_nd(ops.full(tt), idx)
@@ -707,7 +748,8 @@ class _TTTensorBatchTest():
       self.assertAllClose(res_pl_v, res_pl_v)
 
   def testCoreRenormBatch(self):
-      a = initializers.random_tensor_batch(3 * (10,), tt_rank=7, batch_size=5)
+      a = initializers.random_tensor_batch(3 * (10,), tt_rank=7, batch_size=5,
+                                           dtype=self.tf_dtype)
       b = ops.renormalize_tt_cores(a)
       var_list = [ops.full(a), ops.full(b)]
 
@@ -765,9 +807,11 @@ class _TTMatrixTestBatch():
     right_shape = (4, 4)
     with self.test_session() as sess:
       tt_mat_1 = initializers.random_matrix_batch((left_shape, sum_shape),
-                                                  tt_rank=3, batch_size=3)
+                                                  tt_rank=3, batch_size=3,
+                                                  dtype=self.tf_dtype)
       tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape),
-                                                  batch_size=3)
+                                                  batch_size=3,
+                                                  dtype=self.tf_dtype)
       res_actual = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
       res_desired = tf.matmul(ops.full(tt_mat_1), ops.full(tt_mat_2))
@@ -783,8 +827,10 @@ class _TTMatrixTestBatch():
     right_shape = (4, 4)
     with self.test_session() as sess:
       tt_mat_1 = initializers.random_matrix_batch((left_shape, sum_shape),
-                                                  tt_rank=3, batch_size=3)
-      tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape))
+                                                  tt_rank=3, batch_size=3,
+                                                  dtype=self.tf_dtype)
+      tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape),
+                                                  dtype=self.tf_dtype)
       # TT-batch by one element TT-batch
       res_actual = ops.matmul(tt_mat_1, tt_mat_2)
       res_actual = ops.full(res_actual)
@@ -802,7 +848,8 @@ class _TTMatrixTestBatch():
   def testTranspose(self):
     # Transpose a batch of TT-matrices.
     with self.test_session() as sess:
-      tt = initializers.random_matrix_batch(((2, 3, 4), (2, 2, 2)), batch_size=2)
+      tt = initializers.random_matrix_batch(((2, 3, 4), (2, 2, 2)),
+                                            batch_size=2, dtype=self.tf_dtype)
       res_actual = ops.full(ops.transpose(tt))
       res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
       self.assertAllClose(tt_val.transpose((0, 2, 1)), res_actual_val)
@@ -810,9 +857,10 @@ class _TTMatrixTestBatch():
   def testAddSameBatchSize(self):
     # Sum two TT-matrices with the same batch size.
     tt_a = initializers.random_matrix_batch(((2, 1, 4), None), tt_rank=2,
-                                            batch_size=3)
+                                            batch_size=3, dtype=self.tf_dtype)
     tt_b = initializers.random_matrix_batch(((2, 1, 4), None),
-                                            tt_rank=[1, 2, 4, 1], batch_size=3)
+                                            tt_rank=[1, 2, 4, 1], batch_size=3,
+                                            dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_a + tt_b)
@@ -825,9 +873,10 @@ class _TTMatrixTestBatch():
   def testAddBroadcasting(self):
     # Sum two TT-matrices with broadcasting.
     tt_a = initializers.random_matrix_batch(((2, 1, 4), (2, 2, 2)), tt_rank=2,
-                                            batch_size=3)
+                                            batch_size=3, dtype=self.tf_dtype)
     tt_b = initializers.random_matrix_batch(((2, 1, 4), (2, 2, 2)),
-                                            tt_rank=[1, 2, 4, 1], batch_size=1)
+                                            tt_rank=[1, 2, 4, 1], batch_size=1,
+                                            dtype=self.tf_dtype)
     with self.test_session() as sess:
       res_actual = ops.full(ops.add(tt_a, tt_b))
       res_actual2 = ops.full(tt_b + tt_a)
