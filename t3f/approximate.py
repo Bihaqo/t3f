@@ -73,6 +73,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None):
   is_batch_output = False
   if coef is not None:
     coef = tf.convert_to_tensor(coef)
+    coef = tf.cast(coef, tt_batch.dtype)
     if len(coef.get_shape()) == 1:
       tt_batch = batch_ops.multiply_along_batch_dim(tt_batch, coef)
     elif len(coef.get_shape()) == 2:
