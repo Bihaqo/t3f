@@ -952,6 +952,7 @@ class TTTensorBatchTestFloat64(tf.test.TestCase, _TTTensorBatchTest):
   np_dtype = np.float64
   tf_dtype = tf.float64
 
+
 class TTMatrixTestBatchFloat32(tf.test.TestCase, _TTMatrixTestBatch):
   np_dtype = np.float32
   tf_dtype = tf.float32
