@@ -132,7 +132,7 @@ class _RiemannianTest():
                                             dtype=self.tf_dtype)
     tangent_tens = initializers.random_tensor((2, 3, 4), 4,
                                               dtype=self.tf_dtype)
-    project_sum = riemannian.project_sum(tens, tangent_tens, tf.eye(4))
+    project_sum = riemannian.project_sum(tens, tangent_tens, np.eye(4))
     project = riemannian.project(tens, tangent_tens)
     with self.test_session() as sess:
       res = sess.run((ops.full(project_sum), ops.full(project)))
