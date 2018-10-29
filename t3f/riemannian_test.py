@@ -32,7 +32,7 @@ class _RiemannianTest():
         [[-0.19279465],
          [ 0.524976  ],
          [-0.40149197]]])
-    convert = lambda t: np.array(t, dtype=self.np_dtype)
+    convert = lambda t: np.array(t, dtype=self.tf_dtype.as_numpy_dtype)
     tangent_tens_cores = list([convert(t) for t in tangent_tens_cores])
     tangent_tens = TensorTrain(tangent_tens_cores, (4, 3), (1, 2, 1))
     tens_cores = ([[[-1.01761142,  0.36075896, -0.2493624 ],
@@ -60,7 +60,7 @@ class _RiemannianTest():
     with self.test_session() as sess:
       proj_v = proj_full.eval()
       self.assertAllClose(desired_projection, proj_v)
-      self.assertEqual(self.np_dtype, proj_v.dtype)
+      self.assertEqual(self.tf_dtype.as_numpy_dtype, proj_v.dtype)
 
   def testProjectSum(self):
     # Test projecting a batch of TT-tensors.
@@ -98,7 +98,7 @@ class _RiemannianTest():
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
                                             dtype=self.tf_dtype)
     np.random.seed(0)
-    weights = np.random.randn(4, 2).astype(self.np_dtype)
+    weights = np.random.randn(4, 2).astype(self.tf_dtype.as_numpy_dtype)
     tangent_tens = initializers.random_tensor((2, 3, 4), 4,
                                               dtype=self.tf_dtype)
     weighted_sum_1 = weights[0, 0] * tens[0] + weights[1, 0] * tens[1] +\
@@ -276,12 +276,10 @@ class _RiemannianTest():
 
 
 class RiemannianTestFloat32(tf.test.TestCase, _RiemannianTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class RiemannianTestFloat64(tf.test.TestCase, _RiemannianTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

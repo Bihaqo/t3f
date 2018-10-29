@@ -13,8 +13,8 @@ class _TTTensorTest():
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(10, rank).astype(self.np_dtype)
-      b = np.random.rand(rank, 9).astype(self.np_dtype)
+      a = np.random.rand(10, rank).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(rank, 9).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(1, 10, rank), b.reshape(rank, 9, 1))
       desired = np.dot(a, b)
       with self.test_session():
@@ -25,9 +25,9 @@ class _TTTensorTest():
   def testFullTensor3d(self):
     np.random.seed(1)
     for rank_1 in [1, 2]:
-      a = np.random.rand(10, rank_1).astype(self.np_dtype)
-      b = np.random.rand(rank_1, 9, 3).astype(self.np_dtype)
-      c = np.random.rand(3, 8).astype(self.np_dtype)
+      a = np.random.rand(10, rank_1).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(rank_1, 9, 3).astype(self.tf_dtype.as_numpy_dtype)
+      c = np.random.rand(3, 8).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(1, 10, rank_1), b, c.reshape((3, 8, 1)))
       # Basically do full by hand.
       desired = a.dot(b.reshape((rank_1, -1)))
@@ -76,7 +76,8 @@ class _TTTensorTest():
             sparse_flat_indices = sparse_flat_indices.astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, shape)
             sparse_indices = np.vstack(sparse_indices).transpose()
-            values = np.random.randn(num_elements).astype(self.np_dtype)
+            values = np.random.randn(num_elements)
+            values = values.astype(self.tf_dtype.as_numpy_dtype)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
                                        dense_shape=shape)
             res_actual = ops.flat_inner(tt_1, sparse_2)
@@ -194,8 +195,8 @@ class _TTMatrixTest():
   def testFullMatrix2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(2, 3, rank).astype(self.np_dtype)
-      b = np.random.rand(rank, 4, 5).astype(self.np_dtype)
+      a = np.random.rand(2, 3, rank).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(rank, 4, 5).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(1, 2, 3, rank), b.reshape((rank, 4, 5, 1)))
       # Basically do full by hand.
       desired = a.reshape((-1, rank)).dot(b.reshape((rank, -1)))
@@ -210,9 +211,9 @@ class _TTMatrixTest():
   def testFullMatrix3d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(2, 3, rank).astype(self.np_dtype)
-      b = np.random.rand(rank, 4, 5, rank).astype(self.np_dtype)
-      c = np.random.rand(rank, 2, 2).astype(self.np_dtype)
+      a = np.random.rand(2, 3, rank).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(rank, 4, 5, rank).astype(self.tf_dtype.as_numpy_dtype)
+      c = np.random.rand(rank, 2, 2).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(1, 2, 3, rank), b.reshape(rank, 4, 5, rank),
                   c.reshape(rank, 2, 2, 1))
       # Basically do full by hand.
@@ -248,7 +249,7 @@ class _TTMatrixTest():
     inp_shape = (2, 3, 4)
     out_shape = (3, 4, 3)
     np.random.seed(1)
-    vec = np.random.rand(np.prod(inp_shape), 1).astype(self.np_dtype)
+    vec = np.random.rand(np.prod(inp_shape), 1).astype(self.tf_dtype.as_numpy_dtype)
     with self.test_session() as sess:
       tf_vec = tf.constant(vec)
       tf.set_random_seed(1)
@@ -265,7 +266,7 @@ class _TTMatrixTest():
     out_shape = (3, 3, 3, 3)
     np.random.seed(1)
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
-    mat = mat.astype(self.np_dtype)
+    mat = mat.astype(self.tf_dtype.as_numpy_dtype)
     with self.test_session() as sess:
       tf_mat = tf.constant(mat)
       tf.set_random_seed(1)
@@ -313,7 +314,7 @@ class _TTMatrixTest():
             sparse_flat_indices = sparse_flat_indices.astype(int)
             sparse_indices = np.unravel_index(sparse_flat_indices, matrix_shape)
             sparse_indices = np.vstack(sparse_indices).transpose()
-            values = np.random.randn(num_elements).astype(self.np_dtype)
+            values = np.random.randn(num_elements).astype(self.tf_dtype.as_numpy_dtype)
             sparse_2 = tf.SparseTensor(indices=sparse_indices, values=values,
                                        dense_shape=matrix_shape)
             res_actual = ops.flat_inner(tt_1, sparse_2)
@@ -467,8 +468,8 @@ class _TTTensorBatchTest():
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(3, 10, rank).astype(self.np_dtype)
-      b = np.random.rand(3, rank, 9).astype(self.np_dtype)
+      a = np.random.rand(3, 10, rank).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(3, rank, 9).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(3, 1, 10, rank), b.reshape(3, rank, 9, 1))
       desired = np.einsum('oib,obj->oij', a, b)
       with self.test_session():
@@ -479,9 +480,9 @@ class _TTTensorBatchTest():
   def testFullTensor3d(self):
     np.random.seed(1)
     for rank_1 in [1, 2]:
-      a = np.random.rand(3, 10, rank_1).astype(self.np_dtype)
-      b = np.random.rand(3, rank_1, 9, 3).astype(self.np_dtype)
-      c = np.random.rand(3, 3, 8).astype(self.np_dtype)
+      a = np.random.rand(3, 10, rank_1).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(3, rank_1, 9, 3).astype(self.tf_dtype.as_numpy_dtype)
+      c = np.random.rand(3, 3, 8).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(3, 1, 10, rank_1), b, c.reshape((3, 3, 8, 1)))
       # Basically do full by hand.
       desired = np.einsum('oia,oajb,obk->oijk', a, b, c)
@@ -768,8 +769,8 @@ class _TTMatrixTestBatch():
   def testFullMatrix2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(3, 2, 3, rank).astype(self.np_dtype)
-      b = np.random.rand(3, rank, 4, 5).astype(self.np_dtype)
+      a = np.random.rand(3, 2, 3, rank).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(3, rank, 4, 5).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(3, 1, 2, 3, rank), b.reshape((3, rank, 4, 5, 1)))
       # Basically do full by hand.
       desired = np.einsum('oijb,obkl->oijkl', a, b)
@@ -784,9 +785,9 @@ class _TTMatrixTestBatch():
   def testFullMatrix3d(self):
     np.random.seed(1)
     for rank in [1, 2]:
-      a = np.random.rand(3, 2, 3, rank).astype(self.np_dtype)
-      b = np.random.rand(3, rank, 4, 5, rank).astype(self.np_dtype)
-      c = np.random.rand(3, rank, 2, 2).astype(self.np_dtype)
+      a = np.random.rand(3, 2, 3, rank).astype(self.tf_dtype.as_numpy_dtype)
+      b = np.random.rand(3, rank, 4, 5, rank).astype(self.tf_dtype.as_numpy_dtype)
+      c = np.random.rand(3, rank, 2, 2).astype(self.tf_dtype.as_numpy_dtype)
       tt_cores = (a.reshape(3, 1, 2, 3, rank), b.reshape(3, rank, 4, 5, rank),
                   c.reshape(3, rank, 2, 2, 1))
       # Basically do full by hand.
@@ -917,49 +918,41 @@ def _random_sparse(shape, non_zeros):
   sparse_flat_indices = np.random.choice(np.prod(shape), non_zeros).astype(int)
   sparse_indices = np.unravel_index(sparse_flat_indices, shape)
   sparse_indices = np.vstack(sparse_indices).transpose()
-  values = np.random.randn(non_zeros).astype(self.np_dtype)
+  values = np.random.randn(non_zeros).astype(self.tf_dtype.as_numpy_dtype)
   sparse = tf.SparseTensor(indices=sparse_indices, values=values,
                              dense_shape=shape)
   return sparse
 
 
 class TTTensorTestFloat32(tf.test.TestCase, _TTTensorTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class TTTensorTestFloat64(tf.test.TestCase, _TTTensorTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 
 class TTMatrixTestFloat32(tf.test.TestCase, _TTMatrixTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class TTMatrixTestFloat64(tf.test.TestCase, _TTMatrixTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 
 class TTTensorBatchTestFloat32(tf.test.TestCase, _TTTensorBatchTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class TTTensorBatchTestFloat64(tf.test.TestCase, _TTTensorBatchTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 
 class TTMatrixTestBatchFloat32(tf.test.TestCase, _TTMatrixTestBatch):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class TTMatrixTestBatchFloat64(tf.test.TestCase, _TTMatrixTestBatch):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

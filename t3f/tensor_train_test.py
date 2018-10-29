@@ -144,12 +144,10 @@ class _TensorTrainTest():
 
 
 class TensorTrainTestFloat32(tf.test.TestCase, _TensorTrainTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class TensorTrainTestFloat64(tf.test.TestCase, _TensorTrainTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

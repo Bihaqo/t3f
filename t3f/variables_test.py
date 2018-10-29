@@ -84,12 +84,10 @@ class _VariablesTest():
 
 
 class VariablesTestFloat32(tf.test.TestCase, _VariablesTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class VariablesTestFloat64(tf.test.TestCase, _VariablesTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

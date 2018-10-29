@@ -12,7 +12,7 @@ class _DecompositionsTest():
   def testTTTensor(self):
     shape = (2, 1, 4, 3)
     np.random.seed(1)
-    tens = np.random.rand(*shape).astype(self.np_dtype)
+    tens = np.random.rand(*shape).astype(self.tf_dtype.as_numpy_dtype)
     tf_tens = tf.constant(tens)
     tt_tens = decompositions.to_tt_tensor(tf_tens, max_tt_rank=3)
     with self.test_session():
@@ -33,8 +33,8 @@ class _DecompositionsTest():
     # Test that a tensor of ones and of zeros can be converted into TT with
     # TT-rank 1.
     shape = (2, 1, 4, 3)
-    tens_arr = (np.zeros(shape).astype(self.np_dtype),
-                np.ones(shape).astype(self.np_dtype))
+    tens_arr = (np.zeros(shape).astype(self.tf_dtype.as_numpy_dtype),
+                np.ones(shape).astype(self.tf_dtype.as_numpy_dtype))
     for tens in tens_arr:
       tf_tens = tf.constant(tens)
       tt_tens = decompositions.to_tt_tensor(tf_tens, max_tt_rank=1)
@@ -56,7 +56,7 @@ class _DecompositionsTest():
     vec_shape = (2, 1, 4, 3)
     np.random.seed(1)
     rows = np.prod(vec_shape)
-    vec = np.random.rand(rows, 1).astype(self.np_dtype)
+    vec = np.random.rand(rows, 1).astype(self.tf_dtype.as_numpy_dtype)
     tf_vec = tf.constant(vec)
     tt_vec = decompositions.to_tt_matrix(tf_vec, (vec_shape, None))
     with self.test_session():
@@ -66,7 +66,7 @@ class _DecompositionsTest():
     # Test if a composite rank (list of ranks) can be used for decomposition
     # for tensor.
     np.random.seed(1)
-    np_tensor = np.random.rand(2, 3, 3, 1).astype(self.np_dtype)
+    np_tensor = np.random.rand(2, 3, 3, 1).astype(self.tf_dtype.as_numpy_dtype)
     tf_tensor = tf.constant(np_tensor)
 
     tt_ranks = [1, 2, 3, 3, 1]
@@ -81,7 +81,7 @@ class _DecompositionsTest():
     out_shape = (1, 2, 2, 1)
     np.random.seed(1)
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
-    mat = mat.astype(self.np_dtype)
+    mat = mat.astype(self.tf_dtype.as_numpy_dtype)
     tf_mat = tf.constant(mat)
     tt_ranks = [10, 20, 30, 40, 30]
     tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
@@ -96,7 +96,7 @@ class _DecompositionsTest():
     out_shape = (3, 3, 2, 3)
     np.random.seed(1)
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
-    mat = mat.astype(self.np_dtype)
+    mat = mat.astype(self.tf_dtype.as_numpy_dtype)
     tf_mat = tf.constant(mat)
     tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
                                          max_tt_rank=90)
@@ -204,22 +204,18 @@ class _DecompositionsBatchTest():
 
 
 class DecompositionsTestFloat32(tf.test.TestCase, _DecompositionsTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class DecompositionsTestFloat64(tf.test.TestCase, _DecompositionsTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 
 class DecompositionsBatchTestFloat32(tf.test.TestCase, _DecompositionsBatchTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class DecompositionsBatchTestFloat64(tf.test.TestCase, _DecompositionsBatchTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

@@ -11,8 +11,8 @@ class _InitializersTest():
     tt_ones = initializers.tensor_ones([2, 3, 4], dtype=self.tf_dtype)
     tt_zeros = initializers.tensor_zeros([2, 3, 4], dtype=self.tf_dtype)
 
-    ones_desired = np.ones((2, 3, 4), dtype=self.np_dtype)
-    zeros_desired = np.zeros((2, 3, 4), dtype=self.np_dtype)
+    ones_desired = np.ones((2, 3, 4), dtype=self.tf_dtype.as_numpy_dtype)
+    zeros_desired = np.zeros((2, 3, 4), dtype=self.tf_dtype.as_numpy_dtype)
     with self.test_session() as sess:
       tt_ones_full = sess.run(ops.full(tt_ones))
       tt_zeros_full = sess.run(ops.full(tt_zeros))
@@ -33,8 +33,8 @@ class _InitializersTest():
     tt_zeros = initializers.matrix_zeros([[2, 3, 4], [1, 2, 5]],
                                          dtype=self.tf_dtype)
 
-    ones_desired = np.ones((24, 10), dtype=self.np_dtype)
-    zeros_desired = np.zeros((24, 10), dtype=self.np_dtype)
+    ones_desired = np.ones((24, 10), dtype=self.tf_dtype.as_numpy_dtype)
+    zeros_desired = np.zeros((24, 10), dtype=self.tf_dtype.as_numpy_dtype)
 
     bad_shapes = [[[-1, 2, 3], [3, 4, 6]], [[1.5, 2, 4], [2, 5, 6]],
                   [[1], [2, 3]], [2, 3, 4]]
@@ -70,9 +70,9 @@ class _InitializersTest():
     with self.test_session() as sess:
       bf, cf = sess.run(var_list)
       self.assertAllClose(bf, np.ones((2, 3, 4)))
-      self.assertEqual(self.np_dtype, bf.dtype)
+      self.assertEqual(self.tf_dtype.as_numpy_dtype, bf.dtype)
       self.assertAllClose(cf, np.zeros((2, 3, 4)))
-      self.assertEqual(self.np_dtype, cf.dtype)
+      self.assertEqual(self.tf_dtype.as_numpy_dtype, cf.dtype)
     with self.assertRaises(ValueError):
       initializers.ones_like(1)
     with self.assertRaises(ValueError):
@@ -182,12 +182,10 @@ class _InitializersTest():
 
 
 class InitializersTestFloat32(tf.test.TestCase, _InitializersTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class InitializersTestFloat64(tf.test.TestCase, _InitializersTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

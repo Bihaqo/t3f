@@ -174,12 +174,10 @@ class _BatchOpsTest():
 
 
 class BatchOpsTestFloat32(tf.test.TestCase, _BatchOpsTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class BatchOpsTestFloat64(tf.test.TestCase, _BatchOpsTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

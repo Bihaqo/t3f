@@ -84,12 +84,10 @@ class _TensorTrainBatchTest():
 
 
 class TensorTrainBatchTestFloat32(tf.test.TestCase, _TensorTrainBatchTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class TensorTrainBatchTestFloat64(tf.test.TestCase, _TensorTrainBatchTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

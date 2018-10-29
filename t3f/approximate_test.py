@@ -90,7 +90,7 @@ class _ApproximateTest():
       coef = [[1., 0.1],
               [0.9, -0.2],
               [0.3, 0.3]]
-      coef = np.array(coef).astype(self.np_dtype)
+      coef = np.array(coef).astype(self.tf_dtype.as_numpy_dtype)
       res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 6,
                                                          coef))
       res_desired_1 = ops.full(desired(tt_batch, coef[:, 0]))
@@ -101,12 +101,10 @@ class _ApproximateTest():
 
 
 class ApproximateTestFloat32(tf.test.TestCase, _ApproximateTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class ApproximateTestFloat64(tf.test.TestCase, _ApproximateTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 

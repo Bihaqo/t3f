@@ -85,9 +85,9 @@ class _KroneckerTest():
 
     # generating two symmetric positive-definite tt-cores
     L_1 = np.tril(np.random.normal(scale=2., size=(2, 2)))
-    L_1 = L_1.astype(self.np_dtype)
+    L_1 = L_1.astype(self.tf_dtype.as_numpy_dtype)
     L_2 = np.tril(np.random.normal(scale=2., size=(3, 3)))
-    L_2 = L_2.astype(self.np_dtype)
+    L_2 = L_2.astype(self.tf_dtype.as_numpy_dtype)
     K_1 = L_1.dot(L_1.T)
     K_2 = L_2.dot(L_2.T)
     K = np.kron(K_1, K_2)
@@ -176,9 +176,9 @@ class _BatchKroneckerTest():
 
     # generating two symmetric positive-definite tt-cores
     L_1 = np.tril(np.random.normal(scale=2., size=(4, 2, 2)))
-    L_1 = L_1.astype(self.np_dtype)
+    L_1 = L_1.astype(self.tf_dtype.as_numpy_dtype)
     L_2 = np.tril(np.random.normal(scale=2., size=(4, 3, 3)))
-    L_2 = L_2.astype(self.np_dtype)
+    L_2 = L_2.astype(self.tf_dtype.as_numpy_dtype)
     K_1 = np.einsum('ijk,ilk->ijl', L_1, L_1)
     K_2 = np.einsum('ijk,ilk->ijl', L_2, L_2)
     initializer = TensorTrainBatch([K_1[:, None, :, :, None],
@@ -194,22 +194,18 @@ class _BatchKroneckerTest():
 
 
 class KroneckerTestFloat32(tf.test.TestCase, _KroneckerTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class KroneckerTestFloat64(tf.test.TestCase, _KroneckerTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 
 class BatchKroneckerTestFloat32(tf.test.TestCase, _BatchKroneckerTest):
-  np_dtype = np.float32
   tf_dtype = tf.float32
 
 
 class BatchKroneckerTestFloat64(tf.test.TestCase, _BatchKroneckerTest):
-  np_dtype = np.float64
   tf_dtype = tf.float64
 
 
