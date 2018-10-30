@@ -49,7 +49,8 @@ class AutodiffTest(tf.test.TestCase):
     # Hessian by vector: w <w, P_x z>
 
     actual1 = ops.full(autodiff.hessian_vector_product(func1, x, z))
-    desired1 = riemannian.project(ops.flat_inner(z, w) * w, x)
+    projected_z = riemannian.project(z, x)
+    desired1 = riemannian.project(ops.flat_inner(projected_z, w) * w, x)
     desired1 = ops.full(desired1)
     with self.test_session() as sess:
       actual1_v, desired1_v = sess.run([actual1, desired1])
