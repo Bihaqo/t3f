@@ -31,10 +31,8 @@ def l2_regularizer(scale, scope=None):
   def l2(tt):
     """Applies l2 regularization to TensorTrain object."""
     with tf.name_scope(scope, 'l2_regularizer', [tt]) as name:
-      my_scale = tf.convert_to_tensor(scale,
-                                       dtype=tt.dtype.base_dtype,
-                                       name='scale')
-      return tf.mul(my_scale, ops.frobenius_norm_squared(tt), name=name)
+      my_scale = tf.convert_to_tensor(scale, dtype=tt.dtype, name='scale')
+      return tf.multiply(my_scale, ops.frobenius_norm_squared(tt), name=name)
 
   return l2
 
@@ -68,12 +66,10 @@ def cores_regularizer(core_regularizer, scale, scope=None):
   def regularizer(tt):
     """Applies the regularization to TensorTrain object."""
     with tf.name_scope(scope, 'l2_regularizer', [tt]) as name:
-      my_scale = tf.convert_to_tensor(scale,
-                                       dtype=tt.dtype.base_dtype,
-                                       name='scale')
+      my_scale = tf.convert_to_tensor(scale, dtype=tt.dtype, name='scale')
       penalty = 0.0
       for i in range(tt.ndims()):
         penalty += core_regularizer(tt.tt_cores[i])
-      return tf.mul(my_scale, penalty, name=name)
+      return tf.multiply(my_scale, penalty, name=name)
 
   return regularizer

@@ -60,7 +60,7 @@ def multiply_along_batch_dim(batch_tt, weights):
   Returns:
     TensorTrainBatch
   """
-  weights = tf.convert_to_tensor(weights)
+  weights = tf.convert_to_tensor(weights, dtype=batch_tt.dtype)
   tt_cores = list(batch_tt.tt_cores)
   if batch_tt.is_tt_matrix():
     weights = weights[:, tf.newaxis, tf.newaxis, tf.newaxis, tf.newaxis]

@@ -29,9 +29,11 @@ def replace_tf_svd_with_np_svd():
     s_, u_, v_ = tf.original_svd(tensor, full_matrices, compute_uv)
     s = tf.reshape(s, s_.get_shape())
     u = tf.reshape(u, u_.get_shape())
-    v = tf.reshape(v, v_.get_shape())
+    v_shape = v_.get_shape().as_list()
+    v_shape[-2], v_shape[-1] = v_shape[-1], v_shape[-2]
+    v = tf.reshape(v, v_shape)
     # Converting numpy order of v dims to TF order.
-    order = range(tensor.get_shape().ndims)
+    order = list(range(tensor.get_shape().ndims))
     order[-2], order[-1] = order[-1], order[-2]
     v = tf.transpose(v, order)
     return s, u, v
