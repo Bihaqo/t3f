@@ -40,7 +40,7 @@ class _AutodiffTest():
     A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
     x = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     z = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
-    projected_vector = ops.full(riemannian.project(z, x))
+    projected_vector = riemannian.project(z, x)
 
     def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
@@ -49,8 +49,7 @@ class _AutodiffTest():
     # Hessian by vector: w <w, P_x z>
 
     actual1 = ops.full(autodiff.hessian_vector_product(func1, x, z))
-    projected_z = riemannian.project(z, x)
-    desired1 = riemannian.project(ops.flat_inner(projected_z, w) * w, x)
+    desired1 = riemannian.project(ops.flat_inner(projected_vector, w) * w, x)
     desired1 = ops.full(desired1)
     with self.test_session() as sess:
       actual1_v, desired1_v = sess.run([actual1, desired1])
@@ -60,7 +59,6 @@ class _AutodiffTest():
       return ops.quadratic_form(A, x, x)
     # Hessian of <x, Ax> is A + A.T
     actual2 = ops.full(autodiff.hessian_vector_product(func2, x, z))
-    projected_vector = riemannian.project(z, x)
     hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
     desired2 = ops.full(riemannian.project(hessian_by_vector, x))
     with self.test_session() as sess:
