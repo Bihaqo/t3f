@@ -8,13 +8,13 @@ from t3f import riemannian
 from t3f import autodiff
 
 
-class AutodiffTest(tf.test.TestCase):
+class _AutodiffTest():
 
   def testGradients(self):
-    w = initializers.random_matrix(([5] * 3, None))
-    A = initializers.random_matrix(([5] * 3, [5] * 3))
-    x = initializers.random_matrix(([5] * 3, None))
-    z = initializers.random_matrix(([5] * 3, None))
+    w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
+    A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
+    x = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
+    z = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
 
     def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
@@ -36,10 +36,10 @@ class AutodiffTest(tf.test.TestCase):
       np.testing.assert_allclose(actual_v2, desired_v2, rtol=1e-4)
 
   def testHessianVectorProduct(self):
-    w = initializers.random_matrix(([5] * 3, None))
-    A = initializers.random_matrix(([5] * 3, [5] * 3))
-    x = initializers.random_matrix(([5] * 3, None))
-    z = initializers.random_matrix(([5] * 3, None))
+    w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
+    A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
+    x = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
+    z = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     projected_vector = ops.full(riemannian.project(z, x))
 
     def func1(x):
@@ -66,6 +66,14 @@ class AutodiffTest(tf.test.TestCase):
     with self.test_session() as sess:
       actual2_v, desired2_v = sess.run([actual2, desired2])
       np.testing.assert_allclose(actual2_v, desired2_v, rtol=1e-3)
+
+
+class AutodiffTestFloat32(tf.test.TestCase, _AutodiffTest):
+  dtype = tf.float32
+
+
+class AutodiffTestFloat64(tf.test.TestCase, _AutodiffTest):
+  dtype = tf.float64
 
 
 if __name__ == "__main__":
