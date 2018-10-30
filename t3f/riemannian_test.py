@@ -50,7 +50,7 @@ class _RiemannianTest():
          [ 0.6577514 ],
          [ 2.13703185]]])
     tens_cores = list([convert(t) for t in tens_cores])
-    tens = TensorTrain((tens_cores), (4, 3), (1, 3, 1))
+    tens = TensorTrain(tens_cores, (4, 3), (1, 3, 1))
     desired_projection = [[-0.67638254, -1.17163914,  0.29850939],
        [-1.66479093, -0.99003251,  2.46629195],
        [-0.04847773, -0.72908174,  0.20142675],
