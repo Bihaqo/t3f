@@ -90,7 +90,7 @@ class _ApproximateTest():
       coef = [[1., 0.1],
               [0.9, -0.2],
               [0.3, 0.3]]
-      coef = np.array(coef).astype(self.dtype.as_numpy_dtype)
+      coef = np.array(coef)
       res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 6,
                                                          coef))
       res_desired_1 = ops.full(desired(tt_batch, coef[:, 0]))

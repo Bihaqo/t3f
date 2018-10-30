@@ -98,7 +98,7 @@ class _RiemannianTest():
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
                                             dtype=self.dtype)
     np.random.seed(0)
-    weights = np.random.randn(4, 2).astype(self.dtype.as_numpy_dtype)
+    weights = np.random.randn(4, 2)
     tangent_tens = initializers.random_tensor((2, 3, 4), 4,
                                               dtype=self.dtype)
     weighted_sum_1 = weights[0, 0] * tens[0] + weights[1, 0] * tens[1] +\
