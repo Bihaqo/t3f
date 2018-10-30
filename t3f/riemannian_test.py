@@ -13,7 +13,7 @@ class _RiemannianTest():
 
   def testProjectOnItself(self):
     # Projection of X into the tangent space of itself is X: P_x(x) = x.
-    tens = initializers.random_tensor((2, 3, 4), dtype=self.tf_dtype)
+    tens = initializers.random_tensor((2, 3, 4), dtype=self.dtype)
     proj = riemannian.project_sum(tens, tens)
     with self.test_session() as sess:
       actual_val, desired_val = sess.run((ops.full(proj), ops.full(tens)))
@@ -32,7 +32,7 @@ class _RiemannianTest():
         [[-0.19279465],
          [ 0.524976  ],
          [-0.40149197]]])
-    convert = lambda t: np.array(t, dtype=self.tf_dtype.as_numpy_dtype)
+    convert = lambda t: np.array(t, dtype=self.dtype.as_numpy_dtype)
     tangent_tens_cores = list([convert(t) for t in tangent_tens_cores])
     tangent_tens = TensorTrain(tangent_tens_cores, (4, 3), (1, 2, 1))
     tens_cores = ([[[-1.01761142,  0.36075896, -0.2493624 ],
@@ -60,14 +60,14 @@ class _RiemannianTest():
     with self.test_session() as sess:
       proj_v = proj_full.eval()
       self.assertAllClose(desired_projection, proj_v)
-      self.assertEqual(self.tf_dtype.as_numpy_dtype, proj_v.dtype)
+      self.assertEqual(self.dtype.as_numpy_dtype, proj_v.dtype)
 
   def testProjectSum(self):
     # Test projecting a batch of TT-tensors.
     tens = initializers.random_tensor_batch((2, 3, 4), batch_size=3,
-                                            dtype=self.tf_dtype)
+                                            dtype=self.dtype)
     tangent_tens = initializers.random_tensor((2, 3, 4), 3,
-                                              dtype=self.tf_dtype)
+                                              dtype=self.dtype)
     weighted_sum = tens[0] + tens[1] + tens[2]
     direct_proj = riemannian.project_sum(weighted_sum, tangent_tens)
     actual_proj = riemannian.project_sum(tens, tangent_tens)
@@ -79,10 +79,10 @@ class _RiemannianTest():
   def testProjectWeightedSum(self):
     # Test projecting a batch of TT-tensors with providing coefs.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
-                                            dtype=self.tf_dtype)
+                                            dtype=self.dtype)
     coef = [0.1, -2, 0, 0.4]
     tangent_tens = initializers.random_tensor((2, 3, 4), 4,
-                                              dtype=self.tf_dtype)
+                                              dtype=self.dtype)
     weighted_sum = coef[0] * tens[0] + coef[1] * tens[1] + coef[2] * tens[2]
     weighted_sum += coef[3] * tens[3]
     direct_proj = riemannian.project_sum(weighted_sum, tangent_tens)
@@ -96,11 +96,11 @@ class _RiemannianTest():
     # Test projecting a batch of TT-tensors with providing weights and outputing
     # several TT objects with different weights.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
-                                            dtype=self.tf_dtype)
+                                            dtype=self.dtype)
     np.random.seed(0)
-    weights = np.random.randn(4, 2).astype(self.tf_dtype.as_numpy_dtype)
+    weights = np.random.randn(4, 2).astype(self.dtype.as_numpy_dtype)
     tangent_tens = initializers.random_tensor((2, 3, 4), 4,
-                                              dtype=self.tf_dtype)
+                                              dtype=self.dtype)
     weighted_sum_1 = weights[0, 0] * tens[0] + weights[1, 0] * tens[1] +\
                      weights[2, 0] * tens[2] + weights[3, 0] * tens[3]
     weighted_sum_2 = weights[0, 1] * tens[0] + weights[1, 1] * tens[1] +\
@@ -120,7 +120,7 @@ class _RiemannianTest():
     # Project a TT-matrix on itself.
     # Projection of X into the tangent space of itself is X: P_x(x) = x.
     tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)),
-                                        dtype=self.tf_dtype)
+                                        dtype=self.dtype)
     proj = riemannian.project_sum(tt_mat, tt_mat)
     with self.test_session() as sess:
       actual_val, desired_val = sess.run((ops.full(proj), ops.full(tt_mat)))
@@ -129,9 +129,9 @@ class _RiemannianTest():
   def testCompareProjectSumAndProject(self):
     # Compare results of project_sum and project.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
-                                            dtype=self.tf_dtype)
+                                            dtype=self.dtype)
     tangent_tens = initializers.random_tensor((2, 3, 4), 4,
-                                              dtype=self.tf_dtype)
+                                              dtype=self.dtype)
     project_sum = riemannian.project_sum(tens, tangent_tens, np.eye(4))
     project = riemannian.project(tens, tangent_tens)
     with self.test_session() as sess:
@@ -142,12 +142,12 @@ class _RiemannianTest():
   def testProjectMatmul(self):
     # Project a TT-matrix times TT-vector on a TT-vector.
     tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)),
-                                        dtype=self.tf_dtype)
+                                        dtype=self.dtype)
     tt_vec_what = initializers.random_matrix_batch(((2, 3, 4), None),
                                                    batch_size=3,
-                                                   dtype=self.tf_dtype)
+                                                   dtype=self.dtype)
     tt_vec_where = initializers.random_matrix(((2, 3, 4), None),
-                                              dtype=self.tf_dtype)
+                                              dtype=self.dtype)
     proj = riemannian.project_matmul(tt_vec_what, tt_vec_where, tt_mat)
     matvec = ops.matmul(tt_mat, tt_vec_what)
     proj_desired = riemannian.project(matvec, tt_vec_where)
@@ -158,10 +158,10 @@ class _RiemannianTest():
   def testPairwiseFlatInnerTensor(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
-                                             dtype=self.tf_dtype)
+                                             dtype=self.dtype)
     what2 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=4,
-                                             dtype=self.tf_dtype)
-    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+                                             dtype=self.dtype)
+    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
     desired = batch_ops.pairwise_flat_inner(projected1, projected2)
@@ -173,7 +173,7 @@ class _RiemannianTest():
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
       riemannian.pairwise_flat_inner_projected(projected1, what2)
-    where2 = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+    where2 = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
@@ -182,11 +182,11 @@ class _RiemannianTest():
   def testPairwiseFlatInnerMatrix(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
     what1 = initializers.random_matrix_batch(((2, 3, 4), None), 4, batch_size=3,
-                                             dtype=self.tf_dtype)
+                                             dtype=self.dtype)
     what2 = initializers.random_matrix_batch(((2, 3, 4), None), 4, batch_size=4,
-                                             dtype=self.tf_dtype)
+                                             dtype=self.dtype)
     where = initializers.random_matrix(((2, 3, 4), None), 3,
-                                       dtype=self.tf_dtype)
+                                       dtype=self.dtype)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
     desired = batch_ops.pairwise_flat_inner(projected1, projected2)
@@ -199,7 +199,7 @@ class _RiemannianTest():
       # Second argument is not a projection on the tangent space.
       riemannian.pairwise_flat_inner_projected(projected1, what2)
     where2 = initializers.random_matrix(((2, 3, 4), None), 3,
-                                        dtype=self.tf_dtype)
+                                        dtype=self.dtype)
     another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
@@ -208,10 +208,10 @@ class _RiemannianTest():
   def testAddNProjected(self):
     # Add several TT-objects from the same tangent space.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
-                                             dtype=self.tf_dtype)
+                                             dtype=self.dtype)
     what2 = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=3,
-                                             dtype=self.tf_dtype)
-    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+                                             dtype=self.dtype)
+    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
     desired = ops.full(projected1 + projected2)
@@ -223,7 +223,7 @@ class _RiemannianTest():
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
       riemannian.add_n_projected((projected1, what2))
-    where2 = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+    where2 = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
@@ -231,9 +231,9 @@ class _RiemannianTest():
 
   def testWeightedAddNProjected(self):
     # Add several TT-objects from the same tangent space with coefs.
-    what1 = initializers.random_tensor((2, 3, 4), 4, dtype=self.tf_dtype)
-    what2 = initializers.random_tensor((2, 3, 4), 1, dtype=self.tf_dtype)
-    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+    what1 = initializers.random_tensor((2, 3, 4), 4, dtype=self.dtype)
+    what2 = initializers.random_tensor((2, 3, 4), 1, dtype=self.dtype)
+    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
     desired = ops.full(1.2 * projected1 + -2.0 * projected2)
@@ -246,7 +246,7 @@ class _RiemannianTest():
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
       riemannian.add_n_projected((projected1, what2), coef=[1.2, -2.0])
-    where2 = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+    where2 = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     another_projected2 = riemannian.project(what2, where2)
     with self.assertRaises(ValueError):
       # The arguments are projections on different tangent spaces.
@@ -256,10 +256,10 @@ class _RiemannianTest():
   def testWeightedAddNProjectedBatch(self):
     # Add several TT-batches from the same tangent space with coefs.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
-                                             dtype=self.tf_dtype)
+                                             dtype=self.dtype)
     what2 = initializers.random_tensor_batch((2, 3, 4), 1, batch_size=3,
-                                             dtype=self.tf_dtype)
-    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.tf_dtype)
+                                             dtype=self.dtype)
+    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
     projected1 = riemannian.project(what1, where)
     projected2 = riemannian.project(what2, where)
 
@@ -276,11 +276,11 @@ class _RiemannianTest():
 
 
 class RiemannianTestFloat32(tf.test.TestCase, _RiemannianTest):
-  tf_dtype = tf.float32
+  dtype = tf.float32
 
 
 class RiemannianTestFloat64(tf.test.TestCase, _RiemannianTest):
-  tf_dtype = tf.float64
+  dtype = tf.float64
 
 
 if __name__ == "__main__":

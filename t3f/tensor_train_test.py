@@ -27,8 +27,8 @@ class _TensorTrainTest():
                 ((1, 2, 1, 1), (1, 2, 1), False))
 
     for tt_ranks, claimed_tt_ranks, desired in schedule:
-      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.tf_dtype)
-      b = tf.random_normal((tt_ranks[2], 9, tt_ranks[3]), dtype=self.tf_dtype)
+      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
+      b = tf.random_normal((tt_ranks[2], 9, tt_ranks[3]), dtype=self.dtype)
       with self.test_session():
         actual = tensor_train._are_tt_cores_valid((a, b), (10, 9),
                                                   claimed_tt_ranks)
@@ -72,9 +72,9 @@ class _TensorTrainTest():
                 ((1, 2, 2, 3, 3, 1), None, True))
 
     for tt_ranks, claimed_tt_ranks, desired in schedule:
-      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.tf_dtype)
-      b = tf.random_normal((tt_ranks[2], 1, tt_ranks[3]), dtype=self.tf_dtype)
-      c = tf.random_normal((tt_ranks[4], 2, tt_ranks[5]), dtype=self.tf_dtype)
+      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
+      b = tf.random_normal((tt_ranks[2], 1, tt_ranks[3]), dtype=self.dtype)
+      c = tf.random_normal((tt_ranks[4], 2, tt_ranks[5]), dtype=self.dtype)
       with self.test_session():
         actual = tensor_train._are_tt_cores_valid((a, b, c), (10, 1, 2),
                                                   claimed_tt_ranks)
@@ -96,7 +96,7 @@ class _TensorTrainTest():
           tensor_train.TensorTrain((a, b_new, c), (10, 1, 2), claimed_tt_ranks)
 
   def testTensorIndexing(self):
-    tens = initializers.random_tensor((3, 3, 4), dtype=self.tf_dtype)
+    tens = initializers.random_tensor((3, 3, 4), dtype=self.dtype)
     with self.test_session() as sess:
       desired = ops.full(tens)[:, :, :]
       actual = ops.full(tens[:, :, :])
@@ -126,7 +126,7 @@ class _TensorTrainTest():
         tens[1, 1]
 
   def testPlaceholderTensorIndexing(self):
-    tens = initializers.random_tensor((3, 3, 4), dtype=self.tf_dtype)
+    tens = initializers.random_tensor((3, 3, 4), dtype=self.dtype)
     with self.test_session() as sess:
       start = tf.placeholder(tf.int32)
       end = tf.placeholder(tf.int32)
@@ -138,17 +138,17 @@ class _TensorTrainTest():
   def testShapeOverflow(self):
     large_shape = [10] * 20
     matrix = initializers.matrix_zeros([large_shape, large_shape],
-                                       dtype=self.tf_dtype)
+                                       dtype=self.dtype)
     shape = matrix.get_shape()
     self.assertEqual([10 ** 20, 10 ** 20], shape)
 
 
 class TensorTrainTestFloat32(tf.test.TestCase, _TensorTrainTest):
-  tf_dtype = tf.float32
+  dtype = tf.float32
 
 
 class TensorTrainTestFloat64(tf.test.TestCase, _TensorTrainTest):
-  tf_dtype = tf.float64
+  dtype = tf.float64
 
 
 if __name__ == "__main__":

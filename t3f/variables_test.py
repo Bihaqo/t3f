@@ -9,7 +9,7 @@ from t3f import initializers
 class _VariablesTest():
 
   def testGetExistingVariable(self):
-    init = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.tf_dtype)
+    init = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.dtype)
     tt_1 = variables.get_variable('tt_1', initializer=init)
     with tf.variable_scope('test'):
       tt_2 = variables.get_variable('tt_2', initializer=init)
@@ -24,14 +24,14 @@ class _VariablesTest():
           variables.get_variable('tt_3')
 
       with tf.variable_scope('', reuse=True):
-        tt_1_copy = variables.get_variable('tt_1', dtype=self.tf_dtype)
+        tt_1_copy = variables.get_variable('tt_1', dtype=self.dtype)
         self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
 
       with tf.variable_scope('', reuse=True):
         # Again try to retrieve an existing variable, but pass an initializer
         # and check that it still works.
         tt_1_copy = variables.get_variable('tt_1', initializer=0 * init,
-                                           dtype=self.tf_dtype)
+                                           dtype=self.dtype)
         self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
 
       with self.assertRaises(ValueError):
@@ -45,16 +45,16 @@ class _VariablesTest():
           variables.get_variable('tt_2')
 
       with tf.variable_scope('test', reuse=True):
-        tt_2_copy = variables.get_variable('tt_2', dtype=self.tf_dtype)
+        tt_2_copy = variables.get_variable('tt_2', dtype=self.dtype)
         self.assertAllClose(ops.full(tt_2).eval(), ops.full(tt_2_copy).eval())
 
   def testAttributes(self):
     # Test that after converting an initializer into a variable all the
     # attributes stays the same.
-    tens = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.tf_dtype)
+    tens = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.dtype)
     tens_v = variables.get_variable('tt_tens', initializer=tens)
     mat = initializers.random_matrix([[3, 2, 2], [3, 3, 3]], tt_rank=3,
-                                     dtype=self.tf_dtype)
+                                     dtype=self.dtype)
     mat_v = variables.get_variable('tt_mat', initializer=mat)
     for (init, var) in [[tens, tens_v], [mat, mat_v]]:
       self.assertEqual(init.get_shape(), var.get_shape())
@@ -65,10 +65,10 @@ class _VariablesTest():
 
   def testAssign(self):
     old_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
-                                          dtype=self.tf_dtype)
+                                          dtype=self.dtype)
     tt = variables.get_variable('tt', initializer=old_init)
     new_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
-                                          dtype=self.tf_dtype)
+                                          dtype=self.dtype)
     assigner = variables.assign(tt, new_init)
     with self.test_session():
       tf.global_variables_initializer().run()
@@ -84,11 +84,11 @@ class _VariablesTest():
 
 
 class VariablesTestFloat32(tf.test.TestCase, _VariablesTest):
-  tf_dtype = tf.float32
+  dtype = tf.float32
 
 
 class VariablesTestFloat64(tf.test.TestCase, _VariablesTest):
-  tf_dtype = tf.float64
+  dtype = tf.float64
 
 
 if __name__ == "__main__":

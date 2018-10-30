@@ -9,7 +9,7 @@ class _TensorTrainBatchTest():
 
   def testTensorIndexing(self):
     tens = initializers.random_tensor_batch((3, 3, 4), batch_size=3,
-                                            dtype=self.tf_dtype)
+                                            dtype=self.dtype)
     with self.test_session() as sess:
       desired = ops.full(tens)[:, :, :, :]
       actual = ops.full(tens[:, :, :, :])
@@ -50,7 +50,7 @@ class _TensorTrainBatchTest():
 
   def testPlaceholderTensorIndexing(self):
     tens = initializers.random_tensor_batch((3, 3, 4), batch_size=3,
-                                            dtype=self.tf_dtype)
+                                            dtype=self.dtype)
     with self.test_session() as sess:
       start = tf.placeholder(tf.int32)
       end = tf.placeholder(tf.int32)
@@ -78,17 +78,17 @@ class _TensorTrainBatchTest():
   def testShapeOverflow(self):
     large_shape = [10] * 20
     tensor = initializers.random_matrix_batch([large_shape, large_shape],
-                                              batch_size=5, dtype=self.tf_dtype)
+                                              batch_size=5, dtype=self.dtype)
     shape = tensor.get_shape()
     self.assertEqual([5, 10 ** 20, 10 ** 20], shape)
 
 
 class TensorTrainBatchTestFloat32(tf.test.TestCase, _TensorTrainBatchTest):
-  tf_dtype = tf.float32
+  dtype = tf.float32
 
 
 class TensorTrainBatchTestFloat64(tf.test.TestCase, _TensorTrainBatchTest):
-  tf_dtype = tf.float64
+  dtype = tf.float64
 
 
 if __name__ == "__main__":
