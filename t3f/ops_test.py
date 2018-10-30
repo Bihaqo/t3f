@@ -527,7 +527,8 @@ class _TTTensorBatchTest():
       self.assertAllClose(res_actual_1_val, res_desired_val)
       self.assertAllClose(res_actual_2_val, res_desired_val)
 
-    tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=2)
+    tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=2,
+                                            dtype=self.dtype)
     with self.assertRaises(ValueError):
       # The batch_sizes are different.
       ops.flat_inner(tt_1, tt_2)
