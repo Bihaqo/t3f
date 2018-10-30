@@ -294,7 +294,7 @@ def _block_diag_hessian_vector_product(func, x, vector):
       else:
         curr_grad = cores_grad[r1:, :, :r2]
     if i < x.ndims() - 1:
-      proj = (tf.eye(r1 * n) - q @ tf.transpose(q))
+      proj = tf.matmul(tf.eye(r1 * n) - q, tf.transpose(q))
       # TODO: multiply faster.
       delta = tf.matmul(proj, tf.reshape(curr_grad, (-1, r2)))
       delta = tf.reshape(delta, left.tt_cores[i].shape)
