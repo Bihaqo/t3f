@@ -1179,7 +1179,7 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
       case applies to each TT in `TensorTrainBatch`.
 
     """
-    epsilon = tf.cast(epsilon, tt.dtype)
+    epsilon = tf.convert_to_tensor(epsilon, dtype=tt.dtype)
     if isinstance(tt, TensorTrain):
       new_cores = []
       running_log_norm = 0
