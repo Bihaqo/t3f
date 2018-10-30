@@ -10,7 +10,7 @@ from t3f import riemannian
 def _gradients(func, x, x_projection, left, right):
   """Internal version of t3f.gradients that assumes some precomputed inputs."""
   h = func(x_projection)
-  cores_grad = tf.gradients(h, x_projection.tt_cores)
+  cores_grad = tf.gradients(h, list(x_projection.tt_cores))
   deltas = []
   for i in range(x.ndims()):
     if x.is_tt_matrix():
