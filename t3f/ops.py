@@ -430,7 +430,7 @@ def tt_sparse_flat_inner(tt_a, sparse_b):
   a_shape = shapes.lazy_raw_shape(tt_a)
   a_ranks = shapes.lazy_tt_ranks(tt_a)
   if tt_a.is_tt_matrix():
-    tt_a_elements = tf.ones((num_elements, 1, 1))
+    tt_a_elements = tf.ones((num_elements, 1, 1), dtype=tt_a.dtype)
     # TODO: use t3f.shape is safer??
     tensor_shape = tt_a.get_raw_shape()
     row_idx_linear = tf.cast(sparse_b.indices[:, 0], tf.int64)
@@ -1179,6 +1179,7 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
       case applies to each TT in `TensorTrainBatch`.
 
     """
+    epsilon = tf.convert_to_tensor(epsilon, dtype=tt.dtype)
     if isinstance(tt, TensorTrain):
       new_cores = []
       running_log_norm = 0
@@ -1196,7 +1197,7 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
       return TensorTrain(new_cores)
     else:
       sz = (tt.batch_size,) + (len(tt.tt_cores[0].shape) - 1) * (1,)
-      running_core_log_norms = tf.zeros(sz)
+      running_core_log_norms = tf.zeros(sz, dtype=tt.dtype)
       ax = np.arange(len(tt.tt_cores[0].shape))[1:]
       fact_list = []
       for core in tt.tt_cores:

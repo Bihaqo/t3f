@@ -41,7 +41,7 @@ def project_sum(what, where, weights=None):
   what = shapes.expand_batch_dim(what)
 
   if weights is not None:
-    weights = tf.convert_to_tensor(weights)
+    weights = tf.convert_to_tensor(weights, dtype=where.dtype)
 
   if not isinstance(where, TensorTrain):
     raise ValueError('The first argument should be a TensorTrain object, got '
@@ -661,7 +661,7 @@ def add_n_projected(tt_objects, coef=None):
                        'least the pointers are different.' % (tt.projection_on,
                                                               projection_on))
   if coef is not None:
-    coef = tf.convert_to_tensor(coef)
+    coef = tf.convert_to_tensor(coef, dtype=tt_objects[0].dtype)
     if coef.get_shape().ndims > 1:
       # In batch case we will need to multiply each core by this coefficients
       # along the first axis. To do it need to reshape the coefs to match
