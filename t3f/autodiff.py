@@ -7,47 +7,31 @@ from t3f import decompositions
 from t3f import riemannian
 
 
-def _gradients(func, x, x_projection, left, right):
-  """Internal version of t3f.gradients that assumes some precomputed inputs."""
-  h = func(x_projection)
-  cores_grad = tf.gradients(h, list(x_projection.tt_cores))
-  deltas = []
-  for i in range(x.ndims()):
-    if x.is_tt_matrix():
+def _enforce_gauge_conditions(deltas, left):
+  """Project deltas that define tangent space vec onto the gauge conditions."""
+  proj_deltas = []
+  for i in range(left.ndims()):
+    if left.is_tt_matrix():
       r1, n, m, r2 = left.tt_cores[i].shape.as_list()
     else:
       r1, n, r2 = left.tt_cores[i].shape.as_list()
     q = tf.reshape(left.tt_cores[i], (-1, r2))
-    if x.is_tt_matrix():
-      if i == 0:
-        curr_grad = cores_grad[i][:, :, :, :r2]
-      elif i == x.ndims() - 1:
-        curr_grad = cores_grad[i][r1:, :, :, :]
-      else:
-        curr_grad = cores_grad[i][r1:, :, :, :r2]
+    if i < left.ndims() - 1:
+      proj_delta = deltas[i]
+      proj_delta = tf.reshape(proj_delta, (-1, r2))
+      proj_delta -= tf.matmul(q, tf.matmul(tf.transpose(q), proj_delta))
+      proj_delta = tf.reshape(proj_delta, left.tt_cores[i].shape)
     else:
-      if i == 0:
-        curr_grad = cores_grad[i][:, :, :r2]
-      elif i == w.ndims() - 1:
-        curr_grad = cores_grad[i][r1:, :, :]
-      else:
-        curr_grad = cores_grad[i][r1:, :, :r2]
-    if i < x.ndims() - 1:
-      delta = curr_grad
-      delta = tf.reshape(delta, (-1, r2))
-      delta -= tf.matmul(q, tf.matmul(tf.transpose(q), delta))
-      delta = tf.reshape(delta, left.tt_cores[i].shape)
-    else:
-      delta = curr_grad
-    deltas.append(delta)
-  return riemannian.deltas_to_tangent_space(deltas, x, left, right)
+      proj_delta = deltas[i]
+    proj_deltas.append(proj_delta)
+  return proj_deltas
 
 
-def gradients(func, x, name='t3f_gradients'):
+def gradients(func, x, name='t3f_gradients', debug=True):
   """Riemannian autodiff: returns gradient projected on tangent space of TT.
 
-  Automatically computes projection of the gradient df/dx onto the
-  tangent space of TT tensor at point x.
+  Computes projection of the gradient df/dx onto the tangent space of TT tensor
+  at point x.
 
   Warning: this is experimental feature and it may not work for some function,
   e.g. ones that include QR or SVD decomposition (t3f.project, t3f.round) or
@@ -80,19 +64,21 @@ def gradients(func, x, name='t3f_gradients'):
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     deltas = [right.tt_cores[0]] + [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
-    return _gradients(func, x, x_projection, left, right)
+    cores_grad = tf.gradients(func(x_projection), deltas)
+    deltas = _enforce_gauge_conditions(cores_grad, left)
+    return riemannian.deltas_to_tangent_space(deltas, x, left, right)
 
 
 def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
   """P_x d^2f/dx^2 P_x vector, i.e. Riemannian hessian by vector product.
 
-    Automatically computes
+    Computes
       P_x d^2f/dx^2 P_x vector
     where P_x is projection onto the tangent space of TT at point x and
     d^2f/dx^2 is the Hessian of the function.
 
-    Note that the true hessian also includes the manifold curvature term
-    which is ignored here.
+    Note that the true Riemannian hessian also includes the manifold curvature
+    term which is ignored here.
 
     Warning: this is experimental feature and it may not work for some function,
     e.g. ones that include QR or SVD decomposition (t3f.project, t3f.round) or
@@ -127,17 +113,15 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     vector_projected = riemannian.project(vector, x)
-    vector_projected = shapes.expand_batch_dim(vector_projected)
-    vector_projected.projection_on = x
-
-    def new_f(new_x):
-      grad = _gradients(func, x, new_x, left, right)
-      grad = shapes.expand_batch_dim(grad)
-      # TODO: durty hack.
-      grad.projection_on = x
-      return riemannian.pairwise_flat_inner_projected(grad, vector_projected)[0, 0]
-
-    return gradients(new_f, x)
+    deltas = [right.tt_cores[0]] + [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
+    x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
+    cores_grad = tf.gradients(func(x_projection), deltas)
+    vec_deltas = riemannian.tangent_space_to_deltas(vector_projected)
+    products = [tf.reduce_sum(a * b) for a, b in zip(cores_grad, vec_deltas)]
+    grad_times_vec = tf.add_n(products)
+    second_cores_grad = tf.gradients(grad_times_vec, deltas)
+    final_deltas = _enforce_gauge_conditions(second_cores_grad, left)
+    return riemannian.deltas_to_tangent_space(final_deltas, x, left, right)
 
 
 def _block_diag_hessian_vector_product(func, x, vector):
