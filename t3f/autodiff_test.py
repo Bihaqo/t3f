@@ -35,6 +35,16 @@ class _AutodiffTest():
       actual_v2, desired_v2 = sess.run([actual2, desired2])
       np.testing.assert_allclose(actual_v2, desired_v2, rtol=1e-4)
 
+    def func3(x):
+      # A function which is not invariant to different representations of the
+      # same tensor, i.e. it does not even have a Riemannian gradient.
+      return tf.add_n([tf.reduce_sum(c) for c in x.tt_cores]) ** 2
+    actual3 = ops.full(autodiff.gradients(func3, x))
+    with self.assertRaises(tf.errors.InvalidArgumentError):
+      with self.test_session() as sess:
+        sess.run(actual3)
+
+
   def testHessianVectorProduct(self):
     w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
@@ -64,6 +74,16 @@ class _AutodiffTest():
     with self.test_session() as sess:
       actual2_v, desired2_v = sess.run([actual2, desired2])
       np.testing.assert_allclose(actual2_v, desired2_v, rtol=1e-3)
+
+    def func3(x):
+      # A function which is not invariant to different representations of the
+      # same tensor, i.e. it does not even have a Riemannian gradient or
+      # hessian.
+      return tf.add_n([tf.reduce_sum(c) for c in x.tt_cores]) ** 2
+    actual3 = ops.full(autodiff.hessian_vector_product(func3, x, z))
+    with self.assertRaises(tf.errors.InvalidArgumentError):
+      with self.test_session() as sess:
+        sess.run(actual3)
 
 
 class AutodiffTestFloat32(tf.test.TestCase, _AutodiffTest):
