@@ -787,12 +787,12 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
       slc = [slice(None)] * len(curr_core.shape)
       slc[left_tt_rank_dim] = slice(int(r1 / 2), None)
       slc[right_tt_rank_dim] = slice(0, int(r2 / 2))
-      deltas[i] = curr_core[slice]
+      deltas[i] = curr_core[slc]
     slc = [slice(None)] * len(tt.tt_cores[0].shape)
     slc[right_tt_rank_dim] = slice(0, int(tt_ranks[1] / 2))
     deltas[0] = tt.tt_cores[0][slc]
     slc = [slice(None)] * len(tt.tt_cores[0].shape)
-    slc[left_tt_rank_dim] = slice(int(tt_ranks[-1] / 2), None)
+    slc[left_tt_rank_dim] = slice(int(tt_ranks[-2] / 2), None)
     deltas[num_dims - 1] = tt.tt_cores[num_dims - 1][slc]
   return deltas
 
