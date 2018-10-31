@@ -27,6 +27,36 @@ def _enforce_gauge_conditions(deltas, left):
   return proj_deltas
 
 
+def _is_invariant_to_input_transforms(f_value_1, f_value_2,
+                                      name="check_autodiff_arguments"):
+  """Returns an assert op that checks that the f_value_1 == f_value_2.
+
+  Args:
+    f_value_1: tf.Tensor, value of the function computed on x_1
+    f_value_2: tf.Tensor, value of the function computed on x_2
+    name: String, the name of the returned op
+  
+  Here we assume that as tensors x_1 == x_2, but their TT-cores are different,
+  e.g. x_2 is a cores orthogonalization version of x_1.
+  
+  The function prints a warning about introducing overhead and returns an Assert
+  op that checks that the two values are reasonably close to each other.
+
+  Returns:
+    tf.op, assertion operation.
+  """
+  print('Warning: debug mode of Riemannian autodiff is turned on which '
+        'makes things a bit slower. It is advisable to keep debug=True untill '
+        'actuall production usage, since debug mode does help to catch bugs.')
+  rel_diff = tf.abs((f_value_1 - f_value_2) / f_value_1)
+  err_msg = "The function passed to Riemannian autodiff returns different " \
+            "values for two different versions of the same tensor. " \
+            "The function values are"
+  assert_op = tf.Assert(rel_diff < 1e-5, [err_msg, f_value_1, f_value_2],
+                        name=name)
+  return assert_op
+
+
 def gradients(func, x, name='t3f_gradients', debug=True):
   """Riemannian autodiff: returns gradient projected on tangent space of TT.
 
@@ -51,6 +81,10 @@ def gradients(func, x, name='t3f_gradients', debug=True):
       x: point at which to compute the gradient and on which tangent space to
         project the gradient.
       name: string, name of the Op.
+      debug: [True] whether to do a sanity check that the passed function is
+        invariant to different TT representations (otherwise the Rieamnnian
+        gradient doesn't even exist). It makes things slower, but helps catching
+        bugs, so turn it off during production deployment.
 
   Returns:
       `TensorTrain`, projection of the gradient df/dx onto the tangent space at
@@ -62,14 +96,22 @@ def gradients(func, x, name='t3f_gradients', debug=True):
   with tf.name_scope(name, values=x.tt_cores):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
-    deltas = [right.tt_cores[0]] + [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
+    deltas = [right.tt_cores[0]]
+    deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
-    cores_grad = tf.gradients(func(x_projection), deltas)
+    function_value = func(x_projection)
+    if debug:
+      assert_op = _is_invariant_to_input_transforms(function_value, func(right))
+    else:
+      assert_op = None
+    with tf.control_dependencies([assert_op]):
+      cores_grad = tf.gradients(function_value, deltas)
     deltas = _enforce_gauge_conditions(cores_grad, left)
     return riemannian.deltas_to_tangent_space(deltas, x, left, right)
 
 
-def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
+def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
+                           debug=True):
   """P_x d^2f/dx^2 P_x vector, i.e. Riemannian hessian by vector product.
 
     Computes
@@ -99,7 +141,11 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
         x: point at which to compute the Hessian and on which tangent space to
           project the gradient.
       vector: `TensorTrain` object which to multiply be the Hessian.
-        name: string, name of the Op.
+      name: string, name of the Op.
+      debug: [True] whether to do a sanity check that the passed function is
+        invariant to different TT representations (otherwise the Rieamnnian
+        gradient doesn't even exist). It makes things slower, but helps catching
+        bugs, so turn it off during production deployment.
 
     Returns:
         `TensorTrain`, projection of the gradient df/dx onto the tangent space at
@@ -112,10 +158,17 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product'):
   with tf.name_scope(name, values=all_cores):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
-    vector_projected = riemannian.project(vector, x)
-    deltas = [right.tt_cores[0]] + [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
+    deltas = [right.tt_cores[0]]
+    deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
-    cores_grad = tf.gradients(func(x_projection), deltas)
+    function_value = func(x_projection)
+    if debug:
+      assert_op = _is_invariant_to_input_transforms(function_value, func(right))
+    else:
+      assert_op = None
+    with tf.control_dependencies([assert_op]):
+      vector_projected = riemannian.project(vector, x)
+    cores_grad = tf.gradients(function_value, deltas)
     vec_deltas = riemannian.tangent_space_to_deltas(vector_projected)
     products = [tf.reduce_sum(a * b) for a, b in zip(cores_grad, vec_deltas)]
     grad_times_vec = tf.add_n(products)
