@@ -766,7 +766,7 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
       name: string, name of the Op.
 
   Returns:
-      A list of delta-cores.
+      A list of delta-cores (tf.Tensors).
   """
   if not hasattr(tt, 'projection_on') or tt.projection_on is None:
     raise ValueError('tt argument is supposed to be a projection, but it '
@@ -799,17 +799,18 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
 
 def deltas_to_tangent_space(deltas, tt, left=None, right=None,
                             name='t3f_deltas_to_tangent_space'):
-  """Converts deltas representation of tangent space vector to TensorTrain object.
+  """Converts deltas representation of tangent space vector to TT object.
 
   Takes as input a list of [dP1, ..., dPd] and returns
     dP1 V2 ... Vd + U1 dP2 V3 ... Vd + ... + U1 ... Ud-1 dPd.
 
   This function is hard to use correctly because deltas should abey the
   so called gauge conditions. If the don't, the function will silently return
-  incorrect result. This is why this function is not imported in the __init__.
+  incorrect result. This is why this function is not imported in __init__.
 
   Args:
-      deltas: a list of deltas (essentially TT-cores).
+      deltas: a list of deltas (essentially TT-cores) obeying the gauge
+        conditions.
       tt: `TensorTrain` object on which the tangent space tensor represented by
         delta is projected.
       left: t3f.orthogonilize_tt_cores(tt). If you have it already compute, you
@@ -823,8 +824,8 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
         space at point `tt`.
   """
   cores = []
-  dtype = deltas[0].dtype
-  num_dims = left.ndims()
+  dtype = tt.dtype
+  num_dims = tt.ndims()
   # TODO: add cache instead of mannually pasisng precomputed stuff?
   if left is None:
     left = decompositions.orthogonalize_tt_cores(tt)
@@ -835,10 +836,19 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
   raw_shape = shapes.lazy_raw_shape(left)
   right_rank_dim = left.right_tt_rank_dim
   left_rank_dim = left.left_tt_rank_dim
-  is_batch_case = hasattr(tt, 'batch_size')
+  is_batch_case = len(deltas[0].shape) > len(tt.tt_cores[0].shape)
+  if is_batch_case:
+    right_rank_dim += 1
+    left_rank_dim += 1
+    batch_size = deltas[0].shape[0]
   for i in range(num_dims):
     left_tt_core = left.tt_cores[i]
     right_tt_core = right.tt_cores[i]
+    if is_batch_case:
+      tile = [1] * len(left_tt_core.shape)
+      tile = [batch_size] + tile
+      left_tt_core = tf.tile(left_tt_core[None, ...], tile)
+      right_tt_core = tf.tile(right_tt_core[None, ...], tile)
 
     if i == 0:
       tangent_core = tf.concat((deltas[i], left_tt_core),
@@ -857,13 +867,15 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
         mode_size_n = raw_shape[0][i]
         shape = [rank_1, mode_size_n, rank_2]
       if is_batch_case:
-        shape = [tt.batch_size] + shape
+        shape = [batch_size] + shape
       zeros = tf.zeros(shape, dtype=dtype)
       upper = tf.concat((right_tt_core, zeros), axis=right_rank_dim)
       lower = tf.concat((deltas[i], left_tt_core), axis=right_rank_dim)
       tangent_core = tf.concat((upper, lower), axis=left_rank_dim)
     cores.append(tangent_core)
-  # Create instance of the same class as tt.
-  tangent = tt.__class__(cores)
+  if is_batch_case:
+    tangent = TensorTrainBatch(cores, batch_size=batch_size)
+  else:
+    tangent = TensorTrain(cores)
   tangent.projection_on = tt
   return tangent
