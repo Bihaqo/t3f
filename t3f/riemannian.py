@@ -840,7 +840,7 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
   if is_batch_case:
     right_rank_dim += 1
     left_rank_dim += 1
-    batch_size = deltas[0].shape[0]
+    batch_size = deltas[0].shape.as_list()[0]
   for i in range(num_dims):
     left_tt_core = left.tt_cores[i]
     right_tt_core = right.tt_cores[i]
