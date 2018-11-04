@@ -51,7 +51,6 @@ from t3f.riemannian import project
 from t3f.riemannian import project_matmul
 from t3f.riemannian import project_sum
 from t3f.riemannian import tangent_space_to_deltas
-from t3f.riemannian import deltas_to_tangent_space
 
 from t3f.shapes import batch_size
 from t3f.shapes import clean_raw_shape
