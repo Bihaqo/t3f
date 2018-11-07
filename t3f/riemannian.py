@@ -827,7 +827,12 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
   dtype = tt.dtype
   num_dims = tt.ndims()
   # TODO: add cache instead of mannually pasisng precomputed stuff?
-  with tf.name_scope(name, values=tt.tt_cores):
+  input_tensors = list(tt.tt_cores) + list(deltas)
+  if left is not None:
+    input_tensors += list(left.tt_cores)
+  if right is not None:
+    input_tensors += list(right.tt_cores)
+  with tf.name_scope(name, values=input_tensors):
     if left is None:
       left = decompositions.orthogonalize_tt_cores(tt)
     if right is None:
