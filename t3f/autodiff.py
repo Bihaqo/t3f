@@ -98,7 +98,7 @@ def gradients(func, x, name='t3f_gradients', runtime_check=True):
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
     function_value = func(x_projection)
     if runtime_check:
-      assert_op = _is_invariant_to_input_transforms(function_value, func(right))
+      assert_op = _is_invariant_to_input_transforms(function_value, func(x))
     else:
       assert_op = None
     with tf.control_dependencies([assert_op]):
@@ -160,7 +160,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
     function_value = func(x_projection)
     if runtime_check:
-      assert_op = _is_invariant_to_input_transforms(function_value, func(right))
+      assert_op = _is_invariant_to_input_transforms(function_value, func(x))
     else:
       assert_op = None
     with tf.control_dependencies([assert_op]):
