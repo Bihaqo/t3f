@@ -3,7 +3,6 @@ import tensorflow as tf
 
 from t3f import ops
 from t3f import initializers
-from t3f import variables
 from t3f import riemannian
 from t3f import autodiff
 
@@ -96,4 +95,3 @@ class AutodiffTestFloat64(tf.test.TestCase, _AutodiffTest):
 
 if __name__ == "__main__":
   tf.test.main()
-
