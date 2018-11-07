@@ -21,8 +21,8 @@ class _AutodiffTest():
     actual1 = ops.full(autodiff.gradients(func1, x))
     desired1 = ops.full(ops.flat_inner(x, w) * riemannian.project(w, x))
     with self.test_session() as sess:
-      actual1_v, desired1_v = sess.run([actual1, desired1])
-      np.testing.assert_allclose(actual1_v, desired1_v, rtol=1e-4)
+      desired1_v, actual1_v = sess.run([desired1, actual1])
+      np.testing.assert_allclose(desired1_v, actual1_v, rtol=1e-4)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
@@ -31,8 +31,8 @@ class _AutodiffTest():
     grad = ops.matmul(ops.transpose(A) + A, x)
     desired2 = ops.full(riemannian.project(grad, x))
     with self.test_session() as sess:
-      actual_v2, desired_v2 = sess.run([actual2, desired2])
-      np.testing.assert_allclose(actual_v2, desired_v2, rtol=1e-4)
+      desired2_v, actual2_v = sess.run([desired2, actual2])
+      np.testing.assert_allclose(desired2_v, actual2_v, rtol=1e-4)
 
     def func3(x):
       # A function which is not invariant to different representations of the
@@ -61,8 +61,8 @@ class _AutodiffTest():
     desired1 = riemannian.project(ops.flat_inner(projected_vector, w) * w, x)
     desired1 = ops.full(desired1)
     with self.test_session() as sess:
-      actual1_v, desired1_v = sess.run([actual1, desired1])
-      np.testing.assert_allclose(actual1_v, desired1_v, rtol=1e-4)
+      desired1_v, actual1_v = sess.run([desired1, actual1])
+      np.testing.assert_allclose(desired1_v, actual1_v, rtol=1e-4)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
@@ -71,8 +71,8 @@ class _AutodiffTest():
     hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
     desired2 = ops.full(riemannian.project(hessian_by_vector, x))
     with self.test_session() as sess:
-      actual2_v, desired2_v = sess.run([actual2, desired2])
-      np.testing.assert_allclose(actual2_v, desired2_v, rtol=1e-3)
+      desired2_v, actual2_v = sess.run([desired2, actual2])
+      np.testing.assert_allclose(desired2_v, actual2_v, rtol=1e-4)
 
     def func3(x):
       # A function which is not invariant to different representations of the
