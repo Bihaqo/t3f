@@ -146,8 +146,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
         but helps catching bugs, so turn it off during production deployment.
 
     Returns:
-        `TensorTrain`, projection of the gradient df/dx onto the tangent space at
-        point x.
+        `TensorTrain`, result of the Riemannian hessian by vector product.
 
     See also:
         t3f.gradients
