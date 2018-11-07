@@ -13,7 +13,6 @@ class _AutodiffTest():
     w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
     x = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
-    z = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
 
     def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
