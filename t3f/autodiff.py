@@ -41,9 +41,10 @@ def _is_invariant_to_input_transforms(f_value_1, f_value_2,
   Returns:
     tf.op, assertion operation.
   """
-  print('Warning: debug mode of Riemannian autodiff is turned on which '
-        'makes things a bit slower. It is advisable to keep debug=True untill '
-        'actuall production usage, since debug mode does help to catch bugs.')
+  print('Warning: runtime_check of Riemannian autodiff is turned on which '
+        'makes things a bit slower. It is advisable to keep runtime_check=True '
+        'untill actuall production usage, since runtime check does help to '
+        'catch bugs.')
   rel_diff = tf.abs((f_value_1 - f_value_2) / f_value_1)
   err_msg = "The function passed to Riemannian autodiff returns different " \
             "values for two different versions of the same tensor. " \
@@ -53,7 +54,7 @@ def _is_invariant_to_input_transforms(f_value_1, f_value_2,
   return assert_op
 
 
-def gradients(func, x, name='t3f_gradients', debug=True):
+def gradients(func, x, name='t3f_gradients', runtime_check=True):
   """Riemannian autodiff: returns gradient projected on tangent space of TT.
 
   Computes projection of the gradient df/dx onto the tangent space of TT tensor
@@ -77,10 +78,10 @@ def gradients(func, x, name='t3f_gradients', debug=True):
       x: point at which to compute the gradient and on which tangent space to
         project the gradient.
       name: string, name of the Op.
-      debug: [True] whether to do a sanity check that the passed function is
-        invariant to different TT representations (otherwise the Rieamnnian
-        gradient doesn't even exist). It makes things slower, but helps catching
-        bugs, so turn it off during production deployment.
+      runtime_check: [True] whether to do a sanity check that the passed
+        function is invariant to different TT representations (otherwise
+        the Rieamnnian gradient doesn't even exist). It makes things slower,
+        but helps catching bugs, so turn it off during production deployment.
 
   Returns:
       `TensorTrain`, projection of the gradient df/dx onto the tangent space at
@@ -96,7 +97,7 @@ def gradients(func, x, name='t3f_gradients', debug=True):
     deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
     function_value = func(x_projection)
-    if debug:
+    if runtime_check:
       assert_op = _is_invariant_to_input_transforms(function_value, func(right))
     else:
       assert_op = None
@@ -107,7 +108,7 @@ def gradients(func, x, name='t3f_gradients', debug=True):
 
 
 def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
-                           debug=True):
+                           runtime_check=True):
   """P_x d^2f/dx^2 P_x vector, i.e. Riemannian hessian by vector product.
 
     Computes
@@ -138,10 +139,10 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
           project the gradient.
       vector: `TensorTrain` object which to multiply be the Hessian.
       name: string, name of the Op.
-      debug: [True] whether to do a sanity check that the passed function is
-        invariant to different TT representations (otherwise the Rieamnnian
-        gradient doesn't even exist). It makes things slower, but helps catching
-        bugs, so turn it off during production deployment.
+      runtime_check: [True] whether to do a sanity check that the passed
+        function is invariant to different TT representations (otherwise
+        the Rieamnnian gradient doesn't even exist). It makes things slower,
+        but helps catching bugs, so turn it off during production deployment.
 
     Returns:
         `TensorTrain`, projection of the gradient df/dx onto the tangent space at
@@ -158,7 +159,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
     deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
     x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
     function_value = func(x_projection)
-    if debug:
+    if runtime_check:
       assert_op = _is_invariant_to_input_transforms(function_value, func(right))
     else:
       assert_op = None
