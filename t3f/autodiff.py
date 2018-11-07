@@ -129,7 +129,8 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
         # Quadratic form with matrix A: <x, A x>.
         # It's gradient is (A + A.T) x, it's Hessian is (A + A.T)
         # It's Riemannian Hessian by vector product is
-        #     t3f.project(t3f.matmul(A + t3f.transpose(A), vector), x)
+        #     proj_vec = t3f.project(vector, x)
+        #     t3f.project(t3f.matmul(A + t3f.transpose(A), proj_vec), x)
         f = lambda x: t3f.quadratic_form(A, x, x)
         res = t3f.hessian_vector_product(f, x, vector)
 
