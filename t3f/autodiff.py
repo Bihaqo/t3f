@@ -109,10 +109,10 @@ def gradients(func, x, name='t3f_gradients', runtime_check=True):
 
 def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
                            runtime_check=True):
-  """P_x d^2f/dx^2 P_x vector, i.e. Riemannian hessian by vector product.
+  """P_x [d^2f/dx^2] P_x vector, i.e. Riemannian hessian by vector product.
 
     Computes
-      P_x d^2f/dx^2 P_x vector
+      P_x [d^2f/dx^2] P_x vector
     where P_x is projection onto the tangent space of TT at point x and
     d^2f/dx^2 is the Hessian of the function.
 
