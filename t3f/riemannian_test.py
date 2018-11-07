@@ -274,6 +274,50 @@ class _RiemannianTest():
       desired_val, actual_val = sess.run((desired, actual))
       self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
+  def testToAndFromDeltas(self):
+    # Test converting to and from deltas representation of the tangent space
+    # element.
+    what = initializers.random_tensor((2, 3, 4), 4, dtype=self.dtype)
+    where = initializers.random_tensor((2, 3, 4), 3, dtype=self.dtype)
+    projected = riemannian.project(what, where)
+
+    deltas = riemannian.tangent_space_to_deltas(projected)
+    reconstructed_projected = riemannian.deltas_to_tangent_space(deltas, where)
+    # Tangent space element norm can be computed from deltas norm.
+    projected_normsq_desired = ops.frobenius_norm_squared(projected)
+    projected_normsq_actual = tf.add_n([tf.reduce_sum(c * c) for c in deltas])
+    with self.test_session() as sess:
+      desired_val, actual_val = sess.run((ops.full(projected),
+                                          ops.full(reconstructed_projected)))
+      self.assertAllClose(desired_val, actual_val)
+      desired_val, actual_val = sess.run((projected_normsq_desired,
+                                          projected_normsq_actual))
+      self.assertAllClose(desired_val, actual_val)
+
+  def testToAndFromDeltasBatch(self):
+    # Test converting to and from deltas representation of the tangent space
+    # element in the batch case.
+    what = initializers.random_matrix_batch(((2, 3, 4), (3, 3, 3)), 4,
+                                            batch_size=3, dtype=self.dtype)
+    where = initializers.random_matrix(((2, 3, 4), (3, 3, 3)), 3,
+                                       dtype=self.dtype)
+    projected = riemannian.project(what, where)
+
+    deltas = riemannian.tangent_space_to_deltas(projected)
+    reconstructed_projected = riemannian.deltas_to_tangent_space(deltas, where)
+    # Tangent space element norm can be computed from deltas norm.
+    projected_normsq_desired = ops.frobenius_norm_squared(projected)
+    d_normssq = [tf.reduce_sum(tf.reshape(c, (3, -1)) ** 2, 1) for c in deltas]
+    projected_normsq_actual = tf.add_n(d_normssq)
+
+    with self.test_session() as sess:
+      desired_val, actual_val = sess.run((ops.full(projected),
+                                          ops.full(reconstructed_projected)))
+      self.assertAllClose(desired_val, actual_val)
+      desired_val, actual_val = sess.run((projected_normsq_desired,
+                                          projected_normsq_actual))
+      self.assertAllClose(desired_val, actual_val)
+
 
 class RiemannianTestFloat32(tf.test.TestCase, _RiemannianTest):
   dtype = tf.float32
