@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from t3f import shapes
 from t3f import decompositions
 from t3f import riemannian
 
@@ -7,15 +8,13 @@ from t3f import riemannian
 def _enforce_gauge_conditions(deltas, left):
   """Project deltas that define tangent space vec onto the gauge conditions."""
   proj_deltas = []
+  tt_ranks = shapes.lazy_tt_ranks(left)
   for i in range(left.ndims()):
-    if left.is_tt_matrix():
-      r1, n, m, r2 = left.tt_cores[i].shape.as_list()
-    else:
-      r1, n, r2 = left.tt_cores[i].shape.as_list()
-    q = tf.reshape(left.tt_cores[i], (-1, r2))
+    right_r = tt_ranks[i + 1]
+    q = tf.reshape(left.tt_cores[i], (-1, right_r))
     if i < left.ndims() - 1:
       proj_delta = deltas[i]
-      proj_delta = tf.reshape(proj_delta, (-1, r2))
+      proj_delta = tf.reshape(proj_delta, (-1, right_r))
       proj_delta -= tf.matmul(q, tf.matmul(tf.transpose(q), proj_delta))
       proj_delta = tf.reshape(proj_delta, left.tt_cores[i].shape)
     else:
