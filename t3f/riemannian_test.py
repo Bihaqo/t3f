@@ -288,10 +288,10 @@ class _RiemannianTest():
     projected_normsq_actual = tf.add_n([tf.reduce_sum(c * c) for c in deltas])
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((ops.full(projected),
-                                         ops.full(reconstructed_projected)))
+                                          ops.full(reconstructed_projected)))
       self.assertAllClose(desired_val, actual_val)
       desired_val, actual_val = sess.run((projected_normsq_desired,
-                                         projected_normsq_actual))
+                                          projected_normsq_actual))
       self.assertAllClose(desired_val, actual_val)
 
   def testToAndFromDeltasBatch(self):
@@ -312,10 +312,10 @@ class _RiemannianTest():
 
     with self.test_session() as sess:
       desired_val, actual_val = sess.run((ops.full(projected),
-                                         ops.full(reconstructed_projected)))
+                                          ops.full(reconstructed_projected)))
       self.assertAllClose(desired_val, actual_val)
       desired_val, actual_val = sess.run((projected_normsq_desired,
-                                         projected_normsq_actual))
+                                          projected_normsq_actual))
       self.assertAllClose(desired_val, actual_val)
 
 
