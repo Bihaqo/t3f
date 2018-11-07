@@ -1,8 +1,5 @@
 import tensorflow as tf
 
-from t3f.tensor_train import TensorTrain
-from t3f import shapes
-from t3f import batch_ops
 from t3f import decompositions
 from t3f import riemannian
 
@@ -35,10 +32,10 @@ def _is_invariant_to_input_transforms(f_value_1, f_value_2,
     f_value_1: tf.Tensor, value of the function computed on x_1
     f_value_2: tf.Tensor, value of the function computed on x_2
     name: String, the name of the returned op
-  
+
   Here we assume that as tensors x_1 == x_2, but their TT-cores are different,
   e.g. x_2 is a cores orthogonalization version of x_1.
-  
+
   The function prints a warning about introducing overhead and returns an Assert
   op that checks that the two values are reasonably close to each other.
 

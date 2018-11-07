@@ -777,9 +777,9 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
   deltas = [None] * num_dims
   tt_ranks = shapes.lazy_tt_ranks(tt)
   for i in range(1, num_dims - 1):
-      if int(tt_ranks[i] / 2) != tt_ranks[i] / 2:
-        raise ValueError('tt argument is supposed to be a projection, but its '
-                         'ranks are not even.')
+    if int(tt_ranks[i] / 2) != tt_ranks[i] / 2:
+      raise ValueError('tt argument is supposed to be a projection, but its '
+                       'ranks are not even.')
   with tf.name_scope(name, values=tt.tt_cores):
     for i in range(1, num_dims - 1):
       r1, r2 = tt_ranks[i], tt_ranks[i + 1]
@@ -827,55 +827,56 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
   dtype = tt.dtype
   num_dims = tt.ndims()
   # TODO: add cache instead of mannually pasisng precomputed stuff?
-  if left is None:
-    left = decompositions.orthogonalize_tt_cores(tt)
-  if right is None:
-    right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
-  left_tangent_tt_ranks = shapes.lazy_tt_ranks(left)
-  right_tangent_tt_ranks = shapes.lazy_tt_ranks(left)
-  raw_shape = shapes.lazy_raw_shape(left)
-  right_rank_dim = left.right_tt_rank_dim
-  left_rank_dim = left.left_tt_rank_dim
-  is_batch_case = len(deltas[0].shape) > len(tt.tt_cores[0].shape)
-  if is_batch_case:
-    right_rank_dim += 1
-    left_rank_dim += 1
-    batch_size = deltas[0].shape.as_list()[0]
-  for i in range(num_dims):
-    left_tt_core = left.tt_cores[i]
-    right_tt_core = right.tt_cores[i]
+  with tf.name_scope(name, values=tt.tt_cores):
+    if left is None:
+      left = decompositions.orthogonalize_tt_cores(tt)
+    if right is None:
+      right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
+    left_tangent_tt_ranks = shapes.lazy_tt_ranks(left)
+    right_tangent_tt_ranks = shapes.lazy_tt_ranks(left)
+    raw_shape = shapes.lazy_raw_shape(left)
+    right_rank_dim = left.right_tt_rank_dim
+    left_rank_dim = left.left_tt_rank_dim
+    is_batch_case = len(deltas[0].shape) > len(tt.tt_cores[0].shape)
     if is_batch_case:
-      tile = [1] * len(left_tt_core.shape)
-      tile = [batch_size] + tile
-      left_tt_core = tf.tile(left_tt_core[None, ...], tile)
-      right_tt_core = tf.tile(right_tt_core[None, ...], tile)
-
-    if i == 0:
-      tangent_core = tf.concat((deltas[i], left_tt_core),
-                               axis=right_rank_dim)
-    elif i == num_dims - 1:
-      tangent_core = tf.concat((right_tt_core, deltas[i]),
-                               axis=left_rank_dim)
-    else:
-      rank_1 = right_tangent_tt_ranks[i]
-      rank_2 = left_tangent_tt_ranks[i + 1]
-      if tt.is_tt_matrix():
-        mode_size_n = raw_shape[0][i]
-        mode_size_m = raw_shape[1][i]
-        shape = [rank_1, mode_size_n, mode_size_m, rank_2]
-      else:
-        mode_size_n = raw_shape[0][i]
-        shape = [rank_1, mode_size_n, rank_2]
+      right_rank_dim += 1
+      left_rank_dim += 1
+      batch_size = deltas[0].shape.as_list()[0]
+    for i in range(num_dims):
+      left_tt_core = left.tt_cores[i]
+      right_tt_core = right.tt_cores[i]
       if is_batch_case:
-        shape = [batch_size] + shape
-      zeros = tf.zeros(shape, dtype=dtype)
-      upper = tf.concat((right_tt_core, zeros), axis=right_rank_dim)
-      lower = tf.concat((deltas[i], left_tt_core), axis=right_rank_dim)
-      tangent_core = tf.concat((upper, lower), axis=left_rank_dim)
-    cores.append(tangent_core)
-  if is_batch_case:
-    tangent = TensorTrainBatch(cores, batch_size=batch_size)
-  else:
-    tangent = TensorTrain(cores)
-  tangent.projection_on = tt
-  return tangent
+        tile = [1] * len(left_tt_core.shape)
+        tile = [batch_size] + tile
+        left_tt_core = tf.tile(left_tt_core[None, ...], tile)
+        right_tt_core = tf.tile(right_tt_core[None, ...], tile)
+
+      if i == 0:
+        tangent_core = tf.concat((deltas[i], left_tt_core),
+                                 axis=right_rank_dim)
+      elif i == num_dims - 1:
+        tangent_core = tf.concat((right_tt_core, deltas[i]),
+                                 axis=left_rank_dim)
+      else:
+        rank_1 = right_tangent_tt_ranks[i]
+        rank_2 = left_tangent_tt_ranks[i + 1]
+        if tt.is_tt_matrix():
+          mode_size_n = raw_shape[0][i]
+          mode_size_m = raw_shape[1][i]
+          shape = [rank_1, mode_size_n, mode_size_m, rank_2]
+        else:
+          mode_size_n = raw_shape[0][i]
+          shape = [rank_1, mode_size_n, rank_2]
+        if is_batch_case:
+          shape = [batch_size] + shape
+        zeros = tf.zeros(shape, dtype=dtype)
+        upper = tf.concat((right_tt_core, zeros), axis=right_rank_dim)
+        lower = tf.concat((deltas[i], left_tt_core), axis=right_rank_dim)
+        tangent_core = tf.concat((upper, lower), axis=left_rank_dim)
+      cores.append(tangent_core)
+    if is_batch_case:
+      tangent = TensorTrainBatch(cores, batch_size=batch_size)
+    else:
+      tangent = TensorTrain(cores)
+    tangent.projection_on = tt
+    return tangent
