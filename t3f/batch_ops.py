@@ -68,7 +68,7 @@ def multiply_along_batch_dim(batch_tt, weights,
     TensorTrainBatch
   """
   with tf.name_scope(name, values=batch_tt.tt_cores+(weights,)):
-    weights = tf.convert_to_tensor(weights)
+    weights = tf.convert_to_tensor(weights, dtype=batch_tt.dtype)
     tt_cores = list(batch_tt.tt_cores)
     if batch_tt.is_tt_matrix():
       weights = weights[:, tf.newaxis, tf.newaxis, tf.newaxis, tf.newaxis]
@@ -114,7 +114,7 @@ def gram_matrix(tt_vectors, matrix=None, name='t3f_gram_matrix'):
       r is the TT-rank of vectors tt_vectors;
       R is the TT-rank of the matrix.
   """
-  return pairwise_flat_inner(tt_vectors, tt_vectors, matrix)
+  return pairwise_flat_inner(tt_vectors, tt_vectors, matrix, name)
 
 
 def pairwise_flat_inner(tt_1, tt_2, matrix=None,

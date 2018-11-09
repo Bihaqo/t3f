@@ -67,7 +67,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None,
       a `TensorTrain` object representing (approximate) element-wise sum of all
       the objects in the batch, weighted if coef is provided.
     If coefficients is a matrix, returns `TensorTrainBatch`.
-  
+
   See Also:
     t3f.approximate.add_n
   """
@@ -83,7 +83,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None,
   with tf.name_scope(name, values=all_tensors):
     is_batch_output = False
     if coef is not None:
-      coef = tf.convert_to_tensor(coef)
+      coef = tf.convert_to_tensor(coef, dtype=tt_batch.dtype)
       if len(coef.get_shape()) == 1:
         tt_batch = batch_ops.multiply_along_batch_dim(tt_batch, coef)
       elif len(coef.get_shape()) == 2:
