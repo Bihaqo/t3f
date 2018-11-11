@@ -176,9 +176,9 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None,
         res = tf.einsum(einsum_str, res, curr_core_1, curr_core_2)
     else:
       # res[i, j] = tt_1[i] ^ T * matrix * tt_2[j]
-      are_all_maatrices = tt_1.is_tt_matrix() and tt_2.is_tt_matrix()
-      are_all_maatrices = are_all_maatrices and matrix.is_tt_matrix()
-      if not are_all_maatrices:
+      are_all_matrices = tt_1.is_tt_matrix() and tt_2.is_tt_matrix()
+      are_all_matrices = are_all_matrices and matrix.is_tt_matrix()
+      if not are_all_matrices:
         raise ValueError('When passing three arguments to pairwise_flat_inner, '
                          'the first 2 of them should be TT-vecors and the last '
                          'should be a TT-matrix. Got %s, %s, and %s instead.' %
