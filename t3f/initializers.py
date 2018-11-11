@@ -451,7 +451,10 @@ def ones_like(tt, name='t3f_ones_like'):
     raise ValueError("`tt` has to be a Tensor Train object")
   else:
     shape = shapes.lazy_raw_shape(tt)
-    with tf.name_scope(name, values=tt.tt_cores):
+    # I guess variables=tt.tt_cores is not needed here since the output of
+    # the function doesn't depend on the values of the TT-cores, only on their
+    # shapes etc. But I'm not 100% sure.
+    with tf.name_scope(name):
       if tt.is_tt_matrix():
         return matrix_ones(shape, dtype=tt.dtype)
       else:
@@ -477,7 +480,10 @@ def zeros_like(tt, name='t3f_zeros_like'):
     raise ValueError("`tt` has to be a Tensor Train object")
   else:
     shape = shapes.lazy_raw_shape(tt)
-    with tf.name_scope(name, values=tt.tt_cores):
+    # I guess variables=tt.tt_cores is not needed here since the output of
+    # the function doesn't depend on the values of the TT-cores, only on their
+    # shapes etc. But I'm not 100% sure.
+    with tf.name_scope(name):
       if tt.is_tt_matrix():
         return matrix_zeros(shape, dtype=tt.dtype)
       else:
