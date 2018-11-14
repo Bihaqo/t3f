@@ -11,21 +11,23 @@ from t3f import initializers
 # TODO: add complexities to the comments.
 
 
-def full(tt):
+def full(tt, name='t3f_full'):
   """Converts a TensorTrain into a regular tensor or matrix (tf.Tensor).
 
   Args:
     tt: `TensorTrain` or `TensorTrainBatch` object.
+    name: string, name of the Op.
 
   Returns:
     tf.Tensor.
   """
-  if isinstance(tt, TensorTrainBatch):
-    # Batch of Tensor Trains.
-    return _full_tt_batch(tt)
-  else:
-    # TensorTrain object (not batch).
-    return _full_tt(tt)
+  with tf.name_scope(name, values=tt.tt_cores):
+    if isinstance(tt, TensorTrainBatch):
+      # Batch of Tensor Trains.
+      return _full_tt_batch(tt)
+    else:
+      # TensorTrain object (not batch).
+      return _full_tt(tt)
 
 
 def _full_tt(tt):
@@ -147,7 +149,6 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   einsum_str = '{}aijb,{}cjkd->{}acikbd'.format(a_batch_str, b_batch_str,
                                                 res_batch_str)
   result_cores = []
-  # TODO: name the operation and the resulting tensor.
   a_shape = shapes.lazy_raw_shape(tt_matrix_a)
   a_ranks = shapes.lazy_tt_ranks(tt_matrix_a)
   b_shape = shapes.lazy_raw_shape(tt_matrix_b)
@@ -273,7 +274,7 @@ def tt_sparse_matmul(tt_matrix_a, sparse_matrix_b):
   raise NotImplementedError
 
 
-def matmul(a, b):
+def matmul(a, b, name='t3f_matmul'):
   """Multiplies two matrices that can be TT-, dense, or sparse.
 
   Note that multiplication of two TT-matrices returns a TT-matrix with much
@@ -286,6 +287,7 @@ def matmul(a, b):
       size M x N
     b: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor of
       size N x P
+    name: string, name of the Op.
 
   Returns
     If both arguments are `TensorTrain` objects, returns a `TensorTrain`
@@ -297,15 +299,20 @@ def matmul(a, b):
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
-    return tt_tt_matmul(a, b)
+    with tf.name_scope(name, values=a.tt_cores+b.tt_cores):
+      return tt_tt_matmul(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
-    return tt_dense_matmul(a, b)
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
+      return tt_dense_matmul(a, b)
   elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
-    return dense_tt_matmul(a, b)
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
+      return dense_tt_matmul(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
-    return tt_sparse_matmul(a, b)
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
+      return tt_sparse_matmul(a, b)
   elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
-    return sparse_tt_matmul(a, b)
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
+      return sparse_tt_matmul(a, b)
   else:
     raise ValueError('Argument types are not supported in matmul: %s x %s' %
                      (a, b))
@@ -379,7 +386,6 @@ def tt_tt_flat_inner(tt_a, tt_b):
   # if both arguments are TT-tensors, then it is
   # res = tf.einsum('aib,cid->bd', a_core, b_core)
   res = tf.einsum(init_einsum_str, a_core, b_core)
-  # TODO: name the operation and the resulting tensor.
 
   einsum_str = '{3}ac,{1}a{0}b,{2}c{0}d->{3}bd'.format(axes_str, a_batch_str,
                                                        b_batch_str,
@@ -495,7 +501,7 @@ def sparse_tt_flat_inner(sparse_a, tt_b):
   raise NotImplementedError
 
 
-def flat_inner(a, b):
+def flat_inner(a, b, name='t3f_flat_inner'):
   """Inner product along all axis.
 
   The shapes of a and b should coincide.
@@ -503,6 +509,7 @@ def flat_inner(a, b):
   Args:
     a: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor
     b: `TensorTrain`, `TensorTrainBatch`, tf.Tensor, or tf.SparseTensor
+    name: string, name of the Op.
 
   Returns
     a number
@@ -513,15 +520,20 @@ def flat_inner(a, b):
   """
 #   TODO: is it safe to check types? What if a class is derived from TT?
   if isinstance(a, TensorTrainBase) and isinstance(b, TensorTrainBase):
-    return tt_tt_flat_inner(a, b)
+    with tf.name_scope(name, values=a.tt_cores+b.tt_cores):
+      return tt_tt_flat_inner(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.Tensor):
-    return tt_dense_flat_inner(a, b)
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
+      return tt_dense_flat_inner(a, b)
   elif isinstance(a, tf.Tensor) and isinstance(b, TensorTrain):
-    return dense_tt_flat_inner(a, b)
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
+      return dense_tt_flat_inner(a, b)
   elif isinstance(a, TensorTrain) and isinstance(b, tf.SparseTensor):
-    return tt_sparse_flat_inner(a, b)
+    with tf.name_scope(name, values=a.tt_cores+(b,)):
+      return tt_sparse_flat_inner(a, b)
   elif isinstance(a, tf.SparseTensor) and isinstance(b, TensorTrain):
-    return sparse_tt_flat_inner(a, b)
+    with tf.name_scope(name, values=(a,)+b.tt_cores):
+      return sparse_tt_flat_inner(a, b)
   else:
     raise ValueError('Argument types are not supported in flat_inner: %s x %s' %
                      (a, b))
@@ -671,7 +683,7 @@ def _add_batch_matrix_cores(tt_a, tt_b):
   return tt_cores, batch_size
 
 
-def add(tt_a, tt_b):
+def add(tt_a, tt_b, name='t3f_add'):
   """Returns a TensorTrain corresponding to elementwise sum tt_a + tt_b.
 
   The shapes of tt_a and tt_b should coincide.
@@ -682,6 +694,7 @@ def add(tt_a, tt_b):
   Args:
     tt_a: `TensorTrain`, `TensorTrainBatch`, TT-tensor, or TT-matrix
     tt_b: `TensorTrain`, `TensorTrainBatch`, TT-tensor, or TT-matrix
+    name: string, name of the Op.
 
   Returns
     a `TensorTrain` object corresponding to the element-wise sum of arguments if
@@ -704,33 +717,36 @@ def add(tt_a, tt_b):
     raise ValueError('The batch sizes are different and not 1, broadcasting is '
                      'not available.')
 
-  is_batch_case = isinstance(tt_a, TensorTrainBatch) or isinstance(tt_b, TensorTrainBatch)
-  batch_size = None
-  if is_batch_case:
-    if tt_a.is_tt_matrix():
-      tt_cores, batch_size = _add_batch_matrix_cores(tt_a, tt_b)
+  with tf.name_scope(name, values=tt_a.tt_cores+tt_b.tt_cores):
+    is_a_batch = isinstance(tt_a, TensorTrainBatch)
+    is_b_batch = isinstance(tt_b, TensorTrainBatch)
+    is_batch_case = is_a_batch or is_b_batch
+    batch_size = None
+    if is_batch_case:
+      if tt_a.is_tt_matrix():
+        tt_cores, batch_size = _add_batch_matrix_cores(tt_a, tt_b)
+      else:
+        tt_cores, batch_size = _add_batch_tensor_cores(tt_a, tt_b)
     else:
-      tt_cores, batch_size = _add_batch_tensor_cores(tt_a, tt_b)
-  else:
-    if tt_a.is_tt_matrix():
-      tt_cores = _add_matrix_cores(tt_a, tt_b)
+      if tt_a.is_tt_matrix():
+        tt_cores = _add_matrix_cores(tt_a, tt_b)
+      else:
+        tt_cores = _add_tensor_cores(tt_a, tt_b)
+
+    out_ranks = [1]
+    static_a_ranks = tt_a.get_tt_ranks()
+    static_b_ranks = tt_b.get_tt_ranks()
+    for core_idx in range(1, ndims):
+      out_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
+    out_ranks.append(1)
+    if is_batch_case:
+      return TensorTrainBatch(tt_cores, tt_a.get_raw_shape(), out_ranks,
+                              batch_size)
     else:
-      tt_cores = _add_tensor_cores(tt_a, tt_b)
-
-  out_ranks = [1]
-  static_a_ranks = tt_a.get_tt_ranks()
-  static_b_ranks = tt_b.get_tt_ranks()
-  for core_idx in range(1, ndims):
-    out_ranks.append(static_a_ranks[core_idx] + static_b_ranks[core_idx])
-  out_ranks.append(1)
-  if is_batch_case:
-    return TensorTrainBatch(tt_cores, tt_a.get_raw_shape(), out_ranks,
-                            batch_size)
-  else:
-    return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
+      return TensorTrain(tt_cores, tt_a.get_raw_shape(), out_ranks)
 
 
-def multiply(tt_left, right):
+def multiply(tt_left, right, name='t3f_multiply'):
   """Returns a TensorTrain corresponding to element-wise product tt_left * right.
 
   Supports broadcasting:
@@ -745,6 +761,7 @@ def multiply(tt_left, right):
   Args:
     tt_left: `TensorTrain` OR `TensorTrainBatch`
     right: `TensorTrain` OR `TensorTrainBatch` OR a number.
+    name: string, name of the Op.
 
   Returns
     a `TensorTrain` or `TensorTrainBatch` object corresponding to the
@@ -754,145 +771,147 @@ def multiply(tt_left, right):
     ValueError if the arguments shapes do not coincide or broadcasting is not
     possible.
   """
-
   is_left_batch = isinstance(tt_left, TensorTrainBatch)
   is_right_batch = isinstance(right, TensorTrainBatch)
 
   is_batch_case = is_left_batch or is_right_batch
   ndims = tt_left.ndims()
   if not isinstance(right, TensorTrainBase):
-    # Assume right is a number, not TensorTrain.
-    # To squash right uniformly across TT-cores we pull its absolute value
-    # and raise to the power 1/ndims. First TT-core is multiplied by the sign
-    # of right.
-    tt_cores = list(tt_left.tt_cores)
-    fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0 / ndims)
-    sign = tf.cast(tf.sign(right), tt_left.dtype)
-    for i in range(len(tt_cores)):
-      tt_cores[i] = fact * tt_cores[i]
+    with tf.name_scope(name, values=tt_left.tt_cores+(right,)):
+      # Assume right is a number, not TensorTrain.
+      # To squash right uniformly across TT-cores we pull its absolute value
+      # and raise to the power 1/ndims. First TT-core is multiplied by the sign
+      # of right.
+      tt_cores = list(tt_left.tt_cores)
+      fact = tf.pow(tf.cast(tf.abs(right), tt_left.dtype), 1.0 / ndims)
+      sign = tf.cast(tf.sign(right), tt_left.dtype)
+      for i in range(len(tt_cores)):
+        tt_cores[i] = fact * tt_cores[i]
 
-    tt_cores[0] = tt_cores[0] * sign
-    out_ranks = tt_left.get_tt_ranks()
-    if is_left_batch:
-        out_batch_size = tt_left.batch_size
-  else:
-
-    if tt_left.is_tt_matrix() != right.is_tt_matrix():
-      raise ValueError('The arguments should be both TT-tensors or both '
-                       'TT-matrices')
-
-    if tt_left.get_raw_shape() != right.get_raw_shape():
-      raise ValueError('The arguments should have the same shape.')
-
-    out_batch_size = 1
-    dependencies = []
-    can_determine_if_broadcast = True
-    if is_left_batch and is_right_batch:
-      if tt_left.batch_size is None and right.batch_size is None:
-        can_determine_if_broadcast = False
-      elif tt_left.batch_size is None and right.batch_size is not None:
-        if right.batch_size > 1:
-            can_determine_if_broadcast = False
-      elif tt_left.batch_size is not None and right.batch_size is None:
-        if tt_left.batch_size > 1:
-            can_determine_if_broadcast = False
-
-    if not can_determine_if_broadcast:
-      # Cannot determine if broadcasting is needed. Avoid broadcasting and
-      # assume elementwise multiplication AND add execution time assert to print
-      # a better error message if the batch sizes turn out to be different.
-
-      message = ('The batch sizes were unknown on compilation stage, so '
-                 'assumed elementwise multiplication (i.e. no broadcasting). '
-                 'Now it seems that they are different after all :')
-
-      data = [message, shapes.lazy_batch_size(tt_left), ' x ',
-              shapes.lazy_batch_size(right)]
-      bs_eq = tf.assert_equal(shapes.lazy_batch_size(tt_left),
-                              shapes.lazy_batch_size(right), data=data)
-
-      dependencies.append(bs_eq)
-
-    do_broadcast = shapes.is_batch_broadcasting_possible(tt_left, right)
-    if not can_determine_if_broadcast:
-      # Assume elementwise multiplication if broadcasting cannot be determined
-      # on compilation stage.
-      do_broadcast = False
-    if not do_broadcast and can_determine_if_broadcast:
-      raise ValueError('The batch sizes are different and not 1, broadcasting '
-                       'is not available.')
-
-    a_ranks = shapes.lazy_tt_ranks(tt_left)
-    b_ranks = shapes.lazy_tt_ranks(right)
-    shape = shapes.lazy_raw_shape(tt_left)
-
-    output_str = ''
-    bs_str_left = ''
-    bs_str_right = ''
-
-    if is_batch_case:
-      if is_left_batch and is_right_batch:
-        # Both arguments are batches of equal size.
-        if tt_left.batch_size == right.batch_size or not can_determine_if_broadcast:
-          bs_str_left = 'n'
-          bs_str_right = 'n'
-          output_str = 'n'
-          if not can_determine_if_broadcast:
-            out_batch_size = None
-          else:
-            out_batch_size = tt_left.batch_size
-        else:
-          # Broadcasting (e.g batch_sizes are 1 and n>1).
-          bs_str_left = 'n'
-          bs_str_right = 'm'
-          output_str = 'nm'
-          if tt_left.batch_size is None or tt_left.batch_size > 1:
-            out_batch_size = tt_left.batch_size
-          else:
-            out_batch_size = right.batch_size
-      else:
-        # One of the arguments is TensorTrain.
-        if is_left_batch:
-          bs_str_left = 'n'
-          bs_str_right = ''
+      tt_cores[0] = tt_cores[0] * sign
+      out_ranks = tt_left.get_tt_ranks()
+      if is_left_batch:
           out_batch_size = tt_left.batch_size
+  else:
+    with tf.name_scope(name, values=tt_left.tt_cores+right.tt_cores):
+
+      if tt_left.is_tt_matrix() != right.is_tt_matrix():
+        raise ValueError('The arguments should be both TT-tensors or both '
+                         'TT-matrices')
+
+      if tt_left.get_raw_shape() != right.get_raw_shape():
+        raise ValueError('The arguments should have the same shape.')
+
+      out_batch_size = 1
+      dependencies = []
+      can_determine_if_broadcast = True
+      if is_left_batch and is_right_batch:
+        if tt_left.batch_size is None and right.batch_size is None:
+          can_determine_if_broadcast = False
+        elif tt_left.batch_size is None and right.batch_size is not None:
+          if right.batch_size > 1:
+              can_determine_if_broadcast = False
+        elif tt_left.batch_size is not None and right.batch_size is None:
+          if tt_left.batch_size > 1:
+              can_determine_if_broadcast = False
+
+      if not can_determine_if_broadcast:
+        # Cannot determine if broadcasting is needed. Avoid broadcasting and
+        # assume elementwise multiplication AND add execution time assert to
+        # print a better error message if the batch sizes turn out to be
+        # different.
+
+        message = ('The batch sizes were unknown on compilation stage, so '
+                   'assumed elementwise multiplication (i.e. no broadcasting). '
+                   'Now it seems that they are different after all :')
+
+        data = [message, shapes.lazy_batch_size(tt_left), ' x ',
+                shapes.lazy_batch_size(right)]
+        bs_eq = tf.assert_equal(shapes.lazy_batch_size(tt_left),
+                                shapes.lazy_batch_size(right), data=data)
+
+        dependencies.append(bs_eq)
+
+      do_broadcast = shapes.is_batch_broadcasting_possible(tt_left, right)
+      if not can_determine_if_broadcast:
+        # Assume elementwise multiplication if broadcasting cannot be determined
+        # on compilation stage.
+        do_broadcast = False
+      if not do_broadcast and can_determine_if_broadcast:
+        raise ValueError('The batch sizes are different and not 1, broadcasting '
+                         'is not available.')
+
+      a_ranks = shapes.lazy_tt_ranks(tt_left)
+      b_ranks = shapes.lazy_tt_ranks(right)
+      shape = shapes.lazy_raw_shape(tt_left)
+
+      output_str = ''
+      bs_str_left = ''
+      bs_str_right = ''
+
+      if is_batch_case:
+        if is_left_batch and is_right_batch:
+          # Both arguments are batches of equal size.
+          if tt_left.batch_size == right.batch_size or not can_determine_if_broadcast:
+            bs_str_left = 'n'
+            bs_str_right = 'n'
+            output_str = 'n'
+            if not can_determine_if_broadcast:
+              out_batch_size = None
+            else:
+              out_batch_size = tt_left.batch_size
+          else:
+            # Broadcasting (e.g batch_sizes are 1 and n>1).
+            bs_str_left = 'n'
+            bs_str_right = 'm'
+            output_str = 'nm'
+            if tt_left.batch_size is None or tt_left.batch_size > 1:
+              out_batch_size = tt_left.batch_size
+            else:
+              out_batch_size = right.batch_size
         else:
-          bs_str_left = ''
-          bs_str_right = 'n'
-          out_batch_size = right.batch_size
-        output_str = 'n'
+          # One of the arguments is TensorTrain.
+          if is_left_batch:
+            bs_str_left = 'n'
+            bs_str_right = ''
+            out_batch_size = tt_left.batch_size
+          else:
+            bs_str_left = ''
+            bs_str_right = 'n'
+            out_batch_size = right.batch_size
+          output_str = 'n'
 
-    is_matrix = tt_left.is_tt_matrix()
-    tt_cores = []
+      is_matrix = tt_left.is_tt_matrix()
+      tt_cores = []
 
-    for core_idx in range(ndims):
-      a_core = tt_left.tt_cores[core_idx]
-      b_core = right.tt_cores[core_idx]
-      left_rank = a_ranks[core_idx] * b_ranks[core_idx]
-      right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
-      if is_matrix:
-        with tf.control_dependencies(dependencies):
-          curr_core = tf.einsum('{0}aijb,{1}cijd->{2}acijbd'.format(bs_str_left,
-                                bs_str_right, output_str), a_core, b_core)
-          curr_core = tf.reshape(curr_core, (-1, left_rank,
-                                             shape[0][core_idx],
-                                             shape[1][core_idx],
-                                             right_rank))
-          if not is_batch_case:
+      for core_idx in range(ndims):
+        a_core = tt_left.tt_cores[core_idx]
+        b_core = right.tt_cores[core_idx]
+        left_rank = a_ranks[core_idx] * b_ranks[core_idx]
+        right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
+        if is_matrix:
+          with tf.control_dependencies(dependencies):
+            curr_core = tf.einsum('{0}aijb,{1}cijd->{2}acijbd'.format(bs_str_left,
+                                  bs_str_right, output_str), a_core, b_core)
+            curr_core = tf.reshape(curr_core, (-1, left_rank,
+                                               shape[0][core_idx],
+                                               shape[1][core_idx],
+                                               right_rank))
+            if not is_batch_case:
+                curr_core = tf.squeeze(curr_core, axis=0)
+        else:
+          with tf.control_dependencies(dependencies):
+            curr_core = tf.einsum('{0}aib,{1}cid->{2}acibd'.format(bs_str_left,
+                                  bs_str_right, output_str), a_core, b_core)
+            curr_core = tf.reshape(curr_core, (-1, left_rank,
+                                   shape[0][core_idx], right_rank))
+            if not is_batch_case:
               curr_core = tf.squeeze(curr_core, axis=0)
-      else:
-        with tf.control_dependencies(dependencies):
-          curr_core = tf.einsum('{0}aib,{1}cid->{2}acibd'.format(bs_str_left,
-                                bs_str_right, output_str), a_core, b_core)
-          curr_core = tf.reshape(curr_core, (-1, left_rank,
-                                 shape[0][core_idx], right_rank))
-          if not is_batch_case:
-            curr_core = tf.squeeze(curr_core, axis=0)
 
-      tt_cores.append(curr_core)
+        tt_cores.append(curr_core)
 
-    combined_ranks = zip(tt_left.get_tt_ranks(), right.get_tt_ranks())
-    out_ranks = [a * b for a, b in combined_ranks]
+      combined_ranks = zip(tt_left.get_tt_ranks(), right.get_tt_ranks())
+      out_ranks = [a * b for a, b in combined_ranks]
 
   if not is_batch_case:
     return TensorTrain(tt_cores, tt_left.get_raw_shape(), out_ranks)
@@ -900,7 +919,8 @@ def multiply(tt_left, right):
     return TensorTrainBatch(tt_cores, tt_left.get_raw_shape(), out_ranks,
                             batch_size=out_batch_size)
 
-def frobenius_norm_squared(tt, differentiable=False):
+def frobenius_norm_squared(tt, differentiable=False,
+                           name='t3f_frobenius_norm_squared'):
   """Frobenius norm squared of `TensorTrain` or of each TT in `TensorTrainBatch`.
 
   Frobenius norm squared is the sum of squares of all elements in a tensor.
@@ -909,6 +929,7 @@ def frobenius_norm_squared(tt, differentiable=False):
     tt: `TensorTrain` or `TensorTrainBatch` object
     differentiable: bool, whether to use a differentiable implementation
       or a fast and stable implementation based on QR decomposition.
+    name: string, name of the Op.
 
   Returns
     a number which is the Frobenius norm squared of `tt`, if it is `TensorTrain`
@@ -916,42 +937,44 @@ def frobenius_norm_squared(tt, differentiable=False):
     a Tensor of size tt.batch_size, consisting of the Frobenius norms squared of
     each TensorTrain in `tt`, if it is `TensorTrainBatch`
   """
-  if differentiable:
-    if hasattr(tt, 'batch_size'):
-        bs_str = 'n'
-    else:
-        bs_str = ''
-    if tt.is_tt_matrix():
-      running_prod = tf.einsum('{0}aijb,{0}cijd->{0}bd'.format(bs_str),
-                               tt.tt_cores[0], tt.tt_cores[0])
-    else:
-      running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str),
-                               tt.tt_cores[0], tt.tt_cores[0])
-
-    for core_idx in range(1, tt.ndims()):
-      curr_core = tt.tt_cores[core_idx]
-      if tt.is_tt_matrix():
-        running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
-                                 running_prod, curr_core, curr_core)
+  with tf.name_scope(name, values=tt.tt_cores):
+    if differentiable:
+      if hasattr(tt, 'batch_size'):
+          bs_str = 'n'
       else:
-        running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
-                                 running_prod, curr_core, curr_core)
+          bs_str = ''
+      if tt.is_tt_matrix():
+        running_prod = tf.einsum('{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+                                 tt.tt_cores[0], tt.tt_cores[0])
+      else:
+        running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str),
+                                 tt.tt_cores[0], tt.tt_cores[0])
 
-    return tf.squeeze(running_prod, [-1, -2])
+      for core_idx in range(1, tt.ndims()):
+        curr_core = tt.tt_cores[core_idx]
+        if tt.is_tt_matrix():
+          running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+                                   running_prod, curr_core, curr_core)
+        else:
+          running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
+                                   running_prod, curr_core, curr_core)
 
-  else:
-    orth_tt = decompositions.orthogonalize_tt_cores(tt, left_to_right=True)
-    # All the cores of orth_tt except the last one are orthogonal, hence
-    # the Frobenius norm of orth_tt equals to the norm of the last core.
-    if hasattr(tt, 'batch_size'):
-      batch_size = shapes.lazy_batch_size(tt)
-      last_core = tf.reshape(orth_tt.tt_cores[-1], (batch_size, -1))
-      return tf.norm(last_core, axis=1) ** 2
+      return tf.squeeze(running_prod, [-1, -2])
+
     else:
-      return tf.norm(orth_tt.tt_cores[-1]) ** 2
+      orth_tt = decompositions.orthogonalize_tt_cores(tt, left_to_right=True)
+      # All the cores of orth_tt except the last one are orthogonal, hence
+      # the Frobenius norm of orth_tt equals to the norm of the last core.
+      if hasattr(tt, 'batch_size'):
+        batch_size = shapes.lazy_batch_size(tt)
+        last_core = tf.reshape(orth_tt.tt_cores[-1], (batch_size, -1))
+        return tf.norm(last_core, axis=1) ** 2
+      else:
+        return tf.norm(orth_tt.tt_cores[-1]) ** 2
 
 
-def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
+def frobenius_norm(tt, epsilon=1e-5, differentiable=False,
+                   name='t3f_frobenius_norm'):
   """Frobenius norm of `TensorTrain` or of each TT in `TensorTrainBatch`
 
   Frobenius norm is the sqrt of the sum of squares of all elements in a tensor.
@@ -962,6 +985,7 @@ def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
       numerical stability (e.g. gradient of sqrt at zero is inf).
     differentiable: bool, whether to use a differentiable implementation or
       a fast and stable implementation based on QR decomposition.
+    name: string, name of the Op.
 
   Returns
     a number which is the Frobenius norm of `tt`, if it is `TensorTrain`
@@ -969,15 +993,17 @@ def frobenius_norm(tt, epsilon=1e-5, differentiable=False):
     a Tensor of size tt.batch_size, consisting of the Frobenius norms of
     each TensorTrain in `tt`, if it is `TensorTrainBatch`
   """
-  return tf.sqrt(frobenius_norm_squared(tt, differentiable) + epsilon)
+  with tf.name_scope(name, values=tt.tt_cores):
+    return tf.sqrt(frobenius_norm_squared(tt, differentiable) + epsilon)
 
 
-def transpose(tt_matrix):
+def transpose(tt_matrix, name='t3f_transpose'):
   """Transpose a TT-matrix or a batch of TT-matrices.
 
   Args:
     tt_matrix: `TensorTrain` or `TensorTrainBatch` object containing a TT-matrix
       (or a batch of TT-matrices).
+    name: string, name of the Op.
 
   Returns:
     `TensorTrain` or `TensorTrainBatch` object containing a transposed TT-matrix
@@ -989,27 +1015,28 @@ def transpose(tt_matrix):
   if not isinstance(tt_matrix, TensorTrainBase) or not tt_matrix.is_tt_matrix():
     raise ValueError('The argument should be a TT-matrix.')
 
-  transposed_tt_cores = []
-  for core_idx in range(tt_matrix.ndims()):
-    curr_core = tt_matrix.tt_cores[core_idx]
+  with tf.name_scope(name, values=tt_matrix.tt_cores):
+    transposed_tt_cores = []
+    for core_idx in range(tt_matrix.ndims()):
+      curr_core = tt_matrix.tt_cores[core_idx]
+      if isinstance(tt_matrix, TensorTrain):
+        transposed_tt_cores.append(tf.transpose(curr_core, (0, 2, 1, 3)))
+      else:
+        # TensorTrainBatch.
+        transposed_tt_cores.append(tf.transpose(curr_core, (0, 1, 3, 2, 4)))
+
+    tt_matrix_shape = tt_matrix.get_raw_shape()
+    transposed_shape = tt_matrix_shape[1], tt_matrix_shape[0]
+    tt_ranks = tt_matrix.get_tt_ranks()
     if isinstance(tt_matrix, TensorTrain):
-      transposed_tt_cores.append(tf.transpose(curr_core, (0, 2, 1, 3)))
+      return TensorTrain(transposed_tt_cores, transposed_shape, tt_ranks)
     else:
-      # TensorTrainBatch.
-      transposed_tt_cores.append(tf.transpose(curr_core, (0, 1, 3, 2, 4)))
-
-  tt_matrix_shape = tt_matrix.get_raw_shape()
-  transposed_shape = tt_matrix_shape[1], tt_matrix_shape[0]
-  tt_ranks = tt_matrix.get_tt_ranks()
-  if isinstance(tt_matrix, TensorTrain):
-    return TensorTrain(transposed_tt_cores, transposed_shape, tt_ranks)
-  else:
-    batch_size = tt_matrix.batch_size
-    return TensorTrainBatch(transposed_tt_cores, transposed_shape, tt_ranks,
-                            batch_size)
+      batch_size = tt_matrix.batch_size
+      return TensorTrainBatch(transposed_tt_cores, transposed_shape, tt_ranks,
+                              batch_size)
 
 
-def quadratic_form(A, b, c):
+def quadratic_form(A, b, c, name='t3f_quadratic_form'):
   """Quadratic form b^t A c; A is a TT-matrix, b and c can be batches.
 
   Args:
@@ -1018,6 +1045,7 @@ def quadratic_form(A, b, c):
       or `TensorTrainBatch` with a batch of TT-matrices of size N x 1.
     c: `TensorTrain` object containing a TT-matrix of size M x 1
       or `TensorTrainBatch` with a batch of TT-matrices of size M x 1.
+    name: string, name of the Op.
 
   Returns:
     A number, the value of the quadratic form if all the arguments are
@@ -1053,62 +1081,65 @@ def quadratic_form(A, b, c):
   c_bs_str = 'p' if c_is_batch else ''
   out_bs_str = 'p' if b_is_batch or c_is_batch else ''
 
-  ndims = A.ndims()
-  curr_core_1 = b.tt_cores[0]
-  curr_core_2 = c.tt_cores[0]
-  curr_matrix_core = A.tt_cores[0]
-  # We enumerate the dummy dimension (that takes 1 value) with `k`.
-  # You may think that using two different k would be faster, but in my
-  # experience it's even a little bit slower (but neglectable in general).
-  einsum_str = '{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str, c_bs_str,
-                                                     out_bs_str)
-  res = tf.einsum(einsum_str, curr_core_1, curr_matrix_core, curr_core_2)
-  for core_idx in range(1, ndims):
-    curr_core_1 = b.tt_cores[core_idx]
-    curr_core_2 = c.tt_cores[core_idx]
-    curr_matrix_core = A.tt_cores[core_idx]
-    einsum_str = '{2}ace,{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str,
-                                                              c_bs_str,
-                                                              out_bs_str)
-    res = tf.einsum(einsum_str, res, curr_core_1,
-                    curr_matrix_core, curr_core_2)
+  with tf.name_scope(name, values=A.tt_cores+b.tt_cores+c.tt_cores):
+    ndims = A.ndims()
+    curr_core_1 = b.tt_cores[0]
+    curr_core_2 = c.tt_cores[0]
+    curr_matrix_core = A.tt_cores[0]
+    # We enumerate the dummy dimension (that takes 1 value) with `k`.
+    # You may think that using two different k would be faster, but in my
+    # experience it's even a little bit slower (but neglectable in general).
+    einsum_str = '{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str, c_bs_str,
+                                                       out_bs_str)
+    res = tf.einsum(einsum_str, curr_core_1, curr_matrix_core, curr_core_2)
+    for core_idx in range(1, ndims):
+      curr_core_1 = b.tt_cores[core_idx]
+      curr_core_2 = c.tt_cores[core_idx]
+      curr_matrix_core = A.tt_cores[core_idx]
+      einsum_str = '{2}ace,{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str,
+                                                                c_bs_str,
+                                                                out_bs_str)
+      res = tf.einsum(einsum_str, res, curr_core_1,
+                      curr_matrix_core, curr_core_2)
 
-  # Squeeze to make the result a number instead of 1 x 1 for NON batch case and
-  # to make the result a tensor of size
-  #   batch_size
-  # instead of
-  #   batch_size x 1 x 1
-  # in the batch case.
-  return tf.squeeze(res)
+    # Squeeze to make the result a number instead of 1 x 1 for NON batch case
+    # and to make the result a tensor of size
+    #   batch_size
+    # instead of
+    #   batch_size x 1 x 1
+    # in the batch case.
+    return tf.squeeze(res)
 
 
-def cast(tt_a, dtype):
+def cast(tt, dtype, name='t3f_cast'):
   """Casts a tt-tensor to a new type.
 
   Args:
-    tt_a: `TensorTrain` object.
+    tt: `TensorTrain` object.
     dtype: The destination type.
+    name: string, name of the Op.
 
   Raises:
-    TypeError: If `tt_a` cannot be cast to the `dtype`.
-    ValueError: If `tt_a` is not a `TensorTrain` or `TensorTrainBatch`.
+    TypeError: If `tt` cannot be cast to the `dtype`.
+    ValueError: If `tt` is not a `TensorTrain` or `TensorTrainBatch`.
   """
-  res_cores = []
-  cores = tt_a.tt_cores
-  for core_idx in range(tt_a.ndims()):
-    res_cores.append(tf.cast(cores[core_idx], dtype))
-  res_shape = tt_a.get_raw_shape()
-  res_ranks = tt_a.get_tt_ranks()
-  if isinstance(tt_a, TensorTrain):
-    return TensorTrain(res_cores, res_shape, res_ranks)
-  elif isinstance(tt_a, TensorTrainBatch):
-    return TensorTrainBatch(res_cores, res_shape, res_ranks, tt_a.batch_size)
-  else:
-    raise ValueError('Unsupported type of input "%s", should be TensorTrain or '
-                     'TensorTrainBatch.' % tt_a)
+  with tf.name_scope(name, values=tt.tt_cores):
+    res_cores = []
+    cores = tt.tt_cores
+    for core_idx in range(tt.ndims()):
+      res_cores.append(tf.cast(cores[core_idx], dtype))
+    res_shape = tt.get_raw_shape()
+    res_ranks = tt.get_tt_ranks()
+    if isinstance(tt, TensorTrain):
+      return TensorTrain(res_cores, res_shape, res_ranks)
+    elif isinstance(tt, TensorTrainBatch):
+      return TensorTrainBatch(res_cores, res_shape, res_ranks, tt.batch_size)
+    else:
+      raise ValueError('Unsupported type of input "%s", should be TensorTrain '
+                       'or TensorTrainBatch.' % tt)
 
 
-def gather_nd(tt, indices):
+def gather_nd(tt, indices, name='t3f_gather_nd'):
   """out[i] = tt[indices[i, 0], indices[i, 1], ...]
 
   Equivalent to
@@ -1125,6 +1156,7 @@ def gather_nd(tt, indices):
       dimensions in TT:
         indices.shape[-1] = tt.ndims for `TensorTrain`
         indices.shape[-1] = tt.ndims + 1 for `TensorTrainBatch`
+    name: string, name of the Op.
 
   Returns:
     tf.Tensor with elements specified by indices.
@@ -1133,38 +1165,39 @@ def gather_nd(tt, indices):
     ValueError if `indices` have wrong shape.
     NotImplementedError if `tt` is a TT-matrix.
   """
-  if tt.is_tt_matrix():
-    raise NotImplementedError('gather_nd doesnt support TT-matrices yet '
-                              '(got %s)' % tt)
-  indices = tf.convert_to_tensor(indices)
-  if isinstance(tt, TensorTrainBatch):
-    if indices.get_shape()[-1] != tt.ndims() + 1:
-      raise ValueError('The last dimension of indices (%d) should have '
-                       'the same size as the number of dimensions in the tt '
-                       'object (%d) + 1 (for the batch dimension).' %
-                       (indices.get_shape()[-1], tt.ndims()))
-  else:
-    if indices.get_shape()[-1] != tt.ndims():
-      raise ValueError('The last dimension of indices (%d) should have '
-                       'the same size as the number of dimensions in the tt '
-                       'object (%d).' % (indices.get_shape()[-1], tt.ndims()))
-  tt_elements = tf.ones(tf.shape(indices)[:-1], dtype=tt.dtype)
-  tt_elements = tf.reshape(tt_elements, (-1, 1, 1))
-  for core_idx in range(tt.ndims()):
-    curr_core = tt.tt_cores[core_idx]
+  with tf.name_scope(name, values=tt.tt_cores+(indices,)):
+    if tt.is_tt_matrix():
+      raise NotImplementedError('gather_nd doesnt support TT-matrices yet '
+                                '(got %s)' % tt)
+    indices = tf.convert_to_tensor(indices)
     if isinstance(tt, TensorTrainBatch):
-      curr_core = tf.transpose(curr_core, (0, 2, 1, 3))
-      curr_idx = tf.stack((indices[:, 0], indices[:, core_idx + 1]), axis=1)
-      core_slices = tf.gather_nd(curr_core, curr_idx)
+      if indices.get_shape()[-1] != tt.ndims() + 1:
+        raise ValueError('The last dimension of indices (%d) should have '
+                         'the same size as the number of dimensions in the tt '
+                         'object (%d) + 1 (for the batch dimension).' %
+                         (indices.get_shape()[-1], tt.ndims()))
     else:
-      curr_core = tf.transpose(curr_core, (1, 0, 2))
-      core_slices = tf.gather(curr_core, indices[:, core_idx])
-    tt_elements = tf.matmul(tt_elements, core_slices)
-  tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
-  return tt_elements
+      if indices.get_shape()[-1] != tt.ndims():
+        raise ValueError('The last dimension of indices (%d) should have '
+                         'the same size as the number of dimensions in the tt '
+                         'object (%d).' % (indices.get_shape()[-1], tt.ndims()))
+    tt_elements = tf.ones(tf.shape(indices)[:-1], dtype=tt.dtype)
+    tt_elements = tf.reshape(tt_elements, (-1, 1, 1))
+    for core_idx in range(tt.ndims()):
+      curr_core = tt.tt_cores[core_idx]
+      if isinstance(tt, TensorTrainBatch):
+        curr_core = tf.transpose(curr_core, (0, 2, 1, 3))
+        curr_idx = tf.stack((indices[:, 0], indices[:, core_idx + 1]), axis=1)
+        core_slices = tf.gather_nd(curr_core, curr_idx)
+      else:
+        curr_core = tf.transpose(curr_core, (1, 0, 2))
+        core_slices = tf.gather(curr_core, indices[:, core_idx])
+      tt_elements = tf.matmul(tt_elements, core_slices)
+    tt_elements = tf.reshape(tt_elements, tf.shape(indices)[:-1])
+    return tt_elements
 
 
-def renormalize_tt_cores(tt, epsilon=1e-8):
+def renormalize_tt_cores(tt, epsilon=1e-8, name='t3f_renormalize_tt_cores'):
     """Renormalizes TT-cores to make them of the same Frobenius norm.
 
     Doesn't change the tensor represented by `tt` object, but renormalizes the
@@ -1173,42 +1206,45 @@ def renormalize_tt_cores(tt, epsilon=1e-8):
     Args:
       tt: `TensorTrain` or `TensorTrainBatch` object
       epsilon: parameter for numerical stability of sqrt
+      name: string, name of the Op.
+
     Returns:
       `TensorTrain` or `TensorTrainBatch` which represents the same
       tensor as tt, but with all cores having equal norm. In the batch
       case applies to each TT in `TensorTrainBatch`.
-
     """
-    epsilon = tf.convert_to_tensor(epsilon, dtype=tt.dtype)
-    if isinstance(tt, TensorTrain):
-      new_cores = []
-      running_log_norm = 0
-      core_norms = []
-      for core in tt.tt_cores:
-        cur_core_norm = tf.sqrt(tf.maximum(tf.reduce_sum(core ** 2), epsilon))
-        core_norms.append(cur_core_norm)
-        running_log_norm += tf.log(cur_core_norm)
+    # TODO: bad way to check if batch or not.
+    with tf.name_scope(name, values=tt.tt_cores):
+      epsilon = tf.convert_to_tensor(epsilon, dtype=tt.dtype)
+      if isinstance(tt, TensorTrain):
+        new_cores = []
+        running_log_norm = 0
+        core_norms = []
+        for core in tt.tt_cores:
+          cur_core_norm = tf.sqrt(tf.maximum(tf.reduce_sum(core ** 2), epsilon))
+          core_norms.append(cur_core_norm)
+          running_log_norm += tf.log(cur_core_norm)
 
-      running_log_norm = running_log_norm / tt.ndims()
-      fact = tf.exp(running_log_norm)
-      for i, core in enumerate(tt.tt_cores):
-        new_cores.append(core * fact / core_norms[i])
+        running_log_norm = running_log_norm / tt.ndims()
+        fact = tf.exp(running_log_norm)
+        for i, core in enumerate(tt.tt_cores):
+          new_cores.append(core * fact / core_norms[i])
 
-      return TensorTrain(new_cores)
-    else:
-      sz = (tt.batch_size,) + (len(tt.tt_cores[0].shape) - 1) * (1,)
-      running_core_log_norms = tf.zeros(sz, dtype=tt.dtype)
-      ax = np.arange(len(tt.tt_cores[0].shape))[1:]
-      fact_list = []
-      for core in tt.tt_cores:
-        cur_core_norm_sq = tf.reduce_sum(core**2, axis=ax, keep_dims=True)
-        cur_core_norm = tf.sqrt(tf.maximum(epsilon, cur_core_norm_sq))
-        fact_list.append(cur_core_norm)
-        running_core_log_norms += tf.log(cur_core_norm)
+        return TensorTrain(new_cores)
+      else:
+        sz = (tt.batch_size,) + (len(tt.tt_cores[0].shape) - 1) * (1,)
+        running_core_log_norms = tf.zeros(sz, dtype=tt.dtype)
+        ax = np.arange(len(tt.tt_cores[0].shape))[1:]
+        fact_list = []
+        for core in tt.tt_cores:
+          cur_core_norm_sq = tf.reduce_sum(core**2, axis=ax, keep_dims=True)
+          cur_core_norm = tf.sqrt(tf.maximum(epsilon, cur_core_norm_sq))
+          fact_list.append(cur_core_norm)
+          running_core_log_norms += tf.log(cur_core_norm)
 
-      new_cores = []
-      exp_fact = tf.exp(running_core_log_norms / tt.ndims())
-      for i, core in enumerate(tt.tt_cores):
-        new_cores.append(tf.multiply(core, exp_fact / fact_list[i]))
+        new_cores = []
+        exp_fact = tf.exp(running_core_log_norms / tt.ndims())
+        for i, core in enumerate(tt.tt_cores):
+          new_cores.append(tf.multiply(core, exp_fact / fact_list[i]))
 
-      return TensorTrainBatch(new_cores)
+        return TensorTrainBatch(new_cores)
