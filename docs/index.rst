@@ -15,6 +15,7 @@ t3f is implemented on top of TensorFlow which gives it a few nice properties:
 
     installation
     quick_start
+    faq
     api
 
 .. toctree::
