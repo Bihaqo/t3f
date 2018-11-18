@@ -8,6 +8,7 @@ The documentation is available via [readthedocs](https://t3f.readthedocs.io/en/l
 
 # Comparison with other libraries
 TODO: list of libraries, pros and cons, benchmarking? Or maybe just link to the documentation?
+There are also implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).
 Here are the results im ms of benchmarking T3F on CPU and GPU and comparing against the [TTPY library](https://github.com/oseledets/ttpy)
 <img src="examples/profile/results.png" height="200">
 
@@ -25,5 +26,13 @@ cd docs
 make html
 ```
 
-# Other implementations
-There are also implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).
+# Citing
+If you use T3F in your research work, we kindly ask you to cite [the paper](https://arxiv.org/abs/1801.01928) describing this library
+```
+@article{novikov2018tensor,
+  title={Tensor Train decomposition on TensorFlow (T3F)},
+  author={Novikov, Alexander and Izmailov, Pavel and Khrulkov, Valentin and Figurnov, Michael and Oseledets, Ivan},
+  journal={arXiv preprint arXiv:1801.01928},
+  year={2018}
+}
+```
