@@ -42,7 +42,7 @@ class TensorTrainBatch(TensorTrainBase):
     """
     tt_cores = list(tt_cores)
     if convert_to_tensors:
-      with tf.name_scope(name, values=tt_cores):
+      with tf.name_scope(name):
         for i in range(len(tt_cores)):
           name = "core%d" % i
           tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
