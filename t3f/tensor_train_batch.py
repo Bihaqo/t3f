@@ -13,7 +13,7 @@ class TensorTrainBatch(TensorTrainBase):
   """
 
   def __init__(self, tt_cores, shape=None, tt_ranks=None, batch_size=None,
-               convert_to_tensors=True):
+               convert_to_tensors=True, name="TensorTrainBatch"):
     """Creates a `TensorTrainBatch`.
 
     Args:
@@ -31,6 +31,7 @@ class TensorTrainBatch(TensorTrainBase):
         equal to 1. If None, tries to infer the ranks from the cores.
       convert_to_tensors: bool, if True than convert each element of the
         tt_cores tuple into a tf.Tensor (e.g. to initialize from np.array)
+      name: The name of ops.
 
     Returns:
       A `TensorTrainBatch`.
@@ -41,8 +42,7 @@ class TensorTrainBatch(TensorTrainBase):
     """
     tt_cores = list(tt_cores)
     if convert_to_tensors:
-      # TODO: what does this namescope do?
-      with tf.name_scope("TensorTrainBatch", values=tt_cores):
+      with tf.name_scope(name):
         for i in range(len(tt_cores)):
           name = "core%d" % i
           tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)

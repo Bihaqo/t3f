@@ -6,13 +6,14 @@ from t3f import approximate
 from t3f import initializers
 
 
-class ApproximateTest(tf.test.TestCase):
+class _ApproximateTest():
 
   def testAddN(self):
     # Sum a bunch of TT-matrices.
-    tt_a = initializers.random_matrix(((2, 1, 4), (2, 2, 2)), tt_rank=2)
+    tt_a = initializers.random_matrix(((2, 1, 4), (2, 2, 2)), tt_rank=2,
+                                      dtype=self.dtype)
     tt_b = initializers.random_matrix(((2, 1, 4), (2, 2, 2)),
-                                            tt_rank=[1, 2, 4, 1])
+                                      tt_rank=[1, 2, 4, 1], dtype=self.dtype)
 
     def desired(tt_objects):
       res = tt_objects[0]
@@ -48,7 +49,8 @@ class ApproximateTest(tf.test.TestCase):
       with self.test_session() as sess:
         tt_batch = initializers.random_tensor_batch((4, 3, 5),
                                                     tt_rank=2,
-                                                    batch_size=batch_size)
+                                                    batch_size=batch_size,
+                                                    dtype=self.dtype)
         res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 10))
         res_desired = ops.full(desired(tt_batch))
         res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
@@ -65,7 +67,8 @@ class ApproximateTest(tf.test.TestCase):
     with self.test_session() as sess:
       tt_batch = initializers.random_tensor_batch((4, 3, 5),
                                                   tt_rank=3,
-                                                  batch_size=3)
+                                                  batch_size=3,
+                                                  dtype=self.dtype)
       res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 9,
                                                          [1.2, -0.2, 1]))
       res_desired = ops.full(desired(tt_batch, [1.2, -0.2, 1]))
@@ -81,13 +84,13 @@ class ApproximateTest(tf.test.TestCase):
         res += coef[i] * tt_batch[i]
       return res
     with self.test_session() as sess:
-      tt_batch = initializers.random_tensor_batch((4, 3, 5),
-                                                  tt_rank=2,
-                                                  batch_size=3)
+      tt_batch = initializers.random_tensor_batch((4, 3, 5), tt_rank=2,
+                                                  batch_size=3,
+                                                  dtype=self.dtype)
       coef = [[1., 0.1],
               [0.9, -0.2],
               [0.3, 0.3]]
-      coef = np.array(coef).astype(np.float32)
+      coef = np.array(coef)
       res_actual = ops.full(approximate.reduce_sum_batch(tt_batch, 6,
                                                          coef))
       res_desired_1 = ops.full(desired(tt_batch, coef[:, 0]))
@@ -95,6 +98,14 @@ class ApproximateTest(tf.test.TestCase):
       res_desired = tf.stack((res_desired_1, res_desired_2))
       res_desired_val, res_actual_val = sess.run([res_desired, res_actual])
       self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
+
+
+class ApproximateTestFloat32(tf.test.TestCase, _ApproximateTest):
+  dtype = tf.float32
+
+
+class ApproximateTestFloat64(tf.test.TestCase, _ApproximateTest):
+  dtype = tf.float64
 
 
 if __name__ == "__main__":
