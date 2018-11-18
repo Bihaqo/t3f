@@ -76,7 +76,7 @@ def get_variable(name,
     with tf.variable_scope(name):
       # Try to get the first core through tf.get_variable to check that we don't
       # violate reuse: it will raise a ValueError otherwise.
-      tf.get_variable('core_0')
+      tf.get_variable('core_0', dtype=dtype)
     return found_v
   else:
     # Create new variable.

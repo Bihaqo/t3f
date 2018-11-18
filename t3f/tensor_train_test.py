@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 from t3f import tensor_train
@@ -5,7 +6,7 @@ from t3f import initializers
 from t3f import ops
 
 
-class TensorTrainTest(tf.test.TestCase):
+class _TensorTrainTest():
 
   def testValidateTTCores2d(self):
     schedule = (((1, 1, 1, 1), (1, 1, 1), True),
@@ -26,8 +27,8 @@ class TensorTrainTest(tf.test.TestCase):
                 ((1, 2, 1, 1), (1, 2, 1), False))
 
     for tt_ranks, claimed_tt_ranks, desired in schedule:
-      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]))
-      b = tf.random_normal((tt_ranks[2], 9, tt_ranks[3]))
+      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
+      b = tf.random_normal((tt_ranks[2], 9, tt_ranks[3]), dtype=self.dtype)
       with self.test_session():
         actual = tensor_train._are_tt_cores_valid((a, b), (10, 9),
                                                   claimed_tt_ranks)
@@ -41,7 +42,7 @@ class TensorTrainTest(tf.test.TestCase):
             tensor_train.TensorTrain((a, b), (10, 9), claimed_tt_ranks)
 
         # Make dtypes inconsistent.
-        b_new = tf.cast(b, tf.float64)
+        b_new = tf.cast(b, tf.float16)
         actual = tensor_train._are_tt_cores_valid((a, b_new), (10, 9),
                                                   claimed_tt_ranks)
         self.assertEqual(False, actual)
@@ -71,9 +72,9 @@ class TensorTrainTest(tf.test.TestCase):
                 ((1, 2, 2, 3, 3, 1), None, True))
 
     for tt_ranks, claimed_tt_ranks, desired in schedule:
-      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]))
-      b = tf.random_normal((tt_ranks[2], 1, tt_ranks[3]))
-      c = tf.random_normal((tt_ranks[4], 2, tt_ranks[5]))
+      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
+      b = tf.random_normal((tt_ranks[2], 1, tt_ranks[3]), dtype=self.dtype)
+      c = tf.random_normal((tt_ranks[4], 2, tt_ranks[5]), dtype=self.dtype)
       with self.test_session():
         actual = tensor_train._are_tt_cores_valid((a, b, c), (10, 1, 2),
                                                   claimed_tt_ranks)
@@ -87,7 +88,7 @@ class TensorTrainTest(tf.test.TestCase):
             tensor_train.TensorTrain((a, b, c), (10, 1, 2), claimed_tt_ranks)
 
         # Make dtypes inconsistent.
-        b_new = tf.cast(b, tf.float64)
+        b_new = tf.cast(b, tf.float16)
         actual = tensor_train._are_tt_cores_valid((a, b_new, c), (10, 1, 2),
                                                   claimed_tt_ranks)
         self.assertEqual(False, actual)
@@ -95,7 +96,7 @@ class TensorTrainTest(tf.test.TestCase):
           tensor_train.TensorTrain((a, b_new, c), (10, 1, 2), claimed_tt_ranks)
 
   def testTensorIndexing(self):
-    tens = initializers.random_tensor((3, 3, 4))
+    tens = initializers.random_tensor((3, 3, 4), dtype=self.dtype)
     with self.test_session() as sess:
       desired = ops.full(tens)[:, :, :]
       actual = ops.full(tens[:, :, :])
@@ -125,7 +126,7 @@ class TensorTrainTest(tf.test.TestCase):
         tens[1, 1]
 
   def testPlaceholderTensorIndexing(self):
-    tens = initializers.random_tensor((3, 3, 4))
+    tens = initializers.random_tensor((3, 3, 4), dtype=self.dtype)
     with self.test_session() as sess:
       start = tf.placeholder(tf.int32)
       end = tf.placeholder(tf.int32)
@@ -136,9 +137,19 @@ class TensorTrainTest(tf.test.TestCase):
 
   def testShapeOverflow(self):
     large_shape = [10] * 20
-    matrix = initializers.matrix_zeros([large_shape, large_shape])
+    matrix = initializers.matrix_zeros([large_shape, large_shape],
+                                       dtype=self.dtype)
     shape = matrix.get_shape()
     self.assertEqual([10 ** 20, 10 ** 20], shape)
+
+
+class TensorTrainTestFloat32(tf.test.TestCase, _TensorTrainTest):
+  dtype = tf.float32
+
+
+class TensorTrainTestFloat64(tf.test.TestCase, _TensorTrainTest):
+  dtype = tf.float64
+
 
 if __name__ == "__main__":
   tf.test.main()

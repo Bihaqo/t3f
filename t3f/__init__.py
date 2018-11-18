@@ -50,6 +50,7 @@ from t3f.riemannian import pairwise_flat_inner_projected
 from t3f.riemannian import project
 from t3f.riemannian import project_matmul
 from t3f.riemannian import project_sum
+from t3f.riemannian import tangent_space_to_deltas
 
 from t3f.shapes import batch_size
 from t3f.shapes import clean_raw_shape
@@ -69,13 +70,17 @@ from t3f.decompositions import round
 from t3f.decompositions import to_tt_matrix
 from t3f.decompositions import to_tt_tensor
 
+from t3f.autodiff import gradients
+from t3f.autodiff import hessian_vector_product
+
 import t3f.approximate as approximate
 import t3f.kronecker as kronecker
 import t3f.utils as utils
 
 _directly_imported = ['tensor_train_base', 'tensor_train', 'tensor_train_batch',
                       'variables', 'ops', 'batch_ops', 'initializers',
-                      'regularizers', 'riemannian', 'shapes', 'decompositions']
+                      'regularizers', 'riemannian', 'shapes', 'decompositions',
+                      'autodiff']
 
 __all__ = [s for s in dir() if
            s not in _directly_imported and not s.startswith('_')]
