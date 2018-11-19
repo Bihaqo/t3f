@@ -22,8 +22,8 @@ t3f is implemented on top of TensorFlow which gives it a few nice properties:
     :maxdepth: 1
     :caption: Tutorials
 
-    tutorials/tensor_completion
     tutorials/tensor_nets
+    tutorials/tensor_completion
     tutorials/riemannian
 
 Citation
