@@ -212,7 +212,7 @@ def clean_raw_shape(shape, name='t3f_clean_raw_shape'):
   """
   if shape is None:
     return None
-  with tf.name_scope(name, values=shape):
+  with tf.name_scope(name):
     if isinstance(shape, tf.TensorShape) or isinstance(shape[0], tf.TensorShape):
       # Assume tf.TensorShape.
       if isinstance(shape, tf.TensorShape):
