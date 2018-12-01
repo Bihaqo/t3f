@@ -36,96 +36,69 @@ logs['matvec'] = benchmark.run_op_benchmark(sess, matvec_op)
 print('Multiplying %s by %s takes %f seconds.' % (one_matrix, one_vec,
                                                   logs['matvec']['wall_time']))
 
-# batch_matvec_op = t3f.matmul(one_matrix, vecs).op
-# batch_matvec_time = timeit.timeit(lambda: sess.run(batch_matvec_op),
-#                                   number=100) / 100
-# print('Multiplying %s by %s takes %f seconds.' % (one_matrix, vecs,
-#                                                   batch_matvec_time))
-# logs['batch_matvec_time'] = batch_matvec_time
+batch_matvec_op = t3f.matmul(one_matrix, vecs).op
+logs['batch_matvec_time'] = benchmark.run_op_benchmark(sess, batch_matvec_op)
+print('Multiplying %s by %s takes %f seconds.' % (one_matrix, vecs,
+                                                  logs['batch_matvec_time']['wall_time']))
 
-# matmul_op = t3f.matmul(one_matrix, one_matrix).op
-# matmul_time = timeit.timeit(lambda: sess.run(matmul_op),
-#                             number=1000) / 1000
-# print('Multiplying %s by itself takes %f seconds.' % (one_matrix, matmul_time))
-# logs['matmul_time'] = matmul_time
+matmul_op = t3f.matmul(one_matrix, one_matrix).op
+logs['matmul_time'] = benchmark.run_op_benchmark(sess, matmul_op)
+print('Multiplying %s by itself takes %f seconds.' % (one_matrix, logs['matmul_time']['wall_time']))
 
-# batch_matmul_op = t3f.matmul(one_matrix, matrices).op
-# batch_matmul_time = timeit.timeit(lambda: sess.run(batch_matmul_op),
-#                                   number=100) / 100
-# print('Multiplying %s by %s takes %f seconds.' % (one_matrix, matrices,
-#                                                  batch_matmul_time))
-# logs['batch_matmul_time'] = batch_matmul_time
+batch_matmul_op = t3f.matmul(one_matrix, matrices).op
+logs['batch_matmul_time'] = benchmark.run_op_benchmark(sess, batch_matmul_op)
+print('Multiplying %s by %s takes %f seconds.' % (one_matrix, matrices,
+                                                 logs['batch_matmul_time']['wall_time']))
 
-# norm_op = t3f.frobenius_norm(one_matrix, differentiable=True).op
-# norm_time = timeit.timeit(lambda: sess.run(norm_op),
-#                             number=1000) / 1000
-# print('Computing the norm of %s takes %f seconds.' % (one_matrix, norm_time))
-# logs['norm_time'] = norm_time
+norm_op = t3f.frobenius_norm(one_matrix, differentiable=True).op
+logs['norm_time'] = benchmark.run_op_benchmark(sess, norm_op)
+print('Computing the norm of %s takes %f seconds.' % (one_matrix, logs['norm_time']['wall_time']))
 
-# batch_norm_op = t3f.frobenius_norm(matrices, differentiable=True).op
-# batch_norm_time = timeit.timeit(lambda: sess.run(batch_norm_op),
-#                                 number=1000) / 1000
-# print('Computing the norm of %s takes %f seconds.' % (matrices, batch_norm_time))
-# logs['batch_norm_time'] = batch_norm_time
+batch_norm_op = t3f.frobenius_norm(matrices, differentiable=True).op
+logs['batch_norm_time'] = benchmark.run_op_benchmark(sess, batch_norm_op)
+print('Computing the norm of %s takes %f seconds.' % (matrices, logs['batch_norm_time']['wall_time']))
 
-# flatinner_op = t3f.flat_inner(one_vec, one_vec).op
-# flatinner_time = timeit.timeit(lambda: sess.run(flatinner_op),
-#                                number=1000) / 1000
-# print('Computing the dot product between %s and itself takes %f seconds.' %
-#       (one_vec, flatinner_time))
-# logs['flatinner_time'] = flatinner_time
+flatinner_op = t3f.flat_inner(one_vec, one_vec).op
+logs['flatinner_time'] = benchmark.run_op_benchmark(sess, flatinner_op)
+print('Computing the dot product between %s and itself takes %f seconds.' %
+      (one_vec, logs['flatinner_time']['wall_time']))
 
-# gram_op = t3f.gram_matrix(vecs).op
-# gram_time = timeit.timeit(lambda: sess.run(gram_op),
-#                           number=100) / 100
-# print('Computing the gram matrix of %s takes %f seconds.' % (vecs, gram_time))
-# logs['batch_gram_time'] = gram_time
+gram_op = t3f.gram_matrix(vecs).op
+logs['batch_gram_time'] = benchmark.run_op_benchmark(sess, gram_op)
+print('Computing the gram matrix of %s takes %f seconds.' % (vecs, logs['batch_gram_time']['wall_time']))
 
-# tens = tf.cast(tf.random_normal((10, 10, 10, 10)), tf.float64)
-# tt_svd_op = t3f.to_tt_tensor(tens, max_tt_rank=10).op
-# tt_svd_time = timeit.timeit(lambda: sess.run(tt_svd_op),
-#                             number=1000) / 1000
-# print('TT-SVD for tensor of shape %s takes %f seconds.' % (tens.get_shape(),
-#                                                            tt_svd_time))
-# logs['tt_svd_time'] = tt_svd_time
+tens = tf.cast(tf.random_normal((10, 10, 10, 10)), tf.float64)
+tt_svd_op = t3f.to_tt_tensor(tens, max_tt_rank=10).op
+logs['tt_svd_time'] = benchmark.run_op_benchmark(sess, tt_svd_op)
+print('TT-SVD for tensor of shape %s takes %f seconds.' % (tens.get_shape(),
+                                                           logs['tt_svd_time']['wall_time']))
 
-# round_op = t3f.round(one_vec100, max_tt_rank=10).op
-# round_time = timeit.timeit(lambda: sess.run(round_op),
-#                            number=1000) / 1000
-# print('Rounding %s takes %f seconds.' % (one_vec100, round_time))
-# logs['round_time'] = round_time
+round_op = t3f.round(one_vec100, max_tt_rank=10).op
+logs['round_time'] = benchmark.run_op_benchmark(sess, round_op)
+print('Rounding %s takes %f seconds.' % (one_vec100, logs['round_time']['wall_time']))
 
-# batch_round_op = t3f.round(vecs100, max_tt_rank=10).op
-# batch_round_time = timeit.timeit(lambda: sess.run(batch_round_op),
-#                                  number=100) / 100
-# print('Rounding %s takes %f seconds.' % (vecs100, batch_round_time))
-# logs['batch_round_time'] = batch_round_time
+batch_round_op = t3f.round(vecs100, max_tt_rank=10).op
+logs['batch_round_time'] = benchmark.run_op_benchmark(sess, batch_round_op)
+print('Rounding %s takes %f seconds.' % (vecs100, logs['batch_round_time']['wall_time']))
 
-# project_op = t3f.project(one_vec, one_vec).op
-# project_time = timeit.timeit(lambda: sess.run(project_op),
-#                              number=1000) / 1000
-# print('Projecting %s on %s takes %f seconds.' % (one_vec, one_vec, project_time))
-# logs['project_time'] = project_time
+project_op = t3f.project(one_vec, one_vec).op
+logs['project_time'] = benchmark.run_op_benchmark(sess, project_op)
+print('Projecting %s on %s takes %f seconds.' % (one_vec, one_vec, logs['project_time']['wall_time']))
 
-# batch_project_op = t3f.project(vecs, one_vec).op
-# batch_project_time = timeit.timeit(lambda: sess.run(batch_project_op),
-#                                    number=10) / 10
-# print('Projecting %s on %s takes %f seconds.' % (vecs, one_vec,
-#                                                  batch_project_time))
-# logs['batch_project_time'] = batch_project_time
+batch_project_op = t3f.project(vecs, one_vec).op
+logs['batch_project_time'] = benchmark.run_op_benchmark(sess, batch_project_op)
+print('Projecting %s on %s takes %f seconds.' % (vecs, one_vec,
+                                                 logs['batch_project_time']['wall_time']))
 
-# project100_op = t3f.project(one_vec100, one_vec).op
-# project100_time = timeit.timeit(lambda: sess.run(project100_op),
-#                                 number=100) / 100
-# print('Projecting %s on %s takes %f seconds.' % (one_vec100, one_vec, project100_time))
-# logs['project_rank100_time'] = project100_time
+project100_op = t3f.project(one_vec100, one_vec).op
+logs['project_rank100_time'] = benchmark.run_op_benchmark(sess, project100_op)
+print('Projecting %s on %s takes %f seconds.' % (one_vec100, one_vec, logs['project_rank100_time']['wall_time']))
 
-# batch_project100_op = t3f.project(vecs100, one_vec).op
-# batch_project100_time = timeit.timeit(lambda: sess.run(batch_project100_op),
-#                                       number=100) / 100
-# print('Projecting %s on %s takes %f seconds.' % (vecs100, one_vec, batch_project100_time))
-# logs['batch_project_rank100_time'] = batch_project100_time
+batch_project100_op = t3f.project(vecs100, one_vec).op
+logs['batch_project_rank100_time'] = benchmark.run_op_benchmark(sess, batch_project100_op)
+print('Projecting %s on %s takes %f seconds.' % (vecs100, one_vec,
+  logs['batch_project_rank100_time']['wall_time']))
 
-# if args.file_path is not None:
-#   pickle.dump(logs, open(args.file_path, 'wb'))
+if args.file_path is not None:
+  pickle.dump(logs, open(args.file_path, 'wb'))
 
