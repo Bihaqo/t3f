@@ -100,7 +100,7 @@ def gradients(func, x, name='t3f_gradients', runtime_check=True):
     if runtime_check:
       assert_op = _is_invariant_to_input_transforms(function_value, func(x))
     else:
-      assert_op = None
+      assert_op = tf.no_op()
     with tf.control_dependencies([assert_op]):
       cores_grad = tf.gradients(function_value, deltas)
     deltas = _enforce_gauge_conditions(cores_grad, left)
@@ -162,7 +162,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
     if runtime_check:
       assert_op = _is_invariant_to_input_transforms(function_value, func(x))
     else:
-      assert_op = None
+      assert_op = tf.no_op()
     with tf.control_dependencies([assert_op]):
       vector_projected = riemannian.project(vector, x)
     cores_grad = tf.gradients(function_value, deltas)
