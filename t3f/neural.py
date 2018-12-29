@@ -1,83 +1,83 @@
 """Utils for simplifying building neural networks with TT-layers"""
 
+import numpy as np
 from keras.engine.topology import Layer
 from keras.layers import Activation
 import t3f
 import tensorflow as tf
-import numpy as np
 
 
 class KerasTTDense(Layer):
-    counter = 0
+  counter = 0
 
-    def __init__(self, input_dims, output_dims, tt_rank=2,
-                 activation='relu', use_bias=True, kernel_initializer='glorot',
-                 bias_initializer=0.1, **kwargs):
-        """Creates a TT-Matrix based Dense Keras layer.
+  def __init__(self, input_dims, output_dims, tt_rank=2,
+               activation='relu', use_bias=True, kernel_initializer='glorot',
+               bias_initializer=0.1, **kwargs):
+    """Creates a TT-Matrix based Dense Keras layer.
 
-        Args:
-            input_dims: an array, tensor shape of the matrix row index
-            ouput_dims: an array, tensor shape of the matrix column index
-            tt_rank: a number or an array, desired tt-rank of the TT-Matrix
-            activation: string, specifies the activation function. Possible
-                values are 'relu', 'sigmoid', 'tanh', 'softmax' and None
-            use_bias: bool, whether to use bias
-            kernel_initializer: string specifying initializer for the TT-Matrix.
-                Possible values are 'glorot', 'he', and 'lecun'.
-            bias_initializer: a number, initialization value of the bias
+    Args:
+        input_dims: an array, tensor shape of the matrix row index
+        ouput_dims: an array, tensor shape of the matrix column index
+        tt_rank: a number or an array, desired tt-rank of the TT-Matrix
+        activation: string, specifies the activation function. Possible
+            values are 'relu', 'sigmoid', 'tanh', 'softmax' and None
+        use_bias: bool, whether to use bias
+        kernel_initializer: string specifying initializer for the TT-Matrix.
+            Possible values are 'glorot', 'he', and 'lecun'.
+        bias_initializer: a number, initialization value of the bias
 
-        Returns:
-            Layer object corresponding to multiplication by a TT-Matrix
-                followed by addition of a bias and applying
-                an elementwise activation
+    Returns:
+        Layer object corresponding to multiplication by a TT-Matrix
+            followed by addition of a bias and applying
+            an elementwise activation
 
-        Raises:
-            ValueError if the provided activation or kernel_initializer is
-            unknown.
-        """
-        self.tt_shape = [input_dims, output_dims]
-        self.output_dim = np.prod(output_dims)
-        self.tt_rank = tt_rank
-        self.activation = activation
-        self.use_bias = use_bias
-        self.kernel_initializer = kernel_initializer
-        self.bias_initializer = bias_initializer
-        super(KerasTTDense, self).__init__(**kwargs)
+    Raises:
+        ValueError if the provided activation or kernel_initializer is
+        unknown.
+    """
+    self.tt_shape = [input_dims, output_dims]
+    self.output_dim = np.prod(output_dims)
+    self.tt_rank = tt_rank
+    self.activation = activation
+    self.use_bias = use_bias
+    self.kernel_initializer = kernel_initializer
+    self.bias_initializer = bias_initializer
+    super(KerasTTDense, self).__init__(**kwargs)
 
-    def build(self, input_shape):
-        if self.init == 'glorot':
-            initializer = t3f.glorot_initializer(self.tt_shape,
-                                                 tt_rank=self.tt_rank)
-        elif self.init == 'he':
-            initializer = t3f.he_initializer(self.tt_shape,
-                                             tt_rank=self.tt_rank)
-        elif self.init == 'lecun':
-            initializer = t3f.lecun_initializer(self.tt_shape,
-                                                tt_rank=self.tt_rank)
-        else:
-            raise ValueError('Unknown kernel_initializer "%s", only "glorot",'
-                             '"he", and "lecun"  are supported' % self.init)
-        name = 'tt_dense_matrix_{}'.format(KerasTTDense.counter)
-        self.W = t3f.get_variable(name, initializer=initializer)
-        self.b = None
-        if self.bias:
-            b_name = 'tt_dense_b_{}'.format(KerasTTDense.counter)
-            b_init = tf.constant_initializer(self.bias_init)
-            self.b = tf.get_variable(b_name, shape=self.output_dim,
-                                     initializer=b_init)
-        KerasTTDense.counter += 1
-        self.trainable_weights = list(self.W.tt_cores)
-        if self.b is not None:
-            self.trainable_weights.append(self.b)
+  def build(self, input_shape):
+    if self.init == 'glorot':
+      initializer = t3f.glorot_initializer(self.tt_shape,
+                                           tt_rank=self.tt_rank)
+    elif self.init == 'he':
+      initializer = t3f.he_initializer(self.tt_shape,
+                                       tt_rank=self.tt_rank)
+    elif self.init == 'lecun':
+      initializer = t3f.lecun_initializer(self.tt_shape,
+                                          tt_rank=self.tt_rank)
+    else:
+      raise ValueError('Unknown kernel_initializer "%s", only "glorot",'
+                       '"he", and "lecun"  are supported' % self.init)
+    name = 'tt_dense_matrix_{}'.format(KerasTTDense.counter)
+    self.W = t3f.get_variable(name, initializer=initializer)
+    self.b = None
+    if self.bias:
+      b_name = 'tt_dense_b_{}'.format(KerasTTDense.counter)
+      b_init = tf.constant_initializer(self.bias_init)
+      self.b = tf.get_variable(b_name, shape=self.output_dim,
+                               initializer=b_init)
+    KerasTTDense.counter += 1
+    self.trainable_weights = list(self.W.tt_cores)
+    if self.b is not None:
+      self.trainable_weights.append(self.b)
 
-    def call(self, x):
-        if self.bias:
-            h = t3f.matmul(x, self.W) + self.b
-        else:
-            h = t3f.matmul(x, self.W)
-        if self.activation is not None:
-            h = Activation(self.activation)(h)
-        return h
+  def call(self, x):
+    if self.bias:
+      h = t3f.matmul(x, self.W) + self.b
+    else:
+      h = t3f.matmul(x, self.W)
+    if self.activation is not None:
+      h = Activation(self.activation)(h)
+    return h
 
-    def compute_output_shape(self, input_shape):
-        return (input_shape[0], self.output_dim)
+  def compute_output_shape(self, input_shape):
+    return (input_shape[0], self.output_dim)
