@@ -1,3 +1,5 @@
+"""Utils for simplifying building neural networks with TT-layers"""
+
 from keras.engine.topology import Layer
 from keras.layers import Activation
 import t3f
@@ -8,7 +10,7 @@ activations = ['relu', 'sigmoid', 'tanh', 'softmax']
 inits = ['glorot', 'he', 'lecun']
 
 
-class TTDense(Layer):
+class KerasTTDense(Layer):
     counter = 0
 
     def __init__(self, row_dims, column_dims, tt_rank=2, init='glorot',
@@ -41,7 +43,7 @@ class TTDense(Layer):
         self.bias = bias
         self.bias_init = bias_init
         self.init = init
-        super(TTDense, self).__init__(**kwargs)
+        super(Keras, self).__init__(**kwargs)
 
     def build(self, input_shape):
         if self.init == 'glorot':
@@ -56,15 +58,15 @@ class TTDense(Layer):
         else:
             raise ValueError('Unknown init "%s", only %s are supported'
                              % (self.init, inits))
-        name = 'tt_dense_matrix_{}'.format(TTDense.counter)
+        name = 'tt_dense_matrix_{}'.format(KerasTTDense.counter)
         self.W = t3f.get_variable(name, initializer=initializer)
         self.b = None
         if self.bias:
-            b_name = 'tt_dense_b_{}'.format(TTDense.counter)
+            b_name = 'tt_dense_b_{}'.format(KerasTTDense.counter)
             b_init = tf.constant_initializer(self.bias_init)
             self.b = tf.get_variable(b_name, shape=self.output_dim,
                                      initializer=b_init)
-        TTDense.counter += 1
+        KerasTTDense.counter += 1
         self.trainable_weights = list(self.W.tt_cores)
         if self.b is not None:
             self.trainable_weights.append(self.b)
