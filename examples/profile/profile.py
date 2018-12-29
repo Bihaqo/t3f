@@ -3,6 +3,26 @@ import numpy as np
 import pickle
 import argparse
 import tensorflow as tf
+
+
+# TODO: remove this after the next release of TF (which should include
+# tf.test.benchmark_config())
+try:
+  tf.test.benchmark_config()
+except AttributeError:
+  from tensorflow import core
+  def benchmark_config():
+    """Returns a tf.ConfigProto for disabling the dependency optimizer.
+      Returns:
+        A TensorFlow ConfigProto object.
+    """
+    config = core.protobuf.config_pb2.ConfigProto()
+    config.graph_options.rewrite_options.dependency_optimization = (
+      core.protobuf.rewriter_config_pb2.RewriterConfig.OFF)
+    return config
+  tf.test.benchmark_config = benchmark_config
+
+
 from tensorflow.python.client import device_lib
 import t3f
 
