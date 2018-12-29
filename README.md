@@ -7,8 +7,10 @@ TensorFlow implementation of the Tensor Train (TT) -Toolbox.
 The documentation is available via [readthedocs](https://t3f.readthedocs.io/en/latest/index.html).
 
 # Comparison with other libraries
-TODO: list of libraries, pros and cons, benchmarking? Or maybe just link to the documentation?
-There are also implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox).
+There are implementations of the TT-toolbox in [plain Python](https://github.com/oseledets/ttpy) and [Matlab](https://github.com/oseledets/TT-Toolbox). Also, there is a very nice generic tensor network library [tnttorch](https://github.com/rballester/tntorch) which supports TT as a special case.
+
+The main difference between `t3f` Python/Matlab implementations is that `t3f` uses TensorFlow as backend and thus supports GPUs, automatic differentiation, and batch processing. As a more generic library, `tnttorch` lacks some TensorTrain specific tools (e.g. Riemannian optimization support).
+
 Here are the results im ms of benchmarking T3F on CPU and GPU and comparing against the [TTPY library](https://github.com/oseledets/ttpy)
 <img src="examples/profile/results.png" height="200">
 
