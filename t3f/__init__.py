@@ -75,6 +75,7 @@ from t3f.autodiff import hessian_vector_product
 
 import t3f.approximate as approximate
 import t3f.kronecker as kronecker
+import t3f.neural as nn
 import t3f.utils as utils
 
 _directly_imported = ['tensor_train_base', 'tensor_train', 'tensor_train_batch',
