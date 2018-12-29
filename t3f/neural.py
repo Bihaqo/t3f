@@ -71,13 +71,12 @@ class KerasDense(Layer):
       self.trainable_weights.append(self.b)
 
   def call(self, x):
+    res = t3f.matmul(x, self.W)
     if self.use_bias:
-      h = t3f.matmul(x, self.W) + self.b
-    else:
-      h = t3f.matmul(x, self.W)
+      res += self.b
     if self.activation is not None:
-      h = Activation(self.activation)(h)
-    return h
+      res = Activation(self.activation)(res)
+    return res
 
   def compute_output_shape(self, input_shape):
     return (input_shape[0], self.output_dim)
