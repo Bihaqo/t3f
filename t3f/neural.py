@@ -11,7 +11,7 @@ class KerasDense(Layer):
   counter = 0
 
   def __init__(self, input_dims, output_dims, tt_rank=2,
-               activation='relu', use_bias=True, kernel_initializer='glorot',
+               activation=None, use_bias=True, kernel_initializer='glorot',
                bias_initializer=0.1, **kwargs):
     """Creates a TT-Matrix based Dense Keras layer.
 
@@ -19,8 +19,7 @@ class KerasDense(Layer):
         input_dims: an array, tensor shape of the matrix row index
         ouput_dims: an array, tensor shape of the matrix column index
         tt_rank: a number or an array, desired tt-rank of the TT-Matrix
-        activation: string, specifies the activation function. Possible
-            values are 'relu', 'sigmoid', 'tanh', 'softmax' and None
+        activation: [None] string or None, specifies the activation function.
         use_bias: bool, whether to use bias
         kernel_initializer: string specifying initializer for the TT-Matrix.
             Possible values are 'glorot', 'he', and 'lecun'.
