@@ -17,6 +17,15 @@ Module contents
     :show-inheritance:
 
 
+t3f\.nn module
+-----------------
+
+.. automodule:: t3f.nn
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 t3f\.utils module
 -----------------
 
