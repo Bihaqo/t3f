@@ -1,5 +1,6 @@
 """Utils for simplifying building neural networks with TT-layers"""
 
+from itertools import count
 import numpy as np
 from keras.engine.topology import Layer
 from keras.layers import Activation
@@ -8,7 +9,7 @@ import tensorflow as tf
 
 
 class KerasDense(Layer):
-  counter = 0
+  _counter = count(0)
 
   def __init__(self, input_dims, output_dims, tt_rank=2,
                activation=None, use_bias=True, kernel_initializer='glorot',
@@ -34,6 +35,7 @@ class KerasDense(Layer):
         ValueError if the provided activation or kernel_initializer is
         unknown.
     """
+    self.counter = next(self._counter)
     self.tt_shape = [input_dims, output_dims]
     self.output_dim = np.prod(output_dims)
     self.tt_rank = tt_rank
@@ -55,22 +57,22 @@ class KerasDense(Layer):
                                           tt_rank=self.tt_rank)
     else:
       raise ValueError('Unknown kernel_initializer "%s", only "glorot",'
-                       '"he", and "lecun"  are supported' % self.kernel_initializer)
-    name = 'tt_dense_matrix_{}'.format(KerasDense.counter)
-    self.W = t3f.get_variable(name, initializer=initializer)
-    self.b = None
-    if self.use_bias:
-      b_name = 'tt_dense_b_{}'.format(KerasDense.counter)
-      b_init = tf.constant_initializer(self.bias_initializer)
-      self.b = tf.get_variable(b_name, shape=self.output_dim,
-                               initializer=b_init)
-    KerasDense.counter += 1
-    self.trainable_weights = list(self.W.tt_cores)
+                       '"he", and "lecun"  are supported'
+                       % self.kernel_initializer)
+    name = 'tt_dense_{}'.format(self.counter)
+    with tf.variable_scope(name):
+      self.matrix = t3f.get_variable('matrix', initializer=initializer)
+      self.b = None
+      if self.use_bias:
+        b_init = tf.constant_initializer(self.bias_initializer)
+        self.b = tf.get_variable('bias', shape=self.output_dim,
+                                 initializer=b_init)
+    self.trainable_weights = list(self.matrix.tt_cores)
     if self.b is not None:
       self.trainable_weights.append(self.b)
 
   def call(self, x):
-    res = t3f.matmul(x, self.W)
+    res = t3f.matmul(x, self.matrix)
     if self.use_bias:
       res += self.b
     if self.activation is not None:
