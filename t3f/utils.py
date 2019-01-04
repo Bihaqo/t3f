@@ -24,7 +24,7 @@ def replace_tf_svd_with_np_svd():
 
   def my_svd(tensor, full_matrices=False, compute_uv=True):
     dtype = tensor.dtype
-    u, s, v = tf.py_func(np.linalg.svd, [tensor, full_matrices, compute_uv],
+    u, s, v = tf.py_func(np.linalg.svd, [tensor, tf.convert_to_tensor(full_matrices), tf.convert_to_tensor(compute_uv)],
                          [dtype, dtype, dtype])
     s_, u_, v_ = tf.original_svd(tensor, full_matrices, compute_uv)
     s = tf.reshape(s, s_.get_shape())
