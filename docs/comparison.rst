@@ -33,3 +33,7 @@ A brief overview of other libraries that support Tensor Train decomposition (whi
 .. _mpys: https://github.com/alvarorga/mpys
 .. _TT-Toolbox: https://github.com/oseledets/TT-Toolbox
 .. _ITensor: http://itensor.org/
+
+If you use python, we would suggest using t3f if you need extensive Riemannian optimization support, t3f or tntorch if you need GPU or autodiff support, and ttpy if you need advanced algorithms such as AMen.
+
+The performance of the libraries is a bit tricky to measure fairly and is actually not that different between the libraries because everyone relies on the same BLAS/MKL subruitines. However, GPU can help a lot if you need operations that can be expressed as large matrix-by-matrix multiplications, e.g. computing a gram matrix of a bunch of tensors. For more details on benchmarking t3f see :doc:`benchmarking`.
