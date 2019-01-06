@@ -3,33 +3,34 @@ import tensorflow as tf
 
 from t3f import utils
 
+tfe = tf.contrib.eager
 
+
+@tfe.run_all_tests_in_graph_and_eager_modes
 class UtilsTest(tf.test.TestCase):
 
   def testUnravelIndex(self):
-    with self.test_session():
-      # 2D.
-      shape = (7, 6)
-      linear_idx = [22, 41, 37]
-      desired = [[3, 4], [6, 5], [6, 1]]
-      actual = utils.unravel_index(linear_idx, shape)
-      self.assertAllEqual(desired, actual.eval())
-      # 3D.
-      shape = (2, 3, 4)
-      linear_idx = [19, 17, 0, 23]
-      desired = [[1, 1, 3], [1, 1, 1], [0, 0, 0], [1, 2, 3]]
-      actual = utils.unravel_index(linear_idx, shape)
-      self.assertAllEqual(desired, actual.eval())
+    # 2D.
+    shape = (7, 6)
+    linear_idx = [22, 41, 37]
+    desired = [[3, 4], [6, 5], [6, 1]]
+    actual = utils.unravel_index(linear_idx, shape)
+    self.assertAllEqual(desired, self.evaluate(actual))
+    # 3D.
+    shape = (2, 3, 4)
+    linear_idx = [19, 17, 0, 23]
+    desired = [[1, 1, 3], [1, 1, 1], [0, 0, 0], [1, 2, 3]]
+    actual = utils.unravel_index(linear_idx, shape)
+    self.assertAllEqual(desired, self.evaluate(actual))
 
   def testReplaceTfSvdWithNpSvd(self):
-    with self.test_session() as sess:
-      mat = tf.constant([[3., 4], [5, 6]])
-      desired = sess.run(tf.svd(mat))
-      utils.replace_tf_svd_with_np_svd()
-      actual = sess.run(tf.svd(mat))
-      self.assertAllClose(actual[0], desired[0])
-      self.assertAllClose(np.abs(np.dot(actual[1].T, desired[1])), np.eye(2))
-      self.assertAllClose(np.abs(np.dot(actual[2].T, desired[2])), np.eye(2))
+    mat = tf.constant([[3., 4], [5, 6]])
+    desired = self.evaluate(tf.svd(mat))
+    utils.replace_tf_svd_with_np_svd()
+    actual = self.evaluate(tf.svd(mat))
+    self.assertAllClose(actual[0], desired[0])
+    self.assertAllClose(np.abs(np.dot(actual[1].T, desired[1])), np.eye(2))
+    self.assertAllClose(np.abs(np.dot(actual[2].T, desired[2])), np.eye(2))
 
 
 if __name__ == "__main__":
