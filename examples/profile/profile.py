@@ -3,25 +3,7 @@ import numpy as np
 import pickle
 import argparse
 import tensorflow as tf
-
-
-# TODO: remove this after the next release of TF (which should include
-# tf.test.benchmark_config())
-try:
-  tf.test.benchmark_config()
-except AttributeError:
-  from tensorflow import core
-  def benchmark_config():
-    """Returns a tf.ConfigProto for disabling the dependency optimizer.
-      Returns:
-        A TensorFlow ConfigProto object.
-    """
-    config = core.protobuf.config_pb2.ConfigProto()
-    config.graph_options.rewrite_options.dependency_optimization = (
-      core.protobuf.rewriter_config_pb2.RewriterConfig.OFF)
-    return config
-  tf.test.benchmark_config = benchmark_config
-
+import tmp_benchmark_config
 
 from tensorflow.python.client import device_lib
 import t3f
@@ -45,6 +27,7 @@ vecs100 = t3f.random_matrix_batch((shape, None), 100, batch_size=100)
 vecs100 = t3f.cast(vecs100, tf.float64)
 one_vec100 = t3f.get_variable('one_vec100', initializer=vecs100[0])
 vecs100 = t3f.get_variable('vecs100', initializer=vecs100)
+tmp_benchmark_config.import_benchmark_config()
 sess = tf.Session(config=tf.test.benchmark_config())
 sess.run(tf.global_variables_initializer())
 print(device_lib.list_local_devices())
