@@ -12,7 +12,6 @@ env:
     - TF_VERSION=1.11
 # command to install dependencies
 install:
-  # Python 2.7 has very old pip by default that doesn't have tensorflow.
   - pip install numpy tensorflow==$TF_VERSION keras
   - pip install coveralls
 # command to run tests
