@@ -15,7 +15,7 @@ The main difference between `t3f` and other libraries is that `t3f` has extensiv
 nosetests  --logging-level=WARNING
 ```
 
-# Building API documentation
+# Building documentation
 The documentation is build by sphinx and hosted on readthedocs.org. To locally rebuild the documentation, install sphinx and compile the docs by
 ```bash
 cd docs
