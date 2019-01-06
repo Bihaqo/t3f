@@ -24,6 +24,10 @@ class UtilsTest(tf.test.TestCase):
     self.assertAllEqual(desired, self.evaluate(actual))
 
   def testReplaceTfSvdWithNpSvd(self):
+    if hasattr(tf, 'original_svd'):
+      # Undo utils.replace_tf_svd_with_np_svd() if it was already called before.
+      tf.svd = tf.original_svd
+      del tf.original_svd
     mat = tf.constant([[3., 4], [5, 6]])
     desired = self.evaluate(tf.svd(mat))
     utils.replace_tf_svd_with_np_svd()
