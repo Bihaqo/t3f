@@ -9,7 +9,7 @@ from t3f import autodiff
 
 class _AutodiffTest():
 
-  def _check_single_gradient(self, func, x, desired):
+  def _TestSingleGradient(self, func, x, desired):
     actual1 = ops.full(autodiff.gradients(func, x, runtime_check=False))
     actual2 = ops.full(autodiff.gradients(func, x, runtime_check=True))
 
@@ -26,13 +26,13 @@ class _AutodiffTest():
     def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
     desired1 = ops.full(ops.flat_inner(x, w) * riemannian.project(w, x))
-    self._check_single_gradient(func1, x, desired1)
+    self._TestSingleGradient(func1, x, desired1)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
     grad = ops.matmul(ops.transpose(A) + A, x)
     desired2 = ops.full(riemannian.project(grad, x))
-    self._check_single_gradient(func2, x, desired2)
+    self._TestSingleGradient(func2, x, desired2)
 
     def func3(x):
       # A function which is not invariant to different representations of the
@@ -43,7 +43,7 @@ class _AutodiffTest():
       with self.test_session() as sess:
         sess.run(actual3)
 
-  def _check_single_hessian_by_vector(self, func, x, z, desired):
+  def _TestSingleHessianByVector(self, func, x, z, desired):
     actual1 = ops.full(autodiff.hessian_vector_product(
         func, x, z, runtime_check=False))
     actual2 = ops.full(autodiff.hessian_vector_product(func, x, z,
@@ -68,14 +68,14 @@ class _AutodiffTest():
     # Hessian by vector: w <w, P_x z>
     desired1 = riemannian.project(ops.flat_inner(projected_vector, w) * w, x)
     desired1 = ops.full(desired1)
-    self._check_single_hessian_by_vector(func1, x, z, desired1)
+    self._TestSingleHessianByVector(func1, x, z, desired1)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
     # Hessian of <x, Ax> is A + A.T
     hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
     desired2 = ops.full(riemannian.project(hessian_by_vector, x))
-    self._check_single_hessian_by_vector(func1, x, z, desired1)
+    self._TestSingleHessianByVector(func1, x, z, desired1)
 
     def func3(x):
       # A function which is not invariant to different representations of the
