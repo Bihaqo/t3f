@@ -9,6 +9,15 @@ from t3f import autodiff
 
 class _AutodiffTest():
 
+  def _check_single_gradient(self, func, x, desired):
+    actual1 = ops.full(autodiff.gradients(func, x, runtime_check=False))
+    actual2 = ops.full(autodiff.gradients(func, x, runtime_check=True))
+
+    with self.test_session() as sess:
+      desired_v, actual1_v, actual2_v = sess.run([desired, actual1, actual2])
+      self.assertAllClose(desired_v, actual1_v, rtol=1e-4)
+      self.assertAllClose(desired_v, actual2_v, rtol=1e-4)
+
   def testGradients(self):
     w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
@@ -16,22 +25,14 @@ class _AutodiffTest():
 
     def func1(x):
       return 0.5 * ops.flat_inner(x, w) ** 2
-
-    actual1 = ops.full(autodiff.gradients(func1, x))
     desired1 = ops.full(ops.flat_inner(x, w) * riemannian.project(w, x))
-    with self.test_session() as sess:
-      desired1_v, actual1_v = sess.run([desired1, actual1])
-      np.testing.assert_allclose(desired1_v, actual1_v, rtol=1e-4)
+    self._check_single_gradient(func1, x, desired1)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
-
-    actual2 = ops.full(autodiff.gradients(func2, x))
     grad = ops.matmul(ops.transpose(A) + A, x)
     desired2 = ops.full(riemannian.project(grad, x))
-    with self.test_session() as sess:
-      desired2_v, actual2_v = sess.run([desired2, actual2])
-      np.testing.assert_allclose(desired2_v, actual2_v, rtol=1e-4)
+    self._check_single_gradient(func2, x, desired2)
 
     def func3(x):
       # A function which is not invariant to different representations of the
@@ -42,6 +43,16 @@ class _AutodiffTest():
       with self.test_session() as sess:
         sess.run(actual3)
 
+  def _check_single_hessian_by_vector(self, func, x, z, desired):
+    actual1 = ops.full(autodiff.hessian_vector_product(
+        func, x, z, runtime_check=False))
+    actual2 = ops.full(autodiff.hessian_vector_product(func, x, z,
+        runtime_check=True))
+
+    with self.test_session() as sess:
+      desired_v, actual1_v, actual2_v = sess.run([desired, actual1, actual2])
+      self.assertAllClose(desired_v, actual1_v, rtol=1e-4)
+      self.assertAllClose(desired_v, actual2_v, rtol=1e-4)
 
   def testHessianVectorProduct(self):
     w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
@@ -55,23 +66,16 @@ class _AutodiffTest():
     # Grad: <x, w> w
     # Hessian: w w.T
     # Hessian by vector: w <w, P_x z>
-
-    actual1 = ops.full(autodiff.hessian_vector_product(func1, x, z))
     desired1 = riemannian.project(ops.flat_inner(projected_vector, w) * w, x)
     desired1 = ops.full(desired1)
-    with self.test_session() as sess:
-      desired1_v, actual1_v = sess.run([desired1, actual1])
-      np.testing.assert_allclose(desired1_v, actual1_v, rtol=1e-4)
+    self._check_single_hessian_by_vector(func1, x, z, desired1)
 
     def func2(x):
       return ops.quadratic_form(A, x, x)
     # Hessian of <x, Ax> is A + A.T
-    actual2 = ops.full(autodiff.hessian_vector_product(func2, x, z))
     hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
     desired2 = ops.full(riemannian.project(hessian_by_vector, x))
-    with self.test_session() as sess:
-      desired2_v, actual2_v = sess.run([desired2, actual2])
-      np.testing.assert_allclose(desired2_v, actual2_v, rtol=1e-4)
+    self._check_single_hessian_by_vector(func1, x, z, desired1)
 
     def func3(x):
       # A function which is not invariant to different representations of the
