@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/Bihaqo/t3f.svg?branch=develop)](https://travis-ci.org/Bihaqo/t3f)
 [![Coverage Status](https://coveralls.io/repos/github/Bihaqo/t3f/badge.svg?branch=develop)](https://coveralls.io/github/Bihaqo/t3f?branch=develop)
 
-TensorFlow implementation of the Tensor Train (TT) -Toolbox.
+TensorFlow implementation of a library for working with Tensor Train (TT) decomposition which is also known as Matrix Product State (MPS).
 
 # Documentation
 The documentation is available via [readthedocs](https://t3f.readthedocs.io/en/latest/index.html).
