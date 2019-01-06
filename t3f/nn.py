@@ -17,19 +17,19 @@ class KerasDense(Layer):
     """Creates a TT-Matrix based Dense Keras layer.
 
     Args:
-        input_dims: an array, tensor shape of the matrix row index
-        ouput_dims: an array, tensor shape of the matrix column index
-        tt_rank: a number or an array, desired tt-rank of the TT-Matrix
-        activation: [None] string or None, specifies the activation function.
-        use_bias: bool, whether to use bias
-        kernel_initializer: string specifying initializer for the TT-Matrix.
-            Possible values are 'glorot', 'he', and 'lecun'.
-        bias_initializer: a number, initialization value of the bias
+      input_dims: an array, tensor shape of the matrix row index
+      ouput_dims: an array, tensor shape of the matrix column index
+      tt_rank: a number or an array, desired tt-rank of the TT-Matrix
+      activation: [None] string or None, specifies the activation function.
+      use_bias: bool, whether to use bias
+      kernel_initializer: string specifying initializer for the TT-Matrix.
+          Possible values are 'glorot', 'he', and 'lecun'.
+      bias_initializer: a number, initialization value of the bias
 
     Returns:
-        Layer object corresponding to multiplication by a TT-Matrix
-            followed by addition of a bias and applying
-            an elementwise activation
+      Layer object corresponding to multiplication by a TT-Matrix
+          followed by addition of a bias and applying
+          an elementwise activation
 
     Raises:
         ValueError if the provided activation or kernel_initializer is
