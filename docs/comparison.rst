@@ -22,7 +22,13 @@ A brief overview of other libraries that support Tensor Train decomposition (whi
 +---------------+-------------------+---------+------------+--------------+-----------+
 | `TT-Toolbox`_ | Matlab            | Partial | No         | No           | Yes       |
 +---------------+-------------------+---------+------------+--------------+-----------+
+| TENSORBOX_    | Matlab            | Partial | No         | ??           | ??        |
++---------------+-------------------+---------+------------+--------------+-----------+
+| Tensorlab_    | Matlab            | Partial | No         | ??           | ??        |
++---------------+-------------------+---------+------------+--------------+-----------+
 | ITensor_      | C++               | No      | No         | No           | DMRG      |
++---------------+-------------------+---------+------------+--------------+-----------+
+| libtt_        | C++               | No      | No         | No           | TT-cross  |
 +---------------+-------------------+---------+------------+--------------+-----------+
 
 
@@ -32,7 +38,10 @@ A brief overview of other libraries that support Tensor Train decomposition (whi
 .. _scikit\_tt: https://github.com/PGelss/scikit_tt
 .. _mpys: https://github.com/alvarorga/mpys
 .. _TT-Toolbox: https://github.com/oseledets/TT-Toolbox
+.. _TENSORBOX: http://www.bsp.brain.riken.jp/~phan/#tensorbox
+.. _Tensorlab: https://www.tensorlab.net
 .. _ITensor: http://itensor.org/
+.. _libtt: https://bitbucket.org/matseralex/tt_smoluh/src/master/libtt/
 
 If you use python, we would suggest using t3f if you need extensive Riemannian optimization support, t3f or tntorch if you need GPU or autodiff support, and ttpy if you need advanced algorithms such as AMen.
 
