@@ -56,8 +56,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u't3f'
-copyright = u'2017, Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov, Valentin Khrulkov'
-author = u'Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov, Valentin Khrulkov'
+copyright = u'2017, Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Michael Figurnov, Valentin Khrulkov'
+author = u'Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Michael Figurnov, Valentin Khrulkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -137,7 +137,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 't3f.tex', u't3f Documentation',
-     u'Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Mikhail Trofimov, Mikhail Trofimov, Valentin Khrulkov', 'manual'),
+     u'Alexander Novikov, Pavel Izmailov, Ivan Oseledets, Michael Figurnov, Valentin Khrulkov', 'manual'),
 ]
 
 
