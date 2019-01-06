@@ -1,5 +1,5 @@
-## Profiling T3F
-To profile the library, use the following commands
+## Benchmarking T3F
+To benchmark the library, use the following commands
 ```bash
 # Running on CPU.
 CUDA_VISIBLE_DEVICES= python profile.py --file_path logs_cpu.pkl
