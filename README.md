@@ -7,7 +7,7 @@ TensorFlow implementation of the Tensor Train (TT) -Toolbox.
 API is available via [readthedocs](https://t3f.readthedocs.io/en/latest/).
 
 # Installation
-T3f assumes you have Python 2.7, 3.4, 3.5, or 3.6 and a working TensorFlow installation of version >= 1.2, tested versions are from 1.2 to 1.11 (see [here](https://www.tensorflow.org/install/) for TF installation instructions).
+T3f assumes you have Python 2.7, 3.4, 3.5, or 3.6 and a working TensorFlow installation, tested versions are from 1.10 to 1.11 (see [here](https://www.tensorflow.org/install/) for TF installation instructions).
 We don't include it into pip requirements since the installation of TensorFlow varies depending on your setup.
 Then simply run
 ```bash
