@@ -389,12 +389,16 @@ def project_matmul(what, where, matrix):
      a TensorTrain with the TT-ranks equal 2 * tangent_space_tens.get_tt_ranks()
       
   Complexity:
-       O(d r_where^3 m) for orthogonalizing the TT-cores of where
+      O(d r_where^3 m) for orthogonalizing the TT-cores
       +O(batch_size d R r_what r_where (n r_what + n m R + m r_where))
-    d is the number of TT-cores (what.ndims());
-    r_what is the largest TT-rank of what max(what.get_tt_rank())
-    r_where is the largest TT-rank of where
-    matrix is of TT-rank R and of raw-shape (m, m, ..., m) x (n, n, ..., n).
+    or equivalently
+      O(d r_where^3 m)
+      +O(batch_size d R^3 r_what r_where n m R)
+    given that m r_where < n m R and n r_what < n m R, where
+      d is the number of TT-cores (what.ndims());
+      r_what is the largest TT-rank of what (max(what.get_tt_rank()))
+      r_where is the largest TT-rank of where
+      matrix is of TT-rank R and of raw-shape (m, m, ..., m) x (n, n, ..., n).
   """
 
   if not isinstance(where, TensorTrain):
