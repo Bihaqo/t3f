@@ -3,5 +3,6 @@
 # version of the library on each build and it doesn't import properly without
 # tensorflow being installed.
 tensorflow>=1.10,<=1.12
+keras
 ipykernel
 nbsphinx
