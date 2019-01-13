@@ -25,7 +25,6 @@ t3f is implemented on top of TensorFlow which gives it a few nice properties:
     :caption: Tutorials
 
     tutorials/tensor_nets
-    tutorials/tensor_completion
     tutorials/riemannian
 
 Citation
