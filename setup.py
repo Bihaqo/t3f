@@ -9,6 +9,6 @@ setup(name='t3f',
       license='MIT',
       packages=['t3f'],
       install_requires=[
-            'numpy',
+            'numpy', 'sympy', 'scipy', 'keras'
       ],
       zip_safe=False)
