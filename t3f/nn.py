@@ -3,6 +3,7 @@
 from itertools import count
 import numpy as np
 from keras.engine.topology import Layer
+from keras.engine.base_layer import InputSpec
 from keras.layers import Activation
 import t3f
 import tensorflow as tf
@@ -106,8 +107,8 @@ def suggest_shape(n, d=3, criterion='entropy', mode='ascending'):
 class KerasDense(Layer):
   _counter = count(0)
 
-  def __init__(self, in_dim=None, out_dim=None, d=None, mode='mixed',
-               criterion='entropy',input_dims=None, output_dims=None, tt_rank=8,
+  def __init__(self, units=None, d=None, use_auto_shape=True, mode='mixed',
+               criterion='entropy', in_dims=None, out_dims=None, tt_rank=8,
                activation=None, use_bias=True, kernel_initializer='glorot',
                bias_initializer=0.1, **kwargs):
     """Creates a TT-Matrix based Dense Keras layer.
@@ -144,12 +145,29 @@ class KerasDense(Layer):
         unknown.
     """
     self.counter = next(self._counter)
-    if in_dim and out_dim and d:
-      input_dims = auto_shape(in_dim, d=d, mode=mode, criterion=criterion)
-      output_dims = auto_shape(out_dim, d=d, mode=mode, criterion=criterion)
+    if use_auto_shape:
+      if units and d:
+        out_dims = auto_shape(units, d=d, mode=mode, criterion=criterion)
+        # in_dims are not known yet
+        self.tt_shape = None
+      else:
+        raise ValueError('If auto_shape=True, you have to provide units and d,\
+                          got {} and {}'.format(units, d))
 
-    self.tt_shape = [input_dims, output_dims]
-    self.output_dim = np.prod(output_dims)
+    if not use_auto_shape:
+      if in_dims and out_dims:
+        self.tt_shape = [in_dims, out_dims]
+      else:
+        raise ValueError('If auto_shape=False you have to provide \
+                          the desired factorizations in_dims and out_dims, \
+                          got {} and {}'.format(in_dims, out_dims))
+    self.in_dims = in_dims
+    self.out_dims = out_dims
+    self.use_auto_shape = use_auto_shape
+    self.d = d
+    self.mode = mode
+    self.criterion = criterion
+    self.output_dim = np.prod(out_dims)
     self.tt_rank = tt_rank
     self.activation = activation
     self.use_bias = use_bias
@@ -158,6 +176,18 @@ class KerasDense(Layer):
     super(KerasDense, self).__init__(**kwargs)
 
   def build(self, input_shape):
+
+    if self.use_auto_shape:
+      self.in_dims = auto_shape(input_shape[1],
+                                mode=self.mode,
+                                criterion=self.criterion,
+                                d=self.d)
+      self.tt_shape = [self.in_dims, self.out_dims]
+    else:
+      if input_shape[1] != np.prod(self.in_dims):
+        raise ValueError('Input shape factorization does not \
+                          match the actual input shape')
+
     if self.kernel_initializer == 'glorot':
       initializer = t3f.glorot_initializer(self.tt_shape,
                                            tt_rank=self.tt_rank)
@@ -182,6 +212,8 @@ class KerasDense(Layer):
     self.trainable_weights = list(self.matrix.tt_cores)
     if self.b is not None:
       self.trainable_weights.append(self.b)
+
+    self.built = True
 
   def call(self, x):
     res = t3f.matmul(x, self.matrix)
