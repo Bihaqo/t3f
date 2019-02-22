@@ -185,7 +185,7 @@ def full_hessian_vector_product(func, x, vector):
   cores_grad = tf.gradients(function_value, deltas)
   
   # Part 1: only curvature, stop grad of the function itself.
-  vector_projected_curvature = t3f.project(vector, x_shrinked_back)
+  vector_projected_curvature = t3f.project(vector, x_shrinked_back, differentiable=True)
   vec_deltas_curvature = t3f.riemannian.tangent_space_to_deltas(vector_projected_curvature)
   products = [tf.reduce_sum(tf.stop_gradient(a) * b) for a, b in zip(cores_grad, vec_deltas_curvature)]
   grad_times_vec = tf.add_n(products)
