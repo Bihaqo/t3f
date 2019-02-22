@@ -392,7 +392,7 @@ def _round_batch_tt(tt, max_tt_rank, epsilon):
   return TensorTrainBatch(tt_cores, tt.get_raw_shape(), ranks, batch_size=tt.batch_size)
 
 
-def orthogonalize_tt_cores(tt, left_to_right=True,
+def orthogonalize_tt_cores(tt, left_to_right=True, differentiable=False,
                            name='t3f_orthogonalize_tt_cores'):
   """Orthogonalize TT-cores of a TT-object.
 
@@ -407,18 +407,23 @@ def orthogonalize_tt_cores(tt, left_to_right=True,
   with tf.name_scope(name, values=tt.tt_cores):
     if isinstance(tt, TensorTrainBatch):
       if left_to_right:
-        return _orthogonalize_batch_tt_cores_left_to_right(tt)
+        return _orthogonalize_batch_tt_cores_left_to_right(tt, differentiable=differentiable)
       else:
         raise NotImplementedError('Batch right to left orthogonalization is '
                                   'not supported yet.')
     else:
       if left_to_right:
-        return _orthogonalize_tt_cores_left_to_right(tt)
+        return _orthogonalize_tt_cores_left_to_right(tt, differentiable=differentiable)
       else:
-        return _orthogonalize_tt_cores_right_to_left(tt)
+        return _orthogonalize_tt_cores_right_to_left(tt, differentiable=differentiable)
 
 
-def _orthogonalize_tt_cores_left_to_right(tt):
+def svd_qr(matrix):
+  s, u, v = tf.svd(a)
+  return u, tf.matmul(tf.matrix_diag(s), tf.transpose(v))
+
+
+def _orthogonalize_tt_cores_left_to_right(tt, differentiable=False):
   """Orthogonalize TT-cores of a TT-object in the left to right order.
   Args:
     tt: TenosorTrain or a TensorTrainBatch.
@@ -437,7 +442,7 @@ def _orthogonalize_tt_cores_left_to_right(tt):
         for a tensor of size 4 x 4 x 4, n is 4;
         for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12 
   """
-  # Left to right orthogonalization.
+  qr = svd_qr if differentiable else tf.qr
   ndims = tt.ndims()
   raw_shape = shapes.lazy_raw_shape(tt)
   tt_ranks = shapes.lazy_tt_ranks(tt)
@@ -460,7 +465,7 @@ def _orthogonalize_tt_cores_left_to_right(tt):
 
     qr_shape = (curr_rank * curr_mode, next_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
-    curr_core, triang = tf.qr(curr_core)
+    curr_core, triang = qr(curr_core)
     if triang.get_shape().is_fully_defined():
       triang_shape = triang.get_shape().as_list()
     else:
@@ -487,7 +492,7 @@ def _orthogonalize_tt_cores_left_to_right(tt):
   return TensorTrain(tt_cores, tt.get_raw_shape())
 
 
-def _orthogonalize_batch_tt_cores_left_to_right(tt):
+def _orthogonalize_batch_tt_cores_left_to_right(tt, differentiable=False):
   """Orthogonalize TT-cores of a batch TT-object in the left to right order.
 
   Args:
@@ -496,7 +501,7 @@ def _orthogonalize_batch_tt_cores_left_to_right(tt):
   Returns:
     TensorTrainBatch
   """
-  # Left to right orthogonalization.
+  qr = svd_qr if differentiable else tf.qr
   ndims = tt.ndims()
   raw_shape = shapes.lazy_raw_shape(tt)
   tt_ranks = shapes.lazy_tt_ranks(tt)
@@ -521,7 +526,7 @@ def _orthogonalize_batch_tt_cores_left_to_right(tt):
 
     qr_shape = (batch_size, curr_rank * curr_mode, next_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
-    curr_core, triang = tf.qr(curr_core)
+    curr_core, triang = qr(curr_core)
     if triang.get_shape().is_fully_defined():
       triang_shape = triang.get_shape().as_list()
     else:
@@ -551,7 +556,7 @@ def _orthogonalize_batch_tt_cores_left_to_right(tt):
   return TensorTrainBatch(tt_cores, tt.get_raw_shape(), batch_size=batch_size)
 
 
-def _orthogonalize_tt_cores_right_to_left(tt):
+def _orthogonalize_tt_cores_right_to_left(tt, differentiable=False):
   """Orthogonalize TT-cores of a TT-object in the right to left order.
 
   Args:
@@ -560,7 +565,7 @@ def _orthogonalize_tt_cores_right_to_left(tt):
   Returns:
     The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
   """
-  # Left to right orthogonalization.
+  qr = svd_qr if differentiable else tf.qr
   ndims = tt.ndims()
   raw_shape = shapes.lazy_raw_shape(tt)
   tt_ranks = shapes.lazy_tt_ranks(tt)
@@ -583,7 +588,7 @@ def _orthogonalize_tt_cores_right_to_left(tt):
 
     qr_shape = (prev_rank, curr_mode * curr_rank)
     curr_core = tf.reshape(curr_core, qr_shape)
-    curr_core, triang = tf.qr(tf.transpose(curr_core))
+    curr_core, triang = qr(tf.transpose(curr_core))
     curr_core = tf.transpose(curr_core)
     triang = tf.transpose(triang)
     if triang.get_shape().is_fully_defined():
