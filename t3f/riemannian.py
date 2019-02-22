@@ -196,7 +196,7 @@ def project_sum(what, where, weights=None):
   return res
 
 
-def project(what, where):
+def project(what, where, differentiable=False):
   """Project `what` TTs on the tangent space of `where` TT.
 
   project(what, x) = P_x(what)
@@ -244,9 +244,9 @@ def project(what, where):
                       what.dtype))
 
   left_tangent_space_tens = decompositions.orthogonalize_tt_cores(
-    where)
+    where, differentiable=False)
   right_tangent_space_tens = decompositions.orthogonalize_tt_cores(
-    left_tangent_space_tens, left_to_right=False)
+    left_tangent_space_tens, left_to_right=False, differentiable=False)
 
   ndims = where.ndims()
   dtype = where.dtype
