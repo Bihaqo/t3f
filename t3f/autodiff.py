@@ -172,3 +172,30 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
     second_cores_grad = tf.gradients(grad_times_vec, deltas)
     final_deltas = _enforce_gauge_conditions(second_cores_grad, left)
     return riemannian.deltas_to_tangent_space(final_deltas, x, left, right)
+
+  
+def full_hessian_vector_product(func, x, vector):
+  left = t3f.orthogonalize_tt_cores(x)
+  right = t3f.orthogonalize_tt_cores(left, left_to_right=False)
+  deltas = [right.tt_cores[0]]
+  deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
+  x_extended = t3f.riemannian.deltas_to_tangent_space(deltas, x, left, right)
+  x_shrinked_back = t3f.round(x_extended, max_tt_rank=r)
+  function_value = func(x_extended)
+  cores_grad = tf.gradients(function_value, deltas)
+  
+  # Part 1: only curvature, stop grad of the function itself.
+  vector_projected_curvature = t3f.project(vector, x_shrinked_back)
+  vec_deltas_curvature = t3f.riemannian.tangent_space_to_deltas(vector_projected_curvature)
+  products = [tf.reduce_sum(tf.stop_gradient(a) * b) for a, b in zip(cores_grad, vec_deltas_curvature)]
+  grad_times_vec = tf.add_n(products)
+  
+  # Part 2: only hessian of the function.
+  vector_projected = t3f.project(vector, x)
+  vec_deltas = t3f.riemannian.tangent_space_to_deltas(vector_projected)
+  products = [tf.reduce_sum(a * b) for a, b in zip(cores_grad, vec_deltas)]
+  grad_times_vec += tf.add_n(products)
+  
+  second_cores_grad = tf.gradients(grad_times_vec, deltas)
+  final_deltas = t3f.autodiff._enforce_gauge_conditions(second_cores_grad, left)
+  return t3f.riemannian.deltas_to_tangent_space(final_deltas, x, left, right)
