@@ -10,4 +10,5 @@ args = parser.parse_args()
 
 case = utils.Completion(args.n, args.d, args.tt_rank)
 
-all_logs.append(utils.benchmark(case))
+print(case.settings)
+utils.benchmark(case)

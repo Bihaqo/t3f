@@ -169,6 +169,18 @@ class Completion(Task):
     return t3f.project_sum(self.sparsity_mask_list_tt, self.x, vector_nonzero)
 
 
+def exist(all_logs, case):
+  for l in all_logs:
+    s = l['settings']
+    coincide = True
+    for k in case.settings:
+      if s[k] != case.settings[k]:
+        coincide = False
+    if coincide:
+      return True
+  return False
+
+
 def benchmark(case, prev_log=None):
   naive_grad = case.naive_grad()
   smart_grad = case.smart_grad()
@@ -188,6 +200,9 @@ def benchmark(case, prev_log=None):
     benchmark = tf.test.Benchmark()
 
     all_logs['settings'] = case.settings
+    if exist(all_logs_list, case):
+      print('skipping')
+      return None
 
     def benchmark_single(op, name, all_logs):
       try:
