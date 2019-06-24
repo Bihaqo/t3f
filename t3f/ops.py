@@ -8,6 +8,8 @@ from t3f import utils
 from t3f import decompositions
 from t3f import initializers
 
+from opt_einsum import contract
+
 # TODO: add complexities to the comments.
 
 
@@ -1120,7 +1122,6 @@ def bilinear_form(A, b, c, name='t3f_bilinear_form'):
 
 def bilinear_form_two_mat(x, A, B, y, name='t3f_bilinear_xaby'):
   """Bilinear form x^t A B y; A are B are TT-matrices, x and y can be batches.
-
   Args:
     x: `TensorTrain` object containing a TT-matrix of size N x 1
       or `TensorTrainBatch` with a batch of TT-matrices of size N x 1.
