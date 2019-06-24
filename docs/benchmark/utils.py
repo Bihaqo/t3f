@@ -83,34 +83,40 @@ def reduce_sum_batch(x):
     tt_cores[i] = core
   return t3f.TensorTrain(tt_cores)
 
-def compare_tensors(tensors):
+def compare_tensors(tensors, sess):
   for a in tensors:
     for b in tensors:
       a_np, b_np = sess.run([t3f.full(a), t3f.full(b)])
       diff = np.linalg.norm((a_np - b_np).flatten()) / np.linalg.norm(b_np)
       assert diff < 1e-8
 
-def test(case, sess):
-  tensors = []
-  tensors.append(case.naive_grad())
-  try:
-    tensors.append(case.smart_grad())
-  except NotImplementedError:
-    pass
-  auto_g = t3f.gradients(case.loss, case.x, runtime_check=True)
-  tensors.append(auto_g)
-  compare_tensors(tensors)
-  
-  tensors = []
-  tensors.append(case.naive_hessian_by_vector())
-  try:
-    tensors.append(case.smart_hessian_by_vector())
-  except NotImplementedError:
-    pass
-  auto_hv = t3f.hessian_vector_product(case.loss, case.x, case.vector, runtime_check=True)
-  tensors.append(auto_hv)
-  compare_tensors(tensors)
+def test(case):
+  with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    tensors = []
+    tensors.append(case.naive_grad())
+    try:
+      tensors.append(case.smart_grad())
+    except NotImplementedError:
+      pass
+    auto_g = t3f.gradients(case.loss, case.x, runtime_check=True)
+    tensors.append(auto_g)
+    compare_tensors(tensors, sess)
+    
+    tensors = []
+    tensors.append(case.naive_hessian_by_vector())
+    try:
+      tensors.append(case.smart_hessian_by_vector())
+    except NotImplementedError:
+      pass
+    auto_hv = t3f.hessian_vector_product(case.loss, case.x, case.vector, runtime_check=True)
+    tensors.append(auto_hv)
+    compare_tensors(tensors, sess)
       
+
+def prune_ranks(tt_rank, shape):
+  tt_rank_arr = [1] + [tt_rank] * (len(shape) - 1) + [1]
+  return np.minimum(tt_rank_arr, max_tt_ranks(shape))
 
 
 class Task(object):
@@ -169,6 +175,39 @@ class Completion(Task):
     return t3f.project_sum(self.sparsity_mask_list_tt, self.x, vector_nonzero)
 
 
+class BilinearXABX(Task):
+  
+  def __init__(self, m, n, d, tt_rank_mat, tt_rank_vec):
+    self.settings = {'n': n, 'm': m, 'd': d, 'tt_rank_mat': tt_rank_mat, 'tt_rank_vec': tt_rank_vec}
+    shape = ([m] * d, [n] * d)
+    ranks = prune_ranks(tt_rank_vec, shape[1])
+    initialization = t3f.random_matrix((shape[1], None), tt_rank=ranks, dtype=tf.float64)
+    self.x = t3f.get_variable('x', initializer=initialization)
+    ranks = prune_ranks(2 * tt_rank_vec, shape[1])
+    initialization = t3f.random_matrix((shape[1], None), tt_rank=ranks, dtype=tf.float64)
+    self.vector = t3f.get_variable('vector', initializer=initialization)
+    ranks = prune_ranks(tt_rank_mat, np.prod(shape, axis=0))
+    initialization = t3f.random_matrix(shape, tt_rank=ranks, dtype=tf.float64)
+    self.mat = t3f.get_variable('mat', initializer=initialization)
+    
+  def loss(self, x):
+    return 0.5 * t3f.bilinear_xaby(x, t3f.transpose(self.mat), self.mat, x)
+  
+  def naive_grad(self):
+    grad = t3f.matmul(t3f.transpose(self.mat), t3f.matmul(self.mat, self.x))
+    return t3f.project(grad, self.x)
+  
+  def smart_grad(self):
+    raise NotImplementedError()
+  
+  def naive_hessian_by_vector(self):
+    projected_vec = t3f.project(self.vector, self.x)
+    return t3f.project(t3f.matmul(t3f.transpose(self.mat), t3f.matmul(self.mat, projected_vec)), self.x)
+  
+  def smart_hessian_by_vector(self):
+    raise NotImplementedError()
+
+
 def exist(all_logs, case):
   for l in all_logs:
     s = l['settings']
@@ -183,12 +222,18 @@ def exist(all_logs, case):
 
 def benchmark(case, prev_log=None):
   naive_grad = case.naive_grad()
-  smart_grad = case.smart_grad()
   auto_grad = t3f.gradients(case.loss, case.x, runtime_check=False)
+  try:
+    smart_grad = case.smart_grad()
+  except NotImplementedError:
+    smart_grad = None
 
   naive_hv = case.naive_hessian_by_vector()
-  smart_hv = case.smart_hessian_by_vector()
   auto_hv = t3f.hessian_vector_product(case.loss, case.x, case.vector, runtime_check=False)
+  try:
+    smart_hv = case.smart_hessian_by_vector()
+  except NotImplementedError:
+    smart_hv = None
   try:
     with open(r"logs.pickle", "rb") as output_file:
       all_logs_list = pickle.load(output_file)
@@ -219,8 +264,10 @@ def benchmark(case, prev_log=None):
 
     benchmark_single(auto_grad.op, 'auto_grad', all_logs)
     benchmark_single(auto_hv.op, 'auto_hv', all_logs)
-    benchmark_single(smart_grad.op, 'smart_grad', all_logs)
-    benchmark_single(smart_hv.op, 'smart_hv', all_logs)
-    # benchmark_single(naive_grad.op, 'naive_grad', all_logs)
-    # benchmark_single(naive_hv.op, 'naive_hv', all_logs)
+    if smart_grad is not None:
+      benchmark_single(smart_grad.op, 'smart_grad', all_logs)
+    if smart_hv is not None:
+      benchmark_single(smart_hv.op, 'smart_hv', all_logs)
+    benchmark_single(naive_grad.op, 'naive_grad', all_logs)
+    benchmark_single(naive_hv.op, 'naive_hv', all_logs)
     return all_logs
