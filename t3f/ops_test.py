@@ -378,6 +378,30 @@ class _TTMatrixTest():
           self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                               atol=1e-5, rtol=1e-5)
 
+  def testBilinearXaby(self):
+    # Test bilinear form.
+    shape_list = (((2, 2), (3, 4)),
+                  ((2, 3, 4), (2, 2, 2)))
+    rank_list = (1, 2)
+    with self.test_session() as sess:
+      for tensor_shape in shape_list:
+        for rank in rank_list:
+          A = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                         dtype=self.dtype)
+          B = initializers.random_matrix(tensor_shape, tt_rank=rank,
+                                         dtype=self.dtype)
+          B = ops.transpose(B)
+          x = initializers.random_matrix((tensor_shape[0], None), tt_rank=rank,
+                                         dtype=self.dtype)
+          y = initializers.random_matrix((tensor_shape[0], None), tt_rank=rank,
+                                         dtype=self.dtype)
+          res_actual = ops.bilinear_xaby(x, A, B, y)
+          vars = [res_actual, ops.full(x), ops.full(A), ops.full(B), ops.full(y)]
+          res_actual_val, x_val, A_val, B_val, y_val = sess.run(vars)
+          res_desired = x_val.T.dot(A_val).dot(B_val).dot(y_val)
+          self.assertAllClose(res_actual_val, np.squeeze(res_desired),
+                              atol=1e-5, rtol=1e-5)
+
   def testQuadraticFormBatch(self):
     # Test quadratic form for batch of tensors.
     shape_list = (((2, 2), (3, 4)),
