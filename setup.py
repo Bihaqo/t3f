@@ -10,5 +10,6 @@ setup(name='t3f',
       packages=['t3f'],
       install_requires=[
             'numpy',
+            'opt_einsum',
       ],
       zip_safe=False)
