@@ -7,8 +7,8 @@ python:
   - "3.6"
 env:
   matrix:
-    - TF_VERSION=1.12.1
-    - TF_VERSION=1.13
+    - TF_VERSION=1.12.2
+    - TF_VERSION=1.13.2
     - TF_VERSION=1.14
 # command to install dependencies
 install:
