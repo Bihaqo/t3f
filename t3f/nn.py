@@ -2,8 +2,8 @@
 
 from itertools import count
 import numpy as np
-from keras.engine.topology import Layer
-from keras.layers import Activation
+from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Activation
 import t3f
 import tensorflow as tf
 
