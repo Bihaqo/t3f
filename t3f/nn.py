@@ -2,8 +2,8 @@
 
 from itertools import count
 import numpy as np
-from keras.engine.topology import Layer
-from keras.layers import Activation
+from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Activation
 import t3f
 import tensorflow as tf
 
@@ -67,9 +67,9 @@ class KerasDense(Layer):
         b_init = tf.constant_initializer(self.bias_initializer)
         self.b = tf.get_variable('bias', shape=self.output_dim,
                                  initializer=b_init)
-    self.trainable_weights = list(self.matrix.tt_cores)
+    self._trainable_weights = list(self.matrix.tt_cores)
     if self.b is not None:
-      self.trainable_weights.append(self.b)
+      self._trainable_weights.append(self.b)
 
   def call(self, x):
     res = t3f.matmul(x, self.matrix)
