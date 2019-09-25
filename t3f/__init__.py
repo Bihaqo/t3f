@@ -14,6 +14,7 @@ from t3f.ops import full
 from t3f.ops import matmul
 from t3f.ops import multiply
 from t3f.ops import quadratic_form
+from t3f.ops import bilinear_form
 from t3f.ops import transpose
 from t3f.ops import gather_nd
 from t3f.ops import renormalize_tt_cores

@@ -357,8 +357,8 @@ class _TTMatrixTest():
           res_actual_val, tt_val = sess.run([res_actual, ops.full(tt)])
           self.assertAllClose(tt_val.transpose(), res_actual_val)
 
-  def testQuadraticForm(self):
-    # Test quadratic form.
+  def testBilinearForm(self):
+    # Test bilinear form.
     shape_list = (((2, 2), (3, 4)),
                   ((2, 3, 4), (2, 2, 2)))
     rank_list = (1, 2)
@@ -371,15 +371,15 @@ class _TTMatrixTest():
                                          dtype=self.dtype)
           c = initializers.random_matrix((tensor_shape[1], None), tt_rank=rank,
                                          dtype=self.dtype)
-          res_actual = ops.quadratic_form(A, b, c)
+          res_actual = ops.bilinear_form(A, b, c)
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = b_val.T.dot(A_val).dot(c_val)
           self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                               atol=1e-5, rtol=1e-5)
 
-  def testQuadraticFormBatch(self):
-    # Test quadratic form for batch of tensors.
+  def testBilinearFormBatch(self):
+    # Test bilinear form for batch of tensors.
     shape_list = (((2, 2), (3, 4)),
                   ((2, 3, 4), (2, 2, 2)))
     rank_list = (1, 2)
@@ -394,7 +394,7 @@ class _TTMatrixTest():
           c = initializers.random_matrix_batch((tensor_shape[1], None),
                                                tt_rank=rank, batch_size=5,
                                                dtype=self.dtype)
-          res_actual = ops.quadratic_form(A, b, c)
+          res_actual = ops.bilinear_form(A, b, c)
           vars = [res_actual, ops.full(A), ops.full(b), ops.full(c)]
           res_actual_val, A_val, b_val, c_val = sess.run(vars)
           res_desired = np.diag(b_val[:, :, 0].dot(A_val).dot(c_val[:, :, 0].T))
