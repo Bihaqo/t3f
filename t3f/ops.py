@@ -1036,8 +1036,15 @@ def transpose(tt_matrix, name='t3f_transpose'):
                               batch_size)
 
 
-def quadratic_form(A, b, c, name='t3f_quadratic_form'):
-  """Quadratic form b^t A c; A is a TT-matrix, b and c can be batches.
+def quadratic_form(A, b, c, name='t3f_bilinear_form'):
+  """Outdated, see `bilinear_form`."""
+  print('Warning: function quadratic_form is being depricated and '
+        'replaced with bilinear_form.')
+  return bilinear_form(A, b, c)
+
+
+def bilinear_form(A, b, c, name='t3f_bilinear_form'):
+  """Bilinear form b^t A c; A is a TT-matrix, b and c can be batches.
 
   Args:
     A: `TensorTrain` object containing a TT-matrix of size N x M.
@@ -1048,7 +1055,7 @@ def quadratic_form(A, b, c, name='t3f_quadratic_form'):
     name: string, name of the Op.
 
   Returns:
-    A number, the value of the quadratic form if all the arguments are
+    A number, the value of the bilinear form if all the arguments are
       `TensorTrain`s.
     OR tf.Tensor of size batch_size if at least one of the arguments is
       `TensorTrainBatch`

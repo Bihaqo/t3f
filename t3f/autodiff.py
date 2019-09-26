@@ -131,7 +131,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
         # It's Riemannian Hessian by vector product is
         #     proj_vec = t3f.project(vector, x)
         #     t3f.project(t3f.matmul(A + t3f.transpose(A), proj_vec), x)
-        f = lambda x: t3f.quadratic_form(A, x, x)
+        f = lambda x: t3f.bilinear_form(A, x, x)
         res = t3f.hessian_vector_product(f, x, vector)
 
     Args:

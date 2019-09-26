@@ -29,7 +29,7 @@ class _AutodiffTest():
     self._TestSingleGradient(func1, x, desired1)
 
     def func2(x):
-      return ops.quadratic_form(A, x, x)
+      return ops.bilinear_form(A, x, x)
     grad = ops.matmul(ops.transpose(A) + A, x)
     desired2 = ops.full(riemannian.project(grad, x))
     self._TestSingleGradient(func2, x, desired2)
@@ -71,7 +71,7 @@ class _AutodiffTest():
     self._TestSingleHessianByVector(func1, x, z, desired1)
 
     def func2(x):
-      return ops.quadratic_form(A, x, x)
+      return ops.bilinear_form(A, x, x)
     # Hessian of <x, Ax> is A + A.T
     hessian_by_vector = ops.matmul(ops.transpose(A) + A, projected_vector)
     desired2 = ops.full(riemannian.project(hessian_by_vector, x))
