@@ -82,36 +82,6 @@ def reduce_sum_batch(x):
       core *= tf.tile(tf.eye(bs, dtype=x.dtype)[:, None, :], (1, n, 1))
     tt_cores[i] = core
   return t3f.TensorTrain(tt_cores)
-
-def compare_tensors(tensors, sess):
-  for a in tensors:
-    for b in tensors:
-      a_np, b_np = sess.run([t3f.full(a), t3f.full(b)])
-      diff = np.linalg.norm((a_np - b_np).flatten()) / np.linalg.norm(b_np)
-      assert diff < 1e-8
-
-def test(case):
-  with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    tensors = []
-    tensors.append(case.naive_grad())
-    try:
-      tensors.append(case.smart_grad())
-    except NotImplementedError:
-      pass
-    auto_g = t3f.gradients(case.loss, case.x, runtime_check=True)
-    tensors.append(auto_g)
-    compare_tensors(tensors, sess)
-    
-    tensors = []
-    tensors.append(case.naive_hessian_by_vector())
-    try:
-      tensors.append(case.smart_hessian_by_vector())
-    except NotImplementedError:
-      pass
-    auto_hv = t3f.hessian_vector_product(case.loss, case.x, case.vector, runtime_check=True)
-    tensors.append(auto_hv)
-    compare_tensors(tensors, sess)
       
 
 def prune_ranks(tt_rank, shape):
@@ -175,6 +145,89 @@ class Completion(Task):
     return t3f.project_sum(self.sparsity_mask_list_tt, self.x, vector_nonzero)
 
 
+class BilinearXAX(Task):
+  
+  def __init__(self, m, n, d, tt_rank_mat, tt_rank_vec):
+    self.settings = {'n': n, 'm': m, 'd': d, 'tt_rank_mat': tt_rank_mat, 'tt_rank_vec': tt_rank_vec}
+    shape = ([m] * d, [n] * d)
+    ranks = prune_ranks(tt_rank_vec, shape[1])
+    initialization = t3f.random_matrix((shape[1], None), tt_rank=ranks, dtype=tf.float64)
+    self.x = t3f.get_variable('x', initializer=initialization)
+    ranks = prune_ranks(2 * tt_rank_vec, shape[1])
+    initialization = t3f.random_matrix((shape[1], None), tt_rank=ranks, dtype=tf.float64)
+    self.vector = t3f.get_variable('vector', initializer=initialization)
+    ranks = prune_ranks(tt_rank_mat, np.prod(shape, axis=0))
+    mat = t3f.random_matrix(shape, tt_rank=ranks, dtype=tf.float64)
+    mat = t3f.transpose(mat) + mat
+    self.mat = t3f.get_variable('mat', initializer=mat)
+    
+  def loss(self, x):
+    return 0.5 * t3f.quadratic_form(self.mat, x, x)  # DO NOT SUBMIT
+  
+  def naive_grad(self):
+    grad = t3f.matmul(self.mat, self.x)  # DO NOT SUBMIT
+    return t3f.project(grad, self.x)
+  
+  def smart_grad(self):
+    return t3f.project_matmul(t3f.expand_batch_dim(self.x), self.x, self.mat)[0]  # DO NOT SUBMIT
+  
+  def naive_hessian_by_vector(self):
+    grad = t3f.matmul(self.mat, self.vector)
+    return t3f.project(grad, self.x)
+  
+  def smart_hessian_by_vector(self):
+    return t3f.project_matmul(t3f.expand_batch_dim(self.vector), self.x, self.mat)[0]
+
+
+class ExpMachines(Task):
+  
+  def __init__(self, n, d, tt_rank_vec, batch_size=32):
+    self.settings = {'n': n, 'd': d, 'tt_rank_vec': tt_rank_vec}
+    shape = [n] * d
+    ranks = prune_ranks(tt_rank_vec, shape)
+    initialization = t3f.random_tensor(shape, tt_rank=ranks, dtype=tf.float64)
+    self.x = t3f.get_variable('x', initializer=initialization)
+    initialization = t3f.random_tensor_batch(shape, tt_rank=1, dtype=tf.float64, batch_size=batch_size)
+    self.w = t3f.get_variable('w', initializer=initialization)
+    ranks = prune_ranks(2 * tt_rank_vec, shape)
+    initialization = t3f.random_tensor(shape, tt_rank=ranks, dtype=tf.float64)
+    self.vector = t3f.get_variable('vector', initializer=initialization)
+    
+  def loss(self, x):
+    l = t3f.flat_inner(x, self.w)
+    return tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=l, labels=tf.ones(self.w.batch_size, dtype=tf.float64)))
+  
+  def naive_grad(self):
+    e = tf.exp(-1. * t3f.flat_inner(self.x, self.w))
+    c = -e / (1 + e)
+    grad = c[0] * self.w[0]
+    for i in range(1, self.w.batch_size):
+      grad += c[i] * self.w[i]
+    return t3f.project(grad, self.x)
+  
+  def smart_grad(self):
+    e = tf.exp(-1. * t3f.flat_inner(self.x, self.w))
+    c = -e / (1 + e)
+    return t3f.project_sum(self.w, 1. * self.x, c)
+  
+  def naive_hessian_by_vector(self):
+    e = tf.exp(-1. * t3f.flat_inner(self.x, self.w))
+    s = 1. / (1 + e)
+    c = s * (1 - s)
+    c *= t3f.flat_inner(self.vector, self.w)
+    res = c[0] * self.w[0]
+    for i in range(1, self.w.batch_size):
+      res += c[i] * self.w[i]
+    return t3f.project(res, self.x)
+  
+  def smart_hessian_by_vector(self):
+    e = tf.exp(-1. * t3f.flat_inner(self.x, self.w))
+    s = 1. / (1 + e)
+    c = s * (1 - s)
+    c *= t3f.flat_inner(self.vector, self.w)
+    return t3f.project_sum(self.w, 1. * self.x, c)
+
+
 class BilinearXABX(Task):
   
   def __init__(self, m, n, d, tt_rank_mat, tt_rank_vec):
@@ -206,6 +259,65 @@ class BilinearXABX(Task):
   
   def smart_hessian_by_vector(self):
     raise NotImplementedError()
+
+
+class RayleighQuotient(Task):
+  
+  def __init__(self, m, n, d, tt_rank_mat, tt_rank_vec):
+    self.settings = {'n': n, 'm': m, 'd': d, 'tt_rank_mat': tt_rank_mat, 'tt_rank_vec': tt_rank_vec}
+    shape = ([m] * d, [n] * d)
+    ranks = prune_ranks(tt_rank_vec, shape[1])
+    initialization = t3f.random_matrix((shape[1], None), tt_rank=ranks, dtype=tf.float64)
+    self.x = t3f.get_variable('x', initializer=initialization)
+    ranks = prune_ranks(2 * tt_rank_vec, shape[1])
+    initialization = t3f.random_matrix((shape[1], None), tt_rank=ranks, dtype=tf.float64)
+    self.vector = t3f.get_variable('vector', initializer=initialization)
+    ranks = prune_ranks(tt_rank_mat, np.prod(shape, axis=0))
+    mat = t3f.random_matrix(shape, tt_rank=ranks, dtype=tf.float64)
+    mat = t3f.transpose(mat) + mat
+    self.mat = t3f.get_variable('mat', initializer=mat)
+    
+  def loss(self, x):
+    xAx = t3f.quadratic_form(self.mat, x, x)  # bilinear_form
+    xx = t3f.flat_inner(x, x)
+    return xAx / xx
+  
+  def naive_grad(self):
+    xAx = t3f.quadratic_form(self.mat, self.x, self.x)  # bilinear_form
+    xx = t3f.flat_inner(self.x, self.x)
+    grad = (1. / xx) * t3f.matmul(self.mat, self.x)
+    grad -= (xAx / (xx**2)) * self.x
+    return t3f.project(2 * grad, self.x)
+  
+  def smart_grad(self):
+    xAx = t3f.quadratic_form(self.mat, self.x, self.x)  # bilinear_form
+    xx = t3f.frobenius_norm_squared(self.x, differentiable=True)
+    grad = (1. / xx) * t3f.project_matmul(t3f.expand_batch_dim(self.x), self.x, self.mat)[0]
+    grad -= (xAx / xx**2) * self.x
+    return 2 * grad
+  
+  def naive_hessian_by_vector(self):
+    xAx = t3f.quadratic_form(self.mat, self.x, self.x)  # bilinear_form
+    xx = t3f.frobenius_norm_squared(self.x, differentiable=True)
+    res = (2 / xx) * t3f.matmul(self.mat, self.vector)
+    res -= (2 * xAx / xx**2) * self.vector
+    xv = t3f.flat_inner(self.x, self.vector)
+    res -= (4 * t3f.quadratic_form(self.mat, self.vector, self.x) / xx**2) * self.x
+    res -= (4 * xv / xx**2) * t3f.matmul(self.mat, self.x)
+    res += (8 * xAx * xv / xx**3) * self.x
+    return t3f.project(res, self.x)
+  
+  def smart_hessian_by_vector(self):
+    xAx = t3f.quadratic_form(self.mat, self.x, self.x)  # bilinear_form
+    xx = t3f.frobenius_norm_squared(self.x, differentiable=True)
+    projected_vec = t3f.project(self.vector, self.x)
+    res = (2 / xx) * t3f.project_matmul(t3f.expand_batch_dim(self.vector), self.x, self.mat)[0]
+    res -= (2 * xAx / xx**2) * projected_vec
+    xv = t3f.flat_inner(self.x, projected_vec)
+    res -= (4 * t3f.quadratic_form(self.mat, self.vector, self.x) / xx**2) * self.x
+    res -= (4 * xv / xx**2) * t3f.project_matmul(t3f.expand_batch_dim(self.x), self.x, self.mat)[0]
+    res += (8 * xAx * xv / xx**3) * self.x
+    return res
 
 
 def exist(all_logs, case):
