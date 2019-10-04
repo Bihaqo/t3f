@@ -4,6 +4,7 @@ import numpy as np
 import t3f
 import json
 import pickle
+import copy
 
 
 def robust_cumprod(arr):
@@ -100,7 +101,6 @@ class Task(object):
   def smart_hessian_by_vector(self):
     return NotImplementedError()
 
-    
 
 class Completion(Task):
   
@@ -320,8 +320,8 @@ class RayleighQuotient(Task):
     return res
 
 
-def exist(all_logs, case):
-  for l in all_logs:
+def exist(all_logs, case_name, case):
+  for l in all_logs[case_name]:
     s = l['settings']
     coincide = True
     for k in case.settings:
@@ -332,7 +332,21 @@ def exist(all_logs, case):
   return False
 
 
-def benchmark(case, prev_log=None):
+def did_smaller_fail(all_logs, name, case_name, case):
+  for l in all_logs[case_name]:
+    s = l['settings']
+    if name in l and l[name] is None:
+      # If this attempt failed.
+      smaller = True
+      for k in case.settings:
+        if s[k] > case.settings[k]:
+          smaller = False
+      if smaller:
+        return True
+  return False
+
+
+def benchmark(case_name, case, logs_path):
   naive_grad = case.naive_grad()
   auto_grad = t3f.gradients(case.loss, case.x, runtime_check=False)
   try:
@@ -347,39 +361,53 @@ def benchmark(case, prev_log=None):
   except NotImplementedError:
     smart_hv = None
   try:
-    with open(r"logs.pickle", "rb") as output_file:
-      all_logs_list = pickle.load(output_file)
+    with open(logs_path, "rb") as output_file:
+      # Dict with case_name -> list of configurations.
+      all_logs = pickle.load(output_file)
   except:
-    all_logs_list = []
-  all_logs = {}
+    all_logs = {}
+  if case_name not in all_logs:
+    all_logs[case_name] = []
+  # Single configuration.
+  current_case_logs = {}
   with tf.Session(config=tf.test.benchmark_config()) as sess:
     sess.run(tf.global_variables_initializer())
     benchmark = tf.test.Benchmark()
 
-    all_logs['settings'] = case.settings
-    if exist(all_logs_list, case):
+    current_case_logs['settings'] = case.settings
+    if exist(all_logs, case_name, case):
       print('skipping')
       return None
 
-    def benchmark_single(op, name, all_logs):
+
+    def benchmark_single(op, name, current_case_logs):
+      # First write None to indicate the attempt.
+      with open(logs_path, "wb") as output_file:
+        all_logs_curr = copy.deepcopy(all_logs)
+        current_case_logs[name] = None
+        all_logs_curr[case_name].append(current_case_logs)
+        pickle.dump(all_logs_curr, output_file)
+
       try:
-        if prev_log is not None and prev_log[name] is None:
+        if did_smaller_fail(all_logs, name, case_name, case):
           # No point in trying again, a smaller example failed already.
           raise ValueError()
         logs = benchmark.run_op_benchmark(sess, op)
-        all_logs[name] = logs
+        current_case_logs[name] = logs
       except:
-        all_logs[name] = None
+        current_case_logs[name] = None
 
-      with open(r"logs.pickle", "wb") as output_file:
-        pickle.dump(all_logs_list + [all_logs], output_file)
+      with open(logs_path, "wb") as output_file:
+        all_logs_curr = copy.deepcopy(all_logs)
+        all_logs_curr[case_name].append(current_case_logs)
+        pickle.dump(all_logs_curr, output_file)
 
-    benchmark_single(auto_grad.op, 'auto_grad', all_logs)
-    benchmark_single(auto_hv.op, 'auto_hv', all_logs)
+    benchmark_single(auto_grad.op, 'auto_grad', current_case_logs)
+    benchmark_single(auto_hv.op, 'auto_hv', current_case_logs)
     if smart_grad is not None:
-      benchmark_single(smart_grad.op, 'smart_grad', all_logs)
+      benchmark_single(smart_grad.op, 'smart_grad', current_case_logs)
     if smart_hv is not None:
-      benchmark_single(smart_hv.op, 'smart_hv', all_logs)
-    benchmark_single(naive_grad.op, 'naive_grad', all_logs)
-    benchmark_single(naive_hv.op, 'naive_hv', all_logs)
-    return all_logs
+      benchmark_single(smart_hv.op, 'smart_hv', current_case_logs)
+    benchmark_single(naive_grad.op, 'naive_grad', current_case_logs)
+    benchmark_single(naive_hv.op, 'naive_hv', current_case_logs)
+    return current_case_logs
