@@ -5,6 +5,7 @@ import t3f
 import json
 import pickle
 import copy
+import os
 from shutil import copyfile
 
 
@@ -383,7 +384,8 @@ def benchmark(case_name, case, logs_path):
 
     def benchmark_single(op, name, current_case_logs):
       # First write None to indicate the attempt.
-      copyfile(logs_path, logs_path + '_back')
+      if os.path.exists(logs_path):
+        copyfile(logs_path, logs_path + '_back')
       with open(logs_path, "wb") as output_file:
         all_logs_curr = copy.deepcopy(all_logs)
         current_case_logs[name] = None
