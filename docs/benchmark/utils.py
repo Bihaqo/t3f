@@ -5,6 +5,7 @@ import t3f
 import json
 import pickle
 import copy
+from shutil import copyfile
 
 
 def robust_cumprod(arr):
@@ -382,6 +383,7 @@ def benchmark(case_name, case, logs_path):
 
     def benchmark_single(op, name, current_case_logs):
       # First write None to indicate the attempt.
+      copyfile(logs_path, logs_path + '_back')
       with open(logs_path, "wb") as output_file:
         all_logs_curr = copy.deepcopy(all_logs)
         current_case_logs[name] = None
@@ -397,6 +399,7 @@ def benchmark(case_name, case, logs_path):
       except:
         current_case_logs[name] = None
 
+      copyfile(logs_path, logs_path + '_back')
       with open(logs_path, "wb") as output_file:
         all_logs_curr = copy.deepcopy(all_logs)
         all_logs_curr[case_name].append(current_case_logs)
