@@ -12,7 +12,11 @@ def run_single(case, n, d, r, R=None):
          '--tt_rank_vec=%d' % r, '--logs=%s' % args.logs]
   if R is not None:
     cmd.append('--tt_rank_mat=%d' % R)
-  print(subprocess.check_output(cmd))
+  try:
+    print(subprocess.check_output(cmd))
+  except:
+    print('Running subprocess failed.')
+    pass
 
 
 for n in [20, 100, 500]:
