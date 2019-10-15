@@ -8,7 +8,12 @@ from t3f import utils
 from t3f import decompositions
 from t3f import initializers
 
+
 from opt_einsum import contract
+
+
+def my_contract(*args, **kargs):
+  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
 
 # TODO: add complexities to the comments.
 
@@ -87,7 +92,7 @@ def _full_tt_batch(tt):
   for i in range(1, num_dims):
     res = tf.reshape(res, (batch_size, -1, ranks[i]))
     curr_core = tf.reshape(tt.tt_cores[i], (batch_size, ranks[i], -1))
-    res = tf.einsum('oqb,obw->oqw', res, curr_core)
+    res = my_contract('oqb,obw->oqw', res, curr_core)
   if tt.is_tt_matrix():
     intermediate_shape = [batch_size]
     for i in range(num_dims):
@@ -163,7 +168,7 @@ def tt_tt_matmul(tt_matrix_a, tt_matrix_b):
   for core_idx in range(ndims):
     a_core = tt_matrix_a.tt_cores[core_idx]
     b_core = tt_matrix_b.tt_cores[core_idx]
-    curr_res_core = tf.einsum(einsum_str, a_core, b_core)
+    curr_res_core = contract(einsum_str, a_core, b_core, backend='tensorflow', optimize='optimal')
 
     res_left_rank = a_ranks[core_idx] * b_ranks[core_idx]
     res_right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
@@ -223,7 +228,7 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
     curr_core = tt_matrix_a.tt_cores[core_idx]
     # On the k = core_idx iteration, after applying einsum the shape of data
     # becomes ik x (ik-1..., id-1, K, j0, ..., jk-1) x rank_k
-    data = tf.einsum('aijb,rjb->ira', curr_core, data)
+    data = my_contract('aijb,rjb->ira', curr_core, data)
     if core_idx > 0:
       # After reshape the shape of data becomes
       # (ik, ..., id-1, K, j0, ..., jk-2) x jk-1 x rank_k
@@ -386,8 +391,8 @@ def tt_tt_flat_inner(tt_a, tt_b):
   b_core = tt_b.tt_cores[0]
   # Simplest example of this operation:
   # if both arguments are TT-tensors, then it is
-  # res = tf.einsum('aib,cid->bd', a_core, b_core)
-  res = tf.einsum(init_einsum_str, a_core, b_core)
+  # res = my_contract('aib,cid->bd', a_core, b_core)
+  res = my_contract(init_einsum_str, a_core, b_core)
 
   einsum_str = '{3}ac,{1}a{0}b,{2}c{0}d->{3}bd'.format(axes_str, a_batch_str,
                                                        b_batch_str,
@@ -397,8 +402,8 @@ def tt_tt_flat_inner(tt_a, tt_b):
     b_core = tt_b.tt_cores[core_idx]
     # Simplest example of this operation:
     # if both arguments are TT-tensors, then it is
-    # res = tf.einsum('ac,aib,cid->bd', res, a_core, b_core)
-    res = tf.einsum(einsum_str, res, a_core, b_core)
+    # res = my_contract('ac,aib,cid->bd', res, a_core, b_core)
+    res = my_contract(einsum_str, res, a_core, b_core)
   return tf.squeeze(res)
 
 
@@ -893,7 +898,7 @@ def multiply(tt_left, right, name='t3f_multiply'):
         right_rank = a_ranks[core_idx + 1] * b_ranks[core_idx + 1]
         if is_matrix:
           with tf.control_dependencies(dependencies):
-            curr_core = tf.einsum('{0}aijb,{1}cijd->{2}acijbd'.format(bs_str_left,
+            curr_core = my_contract('{0}aijb,{1}cijd->{2}acijbd'.format(bs_str_left,
                                   bs_str_right, output_str), a_core, b_core)
             curr_core = tf.reshape(curr_core, (-1, left_rank,
                                                shape[0][core_idx],
@@ -903,7 +908,7 @@ def multiply(tt_left, right, name='t3f_multiply'):
                 curr_core = tf.squeeze(curr_core, axis=0)
         else:
           with tf.control_dependencies(dependencies):
-            curr_core = tf.einsum('{0}aib,{1}cid->{2}acibd'.format(bs_str_left,
+            curr_core = my_contract('{0}aib,{1}cid->{2}acibd'.format(bs_str_left,
                                   bs_str_right, output_str), a_core, b_core)
             curr_core = tf.reshape(curr_core, (-1, left_rank,
                                    shape[0][core_idx], right_rank))
@@ -946,19 +951,19 @@ def frobenius_norm_squared(tt, differentiable=False,
       else:
           bs_str = ''
       if tt.is_tt_matrix():
-        running_prod = tf.einsum('{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+        running_prod = my_contract('{0}aijb,{0}cijd->{0}bd'.format(bs_str),
                                  tt.tt_cores[0], tt.tt_cores[0])
       else:
-        running_prod = tf.einsum('{0}aib,{0}cid->{0}bd'.format(bs_str),
+        running_prod = my_contract('{0}aib,{0}cid->{0}bd'.format(bs_str),
                                  tt.tt_cores[0], tt.tt_cores[0])
 
       for core_idx in range(1, tt.ndims()):
         curr_core = tt.tt_cores[core_idx]
         if tt.is_tt_matrix():
-          running_prod = tf.einsum('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
+          running_prod = my_contract('{0}ac,{0}aijb,{0}cijd->{0}bd'.format(bs_str),
                                    running_prod, curr_core, curr_core)
         else:
-          running_prod = tf.einsum('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
+          running_prod = my_contract('{0}ac,{0}aib,{0}cid->{0}bd'.format(bs_str),
                                    running_prod, curr_core, curr_core)
 
       return tf.squeeze(running_prod, [-1, -2])
@@ -1093,7 +1098,7 @@ def quadratic_form(A, b, c, name='t3f_quadratic_form'):
     # experience it's even a little bit slower (but neglectable in general).
     einsum_str = '{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str, c_bs_str,
                                                        out_bs_str)
-    res = tf.einsum(einsum_str, curr_core_1, curr_matrix_core, curr_core_2)
+    res = contract(einsum_str, curr_core_1, curr_matrix_core, curr_core_2, backend='tensorflow', optimize='optimal')
     for core_idx in range(1, ndims):
       curr_core_1 = b.tt_cores[core_idx]
       curr_core_2 = c.tt_cores[core_idx]
@@ -1101,8 +1106,8 @@ def quadratic_form(A, b, c, name='t3f_quadratic_form'):
       einsum_str = '{2}ace,{0}aikb,cijd,{1}ejkf->{2}bdf'.format(b_bs_str,
                                                                 c_bs_str,
                                                                 out_bs_str)
-      res = tf.einsum(einsum_str, res, curr_core_1,
-                      curr_matrix_core, curr_core_2)
+      res = contract(einsum_str, res, curr_core_1,
+                      curr_matrix_core, curr_core_2, backend='tensorflow', optimize='optimal')
 
     # Squeeze to make the result a number instead of 1 x 1 for NON batch case
     # and to make the result a tensor of size
