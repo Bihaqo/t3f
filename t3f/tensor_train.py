@@ -4,6 +4,13 @@ from t3f.tensor_train_base import TensorTrainBase
 from t3f import shapes
 
 
+from opt_einsum import contract
+
+
+def my_contract(*args, **kargs):
+  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
+
+
 class TensorTrain(TensorTrainBase):
   """Represents a Tensor Train object (a TT-tensor or TT-matrix).
 
@@ -130,13 +137,13 @@ class TensorTrain(TensorTrainBase):
           if remainder is not None:
             # Add reminder from the previous collapsed cores to the current
             # core.
-            sliced_core = tf.einsum('ab,bid->aid', remainder, sliced_core)
+            sliced_core = my_contract('ab,bid->aid', remainder, sliced_core)
             remainder = None
           new_tt_cores.append(sliced_core)
 
     if remainder is not None:
       # The reminder obtained from collapsing the last cores.
-      new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1], remainder)
+      new_tt_cores[-1] = my_contract('aib,bd->aid', new_tt_cores[-1], remainder)
       remainder = None
     # TODO: infer the output ranks and shape.
     return TensorTrain(new_tt_cores)

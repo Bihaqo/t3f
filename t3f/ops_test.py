@@ -8,6 +8,13 @@ from t3f import shapes
 from t3f import initializers
 
 
+from opt_einsum import contract
+
+
+def my_contract(*args, **kargs):
+  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
+
+
 class _TTTensorTest():
 
   def testFullTensor2d(self):
@@ -544,7 +551,7 @@ class _TTTensorBatchTest():
                                             dtype=self.dtype)
     res_actual_1 = ops.flat_inner(tt_1, tt_2)
     res_actual_2 = ops.flat_inner(tt_2, tt_1)
-    res_desired = tf.einsum('ijk,oijk->o', ops.full(tt_1[0]), ops.full(tt_2))
+    res_desired = my_contract('ijk,oijk->o', ops.full(tt_1[0]), ops.full(tt_2))
     with self.test_session() as sess:
       res = sess.run([res_actual_1, res_actual_2, res_desired])
       res_actual_1_val, res_actual_2_val, res_desired_val = res
@@ -863,7 +870,7 @@ class _TTMatrixTestBatch():
       # TT by TT-batch.
       res_actual2 = ops.matmul(ops.transpose(tt_mat_2[0]), ops.transpose(tt_mat_1))
       res_actual2 = ops.full(ops.transpose(res_actual2))
-      res_desired = tf.einsum('oij,jk->oik', ops.full(tt_mat_1),
+      res_desired = my_contract('oij,jk->oik', ops.full(tt_mat_1),
                               ops.full(tt_mat_2[0]))
       to_run = [res_actual, res_actual2, res_desired]
       res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
