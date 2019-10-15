@@ -9,6 +9,13 @@ from t3f import shapes
 from t3f import initializers
 
 
+from opt_einsum import contract
+
+
+def my_contract(*args, **kargs):
+  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
+
+
 class _TTTensorTest():
 
   def testFullTensor2d(self):
@@ -695,6 +702,7 @@ class _TTMatrixTestBatch():
     left_shape = (2, 3)
     sum_shape = (4, 3)
     right_shape = (4, 4)
+<<<<<<< HEAD
     tt_mat_1 = initializers.random_matrix_batch((left_shape, sum_shape),
                                                 tt_rank=3, batch_size=3,
                                                 dtype=self.dtype)
@@ -713,6 +721,27 @@ class _TTMatrixTestBatch():
     self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5, rtol=1e-5)
     self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-5,
                         rtol=1e-5)
+=======
+    with self.test_session() as sess:
+      tt_mat_1 = initializers.random_matrix_batch((left_shape, sum_shape),
+                                                  tt_rank=3, batch_size=3,
+                                                  dtype=self.dtype)
+      tt_mat_2 = initializers.random_matrix_batch((sum_shape, right_shape),
+                                                  dtype=self.dtype)
+      # TT-batch by one element TT-batch
+      res_actual = ops.matmul(tt_mat_1, tt_mat_2)
+      res_actual = ops.full(res_actual)
+      # TT by TT-batch.
+      res_actual2 = ops.matmul(ops.transpose(tt_mat_2[0]), ops.transpose(tt_mat_1))
+      res_actual2 = ops.full(ops.transpose(res_actual2))
+      res_desired = my_contract('oij,jk->oik', ops.full(tt_mat_1),
+                              ops.full(tt_mat_2[0]))
+      to_run = [res_actual, res_actual2, res_desired]
+      res_actual_val, res_actual2_val, res_desired_val = sess.run(to_run)
+      self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5, rtol=1e-5)
+      self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-5,
+                          rtol=1e-5)
+>>>>>>> make the rest of einsums opt_einsums
 
   def testTranspose(self):
     # Transpose a batch of TT-matrices.

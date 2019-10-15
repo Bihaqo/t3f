@@ -6,6 +6,13 @@ from t3f.tensor_train import TensorTrain
 from t3f import shapes
 
 
+from opt_einsum import contract
+
+
+def my_contract(*args, **kargs):
+  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
+
+
 class TensorTrainBatch(TensorTrainBase):
   """Represents a batch of Tensor Train objects (TT-tensors or TT-matrices).
 
@@ -203,17 +210,17 @@ class TensorTrainBatch(TensorTrainBase):
             remainder = sliced_core
           else:
             if do_collapse_batch_dim:
-              remainder = tf.einsum('ab,bd->ad', remainder, sliced_core)
+              remainder = my_contract('ab,bd->ad', remainder, sliced_core)
             else:
-              remainder = tf.einsum('oab,obd->oad', remainder, sliced_core)
+              remainder = my_contract('oab,obd->oad', remainder, sliced_core)
         else:
           if remainder is not None:
             # Add reminder from the previous collapsed cores to the current
             # core.
             if do_collapse_batch_dim:
-              sliced_core = tf.einsum('ab,bid->aid', remainder, sliced_core)
+              sliced_core = my_contract('ab,bid->aid', remainder, sliced_core)
             else:
-              sliced_core = tf.einsum('oab,obid->oaid', remainder,
+              sliced_core = my_contract('oab,obid->oaid', remainder,
                                       sliced_core)
             remainder = None
           new_tt_cores.append(sliced_core)
@@ -221,11 +228,11 @@ class TensorTrainBatch(TensorTrainBase):
     if remainder is not None:
       # The reminder obtained from collapsing the last cores.
       if do_collapse_batch_dim:
-        new_tt_cores[-1] = tf.einsum('aib,bd->aid', new_tt_cores[-1],
+        new_tt_cores[-1] = my_contract('aib,bd->aid', new_tt_cores[-1],
                                      remainder)
 
       else:
-        new_tt_cores[-1] = tf.einsum('oaib,obd->oaid', new_tt_cores[-1],
+        new_tt_cores[-1] = my_contract('oaib,obd->oaid', new_tt_cores[-1],
                                      remainder)
       remainder = None
     # TODO: infer the output ranks and shape.
