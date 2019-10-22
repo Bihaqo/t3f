@@ -1,6 +1,6 @@
 """
 Running a suite of autodiff benchmarks.
-  run_all_autodiff.py --logs=autodiff_cpu.pkl 2> autodiff_cpu.stderr
+  python3 run_all_autodiff.py --logs=autodiff_logs.pkl 2> autodiff_logs.stderr
 """
 
 import argparse
