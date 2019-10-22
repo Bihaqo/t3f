@@ -14,6 +14,7 @@ from t3f.ops import full
 from t3f.ops import matmul
 from t3f.ops import multiply
 from t3f.ops import quadratic_form
+from t3f.ops import bilinear_form
 from t3f.ops import transpose
 from t3f.ops import gather_nd
 from t3f.ops import renormalize_tt_cores
@@ -50,6 +51,7 @@ from t3f.riemannian import pairwise_flat_inner_projected
 from t3f.riemannian import project
 from t3f.riemannian import project_matmul
 from t3f.riemannian import project_sum
+from t3f.riemannian import tangent_space_to_deltas
 
 from t3f.shapes import batch_size
 from t3f.shapes import clean_raw_shape
@@ -69,13 +71,18 @@ from t3f.decompositions import round
 from t3f.decompositions import to_tt_matrix
 from t3f.decompositions import to_tt_tensor
 
-import t3f.approximate as approximate
-import t3f.kronecker as kronecker
-import t3f.utils as utils
+from t3f.autodiff import gradients
+from t3f.autodiff import hessian_vector_product
+
+import t3f.approximate
+import t3f.kronecker
+import t3f.nn
+import t3f.utils
 
 _directly_imported = ['tensor_train_base', 'tensor_train', 'tensor_train_batch',
                       'variables', 'ops', 'batch_ops', 'initializers',
-                      'regularizers', 'riemannian', 'shapes', 'decompositions']
+                      'regularizers', 'riemannian', 'shapes', 'decompositions',
+                      'autodiff']
 
 __all__ = [s for s in dir() if
            s not in _directly_imported and not s.startswith('_')]

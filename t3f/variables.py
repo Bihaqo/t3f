@@ -2,6 +2,7 @@ import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
+from t3f import utils
 
 
 def get_variable(name,
@@ -55,7 +56,8 @@ def get_variable(name,
     raise ValueError('Scope reuse is False and initializer is not provided.')
 
   variable_cores = []
-  if reuse:
+
+  if reuse and not utils.in_eager_mode():
     # Find an existing variable in the collection.
     path = tf.get_variable_scope().name
     if path != '' and path[-1] != '/':
@@ -74,7 +76,7 @@ def get_variable(name,
     with tf.variable_scope(name):
       # Try to get the first core through tf.get_variable to check that we don't
       # violate reuse: it will raise a ValueError otherwise.
-      tf.get_variable('core_0')
+      tf.get_variable('core_0', dtype=dtype)
     return found_v
   else:
     # Create new variable.

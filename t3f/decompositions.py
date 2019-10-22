@@ -6,7 +6,8 @@ from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import shapes
 
 
-def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
+def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None,
+                 name='t3f_to_tt_matrix'):
   """Converts a given matrix or vector to a TT-matrix.
 
   The matrix dimensions should factorize into d numbers.
@@ -46,6 +47,7 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
       the TT-ranks of the result undefined on the compilation stage
       (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
       will work).
+    name: string, name of the Op.
 
   Returns:
     `TensorTrain` object containing a TT-matrix.
@@ -55,46 +57,48 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None):
       not a vector of length d + 1 where d is the number of dimensions (rank) of
       the input tensor, if epsilon is less than 0.
   """
-  mat = tf.convert_to_tensor(mat)
-  # In case the shape is immutable.
-  shape = list(shape)
-  # In case shape represents a vector, e.g. [None, [2, 2, 2]]
-  if shape[0] is None:
-    shape[0] = np.ones(len(shape[1])).astype(int)
-  # In case shape represents a vector, e.g. [[2, 2, 2], None]
-  if shape[1] is None:
-    shape[1] = np.ones(len(shape[0])).astype(int)
+  with tf.name_scope(name, values=(mat,)):
+    mat = tf.convert_to_tensor(mat)
+    # In case the shape is immutable.
+    shape = list(shape)
+    # In case shape represents a vector, e.g. [None, [2, 2, 2]]
+    if shape[0] is None:
+      shape[0] = np.ones(len(shape[1])).astype(int)
+    # In case shape represents a vector, e.g. [[2, 2, 2], None]
+    if shape[1] is None:
+      shape[1] = np.ones(len(shape[0])).astype(int)
 
-  shape = np.array(shape)
-  tens = tf.reshape(mat, shape.flatten())
-  d = len(shape[0])
-  # transpose_idx = 0, d, 1, d+1 ...
-  transpose_idx = np.arange(2 * d).reshape(2, d).T.flatten()
-  transpose_idx = transpose_idx.astype(int)
-  tens = tf.transpose(tens, transpose_idx)
-  new_shape = np.prod(shape, axis=0)
-  tens = tf.reshape(tens, new_shape)
-  tt_tens = to_tt_tensor(tens, max_tt_rank, epsilon)
-  tt_cores = []
-  static_tt_ranks = tt_tens.get_tt_ranks()
-  dynamic_tt_ranks = shapes.tt_ranks(tt_tens)
-  for core_idx in range(d):
-    curr_core = tt_tens.tt_cores[core_idx]
-    curr_rank = static_tt_ranks[core_idx].value
-    if curr_rank is None:
-      curr_rank = dynamic_tt_ranks[core_idx]
-    next_rank = static_tt_ranks[core_idx + 1].value
-    if next_rank is None:
-      next_rank = dynamic_tt_ranks[core_idx + 1]
-    curr_core_new_shape = (curr_rank, shape[0, core_idx],
-                           shape[1, core_idx], next_rank)
-    curr_core = tf.reshape(curr_core, curr_core_new_shape)
-    tt_cores.append(curr_core)
-  return TensorTrain(tt_cores, shape, tt_tens.get_tt_ranks())
+    shape = np.array(shape)
+    tens = tf.reshape(mat, shape.flatten())
+    d = len(shape[0])
+    # transpose_idx = 0, d, 1, d+1 ...
+    transpose_idx = np.arange(2 * d).reshape(2, d).T.flatten()
+    transpose_idx = transpose_idx.astype(int)
+    tens = tf.transpose(tens, transpose_idx)
+    new_shape = np.prod(shape, axis=0)
+    tens = tf.reshape(tens, new_shape)
+    tt_tens = to_tt_tensor(tens, max_tt_rank, epsilon)
+    tt_cores = []
+    static_tt_ranks = tt_tens.get_tt_ranks()
+    dynamic_tt_ranks = shapes.tt_ranks(tt_tens)
+    for core_idx in range(d):
+      curr_core = tt_tens.tt_cores[core_idx]
+      curr_rank = static_tt_ranks[core_idx].value
+      if curr_rank is None:
+        curr_rank = dynamic_tt_ranks[core_idx]
+      next_rank = static_tt_ranks[core_idx + 1].value
+      if next_rank is None:
+        next_rank = dynamic_tt_ranks[core_idx + 1]
+      curr_core_new_shape = (curr_rank, shape[0, core_idx],
+                             shape[1, core_idx], next_rank)
+      curr_core = tf.reshape(curr_core, curr_core_new_shape)
+      tt_cores.append(curr_core)
+    return TensorTrain(tt_cores, shape, tt_tens.get_tt_ranks())
 
 
 # TODO: implement epsilon.
-def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
+def to_tt_tensor(tens, max_tt_rank=10, epsilon=None,
+                 name='t3f_to_tt_tensor'):
   """Converts a given tf.Tensor to a TT-tensor of the same shape.
 
   Args:
@@ -122,6 +126,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
       the TT-ranks of the result undefined on the compilation stage
       (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
       will work).
+    name: string, name of the Op.
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
@@ -132,63 +137,65 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None):
       and not a vector of length d + 1 where d is the number of dimensions (rank)
       of the input tensor, if epsilon is less than 0.
   """
-  tens = tf.convert_to_tensor(tens)
-  static_shape = tens.get_shape()
-  dynamic_shape = tf.shape(tens)
-  # Raises ValueError if ndims is not defined.
-  d = static_shape.__len__()
-  max_tt_rank = np.array(max_tt_rank).astype(np.int32)
-  if max_tt_rank < 1:
-    raise ValueError('Maximum TT-rank should be greater or equal to 1.')
-  if epsilon is not None and epsilon < 0:
-    raise ValueError('Epsilon should be non-negative.')
-  if max_tt_rank.size == 1:
-    max_tt_rank = (max_tt_rank * np.ones(d+1)).astype(np.int32)
-  elif max_tt_rank.size != d + 1:
-    raise ValueError('max_tt_rank should be a number or a vector of size (d+1) '
-                     'where d is the number of dimensions (rank) of the tensor.')
-  ranks = [1] * (d + 1)
-  tt_cores = []
-  are_tt_ranks_defined = True
-  for core_idx in range(d - 1):
-    curr_mode = static_shape[core_idx].value
-    if curr_mode is None:
-      curr_mode = dynamic_shape[core_idx]
-    rows = ranks[core_idx] * curr_mode
-    tens = tf.reshape(tens, [rows, -1])
-    columns = tens.get_shape()[1].value
-    if columns is None:
-      columns = tf.shape(tens)[1]
-    s, u, v = tf.svd(tens, full_matrices=False)
-    if max_tt_rank[core_idx + 1] == 1:
-      ranks[core_idx + 1] = 1
-    else:
-      try:
-        ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
-      except TypeError:
-        # Some of the values are undefined on the compilation stage and thus
-        # they are tf.tensors instead of values.
-        min_dim = tf.minimum(rows, columns)
-        ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
-        are_tt_ranks_defined = False
-    u = u[:, 0:ranks[core_idx + 1]]
-    s = s[0:ranks[core_idx + 1]]
-    v = v[:, 0:ranks[core_idx + 1]]
-    core_shape = (ranks[core_idx], curr_mode, ranks[core_idx + 1])
-    tt_cores.append(tf.reshape(u, core_shape))
-    tens = tf.matmul(tf.diag(s), tf.transpose(v))
-  last_mode = static_shape[-1].value
-  if last_mode is None:
-    last_mode = dynamic_shape[-1]
-  core_shape = (ranks[d - 1], last_mode, ranks[d])
-  tt_cores.append(tf.reshape(tens, core_shape))
-  if not are_tt_ranks_defined:
-    ranks = None
-  return TensorTrain(tt_cores, static_shape, ranks)
+  with tf.name_scope(name, values=(tens,)):
+    tens = tf.convert_to_tensor(tens)
+    static_shape = tens.get_shape()
+    dynamic_shape = tf.shape(tens)
+    # Raises ValueError if ndims is not defined.
+    d = static_shape.__len__()
+    max_tt_rank = np.array(max_tt_rank).astype(np.int32)
+    if np.any(max_tt_rank < 1):
+      raise ValueError('Maximum TT-rank should be greater or equal to 1.')
+    if epsilon is not None and epsilon < 0:
+      raise ValueError('Epsilon should be non-negative.')
+    if max_tt_rank.size == 1:
+      max_tt_rank = (max_tt_rank * np.ones(d+1)).astype(np.int32)
+    elif max_tt_rank.size != d + 1:
+      raise ValueError('max_tt_rank should be a number or a vector of size '
+                       '(d+1) where d is the number of dimensions (rank) of '
+                       'the tensor.')
+    ranks = [1] * (d + 1)
+    tt_cores = []
+    are_tt_ranks_defined = True
+    for core_idx in range(d - 1):
+      curr_mode = static_shape[core_idx].value
+      if curr_mode is None:
+        curr_mode = dynamic_shape[core_idx]
+      rows = ranks[core_idx] * curr_mode
+      tens = tf.reshape(tens, [rows, -1])
+      columns = tens.get_shape()[1].value
+      if columns is None:
+        columns = tf.shape(tens)[1]
+      s, u, v = tf.svd(tens, full_matrices=False)
+      if max_tt_rank[core_idx + 1] == 1:
+        ranks[core_idx + 1] = 1
+      else:
+        try:
+          ranks[core_idx + 1] = min(max_tt_rank[core_idx + 1], rows, columns)
+        except TypeError:
+          # Some of the values are undefined on the compilation stage and thus
+          # they are tf.tensors instead of values.
+          min_dim = tf.minimum(rows, columns)
+          ranks[core_idx + 1] = tf.minimum(max_tt_rank[core_idx + 1], min_dim)
+          are_tt_ranks_defined = False
+      u = u[:, 0:ranks[core_idx + 1]]
+      s = s[0:ranks[core_idx + 1]]
+      v = v[:, 0:ranks[core_idx + 1]]
+      core_shape = (ranks[core_idx], curr_mode, ranks[core_idx + 1])
+      tt_cores.append(tf.reshape(u, core_shape))
+      tens = tf.matmul(tf.diag(s), tf.transpose(v))
+    last_mode = static_shape[-1].value
+    if last_mode is None:
+      last_mode = dynamic_shape[-1]
+    core_shape = (ranks[d - 1], last_mode, ranks[d])
+    tt_cores.append(tf.reshape(tens, core_shape))
+    if not are_tt_ranks_defined:
+      ranks = None
+    return TensorTrain(tt_cores, static_shape, ranks)
 
 
 # TODO: rename round so not to shadow python.round?
-def round(tt, max_tt_rank=None, epsilon=None):
+def round(tt, max_tt_rank=None, epsilon=None, name='t3f_round'):
   """TT-rounding procedure, returns a TT object with smaller TT-ranks.
 
   Args:
@@ -216,6 +223,7 @@ def round(tt, max_tt_rank=None, epsilon=None):
       the TT-ranks of the result undefined on the compilation stage
       (e.g. res.get_tt_ranks() will return None, but t3f.tt_ranks(res).eval()
       will work).
+    name: string, name of the Op.
 
   Returns:
     `TensorTrain` object containing a TT-tensor.
@@ -225,10 +233,12 @@ def round(tt, max_tt_rank=None, epsilon=None):
       not a vector of length d + 1 where d is the number of dimensions (rank) of
       the input tensor, if epsilon is less than 0.
   """
-  if isinstance(tt, TensorTrainBatch):
-    return _round_batch_tt(tt, max_tt_rank, epsilon)
-  else:
-    return _round_tt(tt, max_tt_rank, epsilon)
+  # TODO: add epsilon to the name_scope dependencies.
+  with tf.name_scope(name, values=tt.tt_cores):
+    if isinstance(tt, TensorTrainBatch):
+      return _round_batch_tt(tt, max_tt_rank, epsilon)
+    else:
+      return _round_tt(tt, max_tt_rank, epsilon)
 
 
 def _round_tt(tt, max_tt_rank, epsilon):
@@ -382,27 +392,30 @@ def _round_batch_tt(tt, max_tt_rank, epsilon):
   return TensorTrainBatch(tt_cores, tt.get_raw_shape(), ranks, batch_size=tt.batch_size)
 
 
-def orthogonalize_tt_cores(tt, left_to_right=True):
+def orthogonalize_tt_cores(tt, left_to_right=True,
+                           name='t3f_orthogonalize_tt_cores'):
   """Orthogonalize TT-cores of a TT-object.
 
   Args:
     tt: TenosorTrain or a TensorTrainBatch.
     left_to_right: bool, the direction of orthogonalization.
+    name: string, name of the Op.
 
   Returns:
     The same type as the input `tt` (TenosorTrain or a TensorTrainBatch).
   """
-  if isinstance(tt, TensorTrainBatch):
-    if left_to_right:
-      return _orthogonalize_batch_tt_cores_left_to_right(tt)
+  with tf.name_scope(name, values=tt.tt_cores):
+    if isinstance(tt, TensorTrainBatch):
+      if left_to_right:
+        return _orthogonalize_batch_tt_cores_left_to_right(tt)
+      else:
+        raise NotImplementedError('Batch right to left orthogonalization is '
+                                  'not supported yet.')
     else:
-      raise NotImplementedError('Batch right to left orthogonalization is not '
-                                'supported yet.')
-  else:
-    if left_to_right:
-      return _orthogonalize_tt_cores_left_to_right(tt)
-    else:
-      return _orthogonalize_tt_cores_right_to_left(tt)
+      if left_to_right:
+        return _orthogonalize_tt_cores_left_to_right(tt)
+      else:
+        return _orthogonalize_tt_cores_right_to_left(tt)
 
 
 def _orthogonalize_tt_cores_left_to_right(tt):

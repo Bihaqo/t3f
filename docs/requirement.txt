@@ -1,0 +1,7 @@
+# We do not include tensorflow into pip requirements in the main module, but
+# tf is necessary for building the docs with readthedocs.org: they fetch a fresh
+# version of the library on each build and it doesn't import properly without
+# tensorflow being installed.
+tensorflow>=1.12,<=1.14
+ipykernel
+nbsphinx

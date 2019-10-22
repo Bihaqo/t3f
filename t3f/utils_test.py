@@ -21,6 +21,16 @@ class UtilsTest(tf.test.TestCase):
       actual = utils.unravel_index(linear_idx, shape)
       self.assertAllEqual(desired, actual.eval())
 
+  def testReplaceTfSvdWithNpSvd(self):
+    with self.test_session() as sess:
+      mat = tf.constant([[3., 4], [5, 6]])
+      desired = sess.run(tf.svd(mat))
+      utils.replace_tf_svd_with_np_svd()
+      actual = sess.run(tf.svd(mat))
+      self.assertAllClose(actual[0], desired[0])
+      self.assertAllClose(np.abs(np.dot(actual[1].T, desired[1])), np.eye(2))
+      self.assertAllClose(np.abs(np.dot(actual[2].T, desired[2])), np.eye(2))
+
 
 if __name__ == "__main__":
   tf.test.main()

@@ -41,7 +41,7 @@ def project_sum(what, where, weights=None):
   what = shapes.expand_batch_dim(what)
 
   if weights is not None:
-    weights = tf.convert_to_tensor(weights)
+    weights = tf.convert_to_tensor(weights, dtype=where.dtype)
 
   if not isinstance(where, TensorTrain):
     raise ValueError('The first argument should be a TensorTrain object, got '
@@ -661,7 +661,7 @@ def add_n_projected(tt_objects, coef=None):
                        'least the pointers are different.' % (tt.projection_on,
                                                               projection_on))
   if coef is not None:
-    coef = tf.convert_to_tensor(coef)
+    coef = tf.convert_to_tensor(coef, dtype=tt_objects[0].dtype)
     if coef.get_shape().ndims > 1:
       # In batch case we will need to multiply each core by this coefficients
       # along the first axis. To do it need to reshape the coefs to match
@@ -749,3 +749,139 @@ def add_n_projected(tt_objects, coef=None):
   # Maintain the projection_on property.
   res.projection_on = tt_objects[0].projection_on
   return res
+
+
+def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
+  """Convert an element of the tangent space to deltas representation.
+
+  Tangent space elements (outputs of t3f.project) look like:
+    dP1 V2 ... Vd + U1 dP2 V3 ... Vd + ... + U1 ... Ud-1 dPd.
+
+  This function takes as input an element of the tangent space and converts
+  it to the list of deltas [dP1, ..., dPd].
+
+  Args:
+      tt: `TensorTrain` or `TensorTrainBatch` that is a result of t3f.project,
+        t3f.project_matmul, or other similar functions.
+      name: string, name of the Op.
+
+  Returns:
+      A list of delta-cores (tf.Tensors).
+  """
+  if not hasattr(tt, 'projection_on') or tt.projection_on is None:
+    raise ValueError('tt argument is supposed to be a projection, but it '
+                     'lacks projection_on field')
+  num_dims = tt.ndims()
+  left_tt_rank_dim = tt.left_tt_rank_dim
+  right_tt_rank_dim = tt.right_tt_rank_dim
+  deltas = [None] * num_dims
+  tt_ranks = shapes.lazy_tt_ranks(tt)
+  for i in range(1, num_dims - 1):
+    if int(tt_ranks[i] / 2) != tt_ranks[i] / 2:
+      raise ValueError('tt argument is supposed to be a projection, but its '
+                       'ranks are not even.')
+  with tf.name_scope(name, values=tt.tt_cores):
+    for i in range(1, num_dims - 1):
+      r1, r2 = tt_ranks[i], tt_ranks[i + 1]
+      curr_core = tt.tt_cores[i]
+      slc = [slice(None)] * len(curr_core.shape)
+      slc[left_tt_rank_dim] = slice(int(r1 / 2), None)
+      slc[right_tt_rank_dim] = slice(0, int(r2 / 2))
+      deltas[i] = curr_core[slc]
+    slc = [slice(None)] * len(tt.tt_cores[0].shape)
+    slc[right_tt_rank_dim] = slice(0, int(tt_ranks[1] / 2))
+    deltas[0] = tt.tt_cores[0][slc]
+    slc = [slice(None)] * len(tt.tt_cores[0].shape)
+    slc[left_tt_rank_dim] = slice(int(tt_ranks[-2] / 2), None)
+    deltas[num_dims - 1] = tt.tt_cores[num_dims - 1][slc]
+  return deltas
+
+
+def deltas_to_tangent_space(deltas, tt, left=None, right=None,
+                            name='t3f_deltas_to_tangent_space'):
+  """Converts deltas representation of tangent space vector to TT object.
+
+  Takes as input a list of [dP1, ..., dPd] and returns
+    dP1 V2 ... Vd + U1 dP2 V3 ... Vd + ... + U1 ... Ud-1 dPd.
+
+  This function is hard to use correctly because deltas should abey the
+  so called gauge conditions. If the don't, the function will silently return
+  incorrect result. This is why this function is not imported in __init__.
+
+  Args:
+      deltas: a list of deltas (essentially TT-cores) obeying the gauge
+        conditions.
+      tt: `TensorTrain` object on which the tangent space tensor represented by
+        delta is projected.
+      left: t3f.orthogonilize_tt_cores(tt). If you have it already compute, you
+        may pass it as argument to avoid recomputing.
+      right: t3f.orthogonilize_tt_cores(left, left_to_right=False). If you have
+        it already compute, you may pass it as argument to avoid recomputing.
+      name: string, name of the Op.
+
+  Returns:
+      `TensorTrain` object constructed from deltas, that is from the tangent
+        space at point `tt`.
+  """
+  cores = []
+  dtype = tt.dtype
+  num_dims = tt.ndims()
+  # TODO: add cache instead of mannually pasisng precomputed stuff?
+  input_tensors = list(tt.tt_cores) + list(deltas)
+  if left is not None:
+    input_tensors += list(left.tt_cores)
+  if right is not None:
+    input_tensors += list(right.tt_cores)
+  with tf.name_scope(name, values=input_tensors):
+    if left is None:
+      left = decompositions.orthogonalize_tt_cores(tt)
+    if right is None:
+      right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
+    left_tangent_tt_ranks = shapes.lazy_tt_ranks(left)
+    right_tangent_tt_ranks = shapes.lazy_tt_ranks(left)
+    raw_shape = shapes.lazy_raw_shape(left)
+    right_rank_dim = left.right_tt_rank_dim
+    left_rank_dim = left.left_tt_rank_dim
+    is_batch_case = len(deltas[0].shape) > len(tt.tt_cores[0].shape)
+    if is_batch_case:
+      right_rank_dim += 1
+      left_rank_dim += 1
+      batch_size = deltas[0].shape.as_list()[0]
+    for i in range(num_dims):
+      left_tt_core = left.tt_cores[i]
+      right_tt_core = right.tt_cores[i]
+      if is_batch_case:
+        tile = [1] * len(left_tt_core.shape)
+        tile = [batch_size] + tile
+        left_tt_core = tf.tile(left_tt_core[None, ...], tile)
+        right_tt_core = tf.tile(right_tt_core[None, ...], tile)
+
+      if i == 0:
+        tangent_core = tf.concat((deltas[i], left_tt_core),
+                                 axis=right_rank_dim)
+      elif i == num_dims - 1:
+        tangent_core = tf.concat((right_tt_core, deltas[i]),
+                                 axis=left_rank_dim)
+      else:
+        rank_1 = right_tangent_tt_ranks[i]
+        rank_2 = left_tangent_tt_ranks[i + 1]
+        if tt.is_tt_matrix():
+          mode_size_n = raw_shape[0][i]
+          mode_size_m = raw_shape[1][i]
+          shape = [rank_1, mode_size_n, mode_size_m, rank_2]
+        else:
+          mode_size_n = raw_shape[0][i]
+          shape = [rank_1, mode_size_n, rank_2]
+        if is_batch_case:
+          shape = [batch_size] + shape
+        zeros = tf.zeros(shape, dtype=dtype)
+        upper = tf.concat((right_tt_core, zeros), axis=right_rank_dim)
+        lower = tf.concat((deltas[i], left_tt_core), axis=right_rank_dim)
+        tangent_core = tf.concat((upper, lower), axis=left_rank_dim)
+      cores.append(tangent_core)
+    if is_batch_case:
+      tangent = TensorTrainBatch(cores, batch_size=batch_size)
+    else:
+      tangent = TensorTrain(cores)
+    tangent.projection_on = tt
+    return tangent

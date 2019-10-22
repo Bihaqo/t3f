@@ -1,7 +1,0 @@
-# This file is needed since we do not include tensorflow into pip requirements
-# in the main module (since tf comes in many different forms and it's hard
-# to check if one of them is installed), but tf is necessary for building
-# the docs with readthedocs.org: they fetch a fresh version of the
-# library on each build and it doesn't import properly without tensorflow
-# being installed.
-tensorflow>=1.0
