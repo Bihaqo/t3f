@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2019-10-22
+### Added
+- Proper documentation with tutorials.
+- Benchmarks.
+- Asymptotic complexities of some function in the docstrings.
+- Eager mode support.
+- Ops have name scopes now.
+- Riemannian autodiff (Yey!)
+- Better support for using dtypes other than float32.
+- Neural network module.
+
+### Changed
+- Change to support TF 1.12-1.14 instead of TF 1.0-1.4
+- Bug fixes.
+- Bug fix in benchmarks.
+- Rename quadratic_form to bilinear_form.
+- Better test coverage.
+
 ## [1.0.0] - 2018-01-08
 ### Added
 - API reference documentation.
@@ -73,5 +91,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - frobenius_norm
 
 [Unreleased]: https://github.com/Bihaqo/t3f/compare/master...develop
+[1.1.0]: https://github.com/Bihaqo/t3f/compare/1.0.0...1.1.0
+[1.0.0]: https://github.com/Bihaqo/t3f/compare/0.3.0...1.0.0
+[0.3.0]: https://github.com/Bihaqo/t3f/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/Bihaqo/t3f/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/Bihaqo/t3f/compare/f24409508...0.1.0
