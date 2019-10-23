@@ -44,153 +44,158 @@ def project_sum(what, where, weights=None):
       for a 9 x 64 matrix of raw shape (3, 3, 3) x (4, 4, 4) n is 12
   """
   # Always work with batch of TT objects for simplicity.
-  what = shapes.expand_batch_dim(what)
+  with tf.variable_scope("preprocess"):
+    what = shapes.expand_batch_dim(what)
 
-  if weights is not None:
-    weights = tf.convert_to_tensor(weights, dtype=where.dtype)
+    if weights is not None:
+      weights = tf.convert_to_tensor(weights, dtype=where.dtype)
 
-  if not isinstance(where, TensorTrain):
-    raise ValueError('The first argument should be a TensorTrain object, got '
-                     '"%s".' % where)
+    if not isinstance(where, TensorTrain):
+      raise ValueError('The first argument should be a TensorTrain object, got '
+                       '"%s".' % where)
 
-  if where.get_raw_shape() != what.get_raw_shape():
-    raise ValueError('The shapes of the tensor we want to project and of the '
-                     'tensor on which tangent space we want to project should '
-                     'match, got %s and %s.' %
-                     (where.get_raw_shape(),
-                      what.get_raw_shape()))
+    if where.get_raw_shape() != what.get_raw_shape():
+      raise ValueError('The shapes of the tensor we want to project and of the '
+                       'tensor on which tangent space we want to project should '
+                       'match, got %s and %s.' %
+                       (where.get_raw_shape(),
+                        what.get_raw_shape()))
 
-  dtypes_compatible = (where.dtype.is_compatible_with(what.dtype) or
-                       what.dtype.is_compatible_with(where.dtype))
-  if not dtypes_compatible:
-    raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
-                     (where.dtype,
-                      what.dtype))
+    dtypes_compatible = (where.dtype.is_compatible_with(what.dtype) or
+                         what.dtype.is_compatible_with(where.dtype))
+    if not dtypes_compatible:
+      raise ValueError('Dtypes of the arguments should coincide, got %s and %s.' %
+                       (where.dtype,
+                        what.dtype))
 
-  left_tangent_space_tens = decompositions.orthogonalize_tt_cores(
-    where)
-  right_tangent_space_tens = decompositions.orthogonalize_tt_cores(
-    left_tangent_space_tens, left_to_right=False)
+    left_tangent_space_tens = decompositions.orthogonalize_tt_cores(
+      where)
+    right_tangent_space_tens = decompositions.orthogonalize_tt_cores(
+      left_tangent_space_tens, left_to_right=False)
 
-  ndims = where.ndims()
-  dtype = where.dtype
-  raw_shape = shapes.lazy_raw_shape(where)
-  batch_size = shapes.lazy_batch_size(what)
-  right_tangent_tt_ranks = shapes.lazy_tt_ranks(right_tangent_space_tens)
-  left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
+    ndims = where.ndims()
+    dtype = where.dtype
+    raw_shape = shapes.lazy_raw_shape(where)
+    batch_size = shapes.lazy_batch_size(what)
+    right_tangent_tt_ranks = shapes.lazy_tt_ranks(right_tangent_space_tens)
+    left_tangent_tt_ranks = shapes.lazy_tt_ranks(left_tangent_space_tens)
 
-  # For einsum notation.
-  mode_str = 'ij' if where.is_tt_matrix() else 'i'
-  right_rank_dim = where.right_tt_rank_dim
-  left_rank_dim = where.left_tt_rank_dim
-  if weights is not None:
-    weights_shape = weights.get_shape()
-    output_is_batch = len(weights_shape) > 1 and weights_shape[1] > 1
-  else:
-    output_is_batch = False
-  output_batch_str = 'o' if output_is_batch else ''
-  if output_is_batch:
-    right_rank_dim += 1
-    left_rank_dim += 1
-    output_batch_size = weights.get_shape()[1].value
-
-  # Prepare rhs vectors.
-  # rhs[core_idx] is of size
-  #   batch_size x tensor_tt_ranks[core_idx] x tangent_tt_ranks[core_idx]
-  rhs = [None] * (ndims + 1)
-  rhs[ndims] = tf.ones((batch_size, 1, 1), dtype=dtype)
-  for core_idx in range(ndims - 1, 0, -1):
-    tens_core = what.tt_cores[core_idx]
-    right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
-    einsum_str = 'sa{0}b,sbd,c{0}d->sac'.format(mode_str)
-    rhs[core_idx] = my_contract(einsum_str, tens_core, rhs[core_idx + 1],
-                              right_tang_core)
-
-  # Prepare lhs vectors.
-  # lhs[core_idx] is of size
-  #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
-  lhs = [None] * (ndims + 1)
-  lhs[0] = tf.ones((batch_size, 1, 1), dtype=dtype)
-  for core_idx in range(ndims - 1):
-    tens_core = what.tt_cores[core_idx]
-    left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
-    einsum_str = 'sab,a{0}c,sb{0}d->scd'.format(mode_str)
-    lhs[core_idx + 1] = my_contract(einsum_str, lhs[core_idx], left_tang_core,
-                                  tens_core)
-
-  # Left to right sweep.
-  res_cores_list = []
-  for core_idx in range(ndims):
-    tens_core = what.tt_cores[core_idx]
-    left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
-    right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
-
-    if core_idx < ndims - 1:
-      einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
-      proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
-      einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
-      proj_core -= my_contract(einsum_str, left_tang_core, lhs[core_idx + 1])
-      if weights is None:
-        einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
-        proj_core = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
-      else:
-        einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str, output_batch_str)
-        proj_core_s = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
-        einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = my_contract(einsum_str, weights, proj_core_s)
-
-    if core_idx == ndims - 1:
-      if weights is None:
-        einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
-        proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
-      else:
-        einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str, output_batch_str)
-        proj_core_s = my_contract(einsum_str, lhs[core_idx], tens_core)
-        einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = my_contract(einsum_str, weights, proj_core_s)
-
+    # For einsum notation.
+    mode_str = 'ij' if where.is_tt_matrix() else 'i'
+    right_rank_dim = where.right_tt_rank_dim
+    left_rank_dim = where.left_tt_rank_dim
+    if weights is not None:
+      weights_shape = weights.get_shape()
+      output_is_batch = len(weights_shape) > 1 and weights_shape[1] > 1
+    else:
+      output_is_batch = False
+    output_batch_str = 'o' if output_is_batch else ''
     if output_is_batch:
-      # Add batch dimension of size output_batch_size to left_tang_core and
-      # right_tang_core
-      extended_left_tang_core = tf.expand_dims(left_tang_core, 0)
-      extended_right_tang_core = tf.expand_dims(right_tang_core, 0)
-      if where.is_tt_matrix():
-        extended_left_tang_core = tf.tile(extended_left_tang_core,
-                                          [output_batch_size, 1, 1, 1, 1])
-        extended_right_tang_core = tf.tile(extended_right_tang_core,
-                                           [output_batch_size, 1, 1, 1, 1])
-      else:
-        extended_left_tang_core = tf.tile(extended_left_tang_core,
-                                          [output_batch_size, 1, 1, 1])
-        extended_right_tang_core = tf.tile(extended_right_tang_core,
-                                           [output_batch_size, 1, 1, 1])
-    else:
-      extended_left_tang_core = left_tang_core
-      extended_right_tang_core = right_tang_core
+      right_rank_dim += 1
+      left_rank_dim += 1
+      output_batch_size = weights.get_shape()[1].value
+  with tf.variable_scope("rhs"):
+    # Prepare rhs vectors.
+    # rhs[core_idx] is of size
+    #   batch_size x tensor_tt_ranks[core_idx] x tangent_tt_ranks[core_idx]
+    rhs = [None] * (ndims + 1)
+    rhs[ndims] = tf.ones((batch_size, 1, 1), dtype=dtype)
+    for core_idx in range(ndims - 1, 0, -1):
+      tens_core = what.tt_cores[core_idx]
+      right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
+      einsum_str = 'sa{0}b,sbd,c{0}d->sac'.format(mode_str)
+      rhs[core_idx] = my_contract(einsum_str, tens_core, rhs[core_idx + 1],
+                                right_tang_core)
+  with tf.variable_scope("lhs"):
+    # Prepare lhs vectors.
+    # lhs[core_idx] is of size
+    #   batch_size x tangent_tt_ranks[core_idx] x tensor_tt_ranks[core_idx]
+    lhs = [None] * (ndims + 1)
+    lhs[0] = tf.ones((batch_size, 1, 1), dtype=dtype)
+    for core_idx in range(ndims - 1):
+      tens_core = what.tt_cores[core_idx]
+      left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
+      einsum_str = 'sab,a{0}c,sb{0}d->scd'.format(mode_str)
+      lhs[core_idx + 1] = my_contract(einsum_str, lhs[core_idx], left_tang_core,
+                                    tens_core)
+  with tf.variable_scope("main"):
+    # Left to right sweep.
+    res_cores_list = []
+    for core_idx in range(ndims):
+      tens_core = what.tt_cores[core_idx]
+      left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
+      right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
-    if core_idx == 0:
-      res_core = tf.concat((proj_core, extended_left_tang_core),
-                           axis=right_rank_dim)
-    elif core_idx == ndims - 1:
-      res_core = tf.concat((extended_right_tang_core, proj_core), axis=left_rank_dim)
-    else:
-      rank_1 = right_tangent_tt_ranks[core_idx]
-      rank_2 = left_tangent_tt_ranks[core_idx + 1]
-      if where.is_tt_matrix():
-        mode_size_n = raw_shape[0][core_idx]
-        mode_size_m = raw_shape[1][core_idx]
-        shape = [rank_1, mode_size_n, mode_size_m, rank_2]
-      else:
-        mode_size = raw_shape[0][core_idx]
-        shape = [rank_1, mode_size, rank_2]
-      if output_is_batch:
-        shape = [output_batch_size] + shape
-      zeros = tf.zeros(shape, dtype)
-      upper = tf.concat((extended_right_tang_core, zeros), axis=right_rank_dim)
-      lower = tf.concat((proj_core, extended_left_tang_core),
-                        axis=right_rank_dim)
-      res_core = tf.concat((upper, lower), axis=left_rank_dim)
-    res_cores_list.append(res_core)
+      if core_idx < ndims - 1:
+        with tf.variable_scope("es_1"):
+          einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
+          proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
+        with tf.variable_scope("es_2"):
+          einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
+          proj_core -= my_contract(einsum_str, left_tang_core, lhs[core_idx + 1])
+        with tf.variable_scope("es_3"):
+          if weights is None:
+            einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
+            proj_core = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
+          else:
+            einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str, output_batch_str)
+            proj_core_s = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
+            einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
+            proj_core = my_contract(einsum_str, weights, proj_core_s)
+
+      if core_idx == ndims - 1:
+        if weights is None:
+          einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
+          proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
+        else:
+          einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str, output_batch_str)
+          proj_core_s = my_contract(einsum_str, lhs[core_idx], tens_core)
+          einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
+          proj_core = my_contract(einsum_str, weights, proj_core_s)
+
+      with tf.variable_scope("postprocess"):
+        if output_is_batch:
+          # Add batch dimension of size output_batch_size to left_tang_core and
+          # right_tang_core
+          extended_left_tang_core = tf.expand_dims(left_tang_core, 0)
+          extended_right_tang_core = tf.expand_dims(right_tang_core, 0)
+          if where.is_tt_matrix():
+            extended_left_tang_core = tf.tile(extended_left_tang_core,
+                                              [output_batch_size, 1, 1, 1, 1])
+            extended_right_tang_core = tf.tile(extended_right_tang_core,
+                                               [output_batch_size, 1, 1, 1, 1])
+          else:
+            extended_left_tang_core = tf.tile(extended_left_tang_core,
+                                              [output_batch_size, 1, 1, 1])
+            extended_right_tang_core = tf.tile(extended_right_tang_core,
+                                               [output_batch_size, 1, 1, 1])
+        else:
+          extended_left_tang_core = left_tang_core
+          extended_right_tang_core = right_tang_core
+
+        if core_idx == 0:
+          res_core = tf.concat((proj_core, extended_left_tang_core),
+                               axis=right_rank_dim)
+        elif core_idx == ndims - 1:
+          res_core = tf.concat((extended_right_tang_core, proj_core), axis=left_rank_dim)
+        else:
+          rank_1 = right_tangent_tt_ranks[core_idx]
+          rank_2 = left_tangent_tt_ranks[core_idx + 1]
+          if where.is_tt_matrix():
+            mode_size_n = raw_shape[0][core_idx]
+            mode_size_m = raw_shape[1][core_idx]
+            shape = [rank_1, mode_size_n, mode_size_m, rank_2]
+          else:
+            mode_size = raw_shape[0][core_idx]
+            shape = [rank_1, mode_size, rank_2]
+          if output_is_batch:
+            shape = [output_batch_size] + shape
+          zeros = tf.zeros(shape, dtype)
+          upper = tf.concat((extended_right_tang_core, zeros), axis=right_rank_dim)
+          lower = tf.concat((proj_core, extended_left_tang_core),
+                            axis=right_rank_dim)
+          res_core = tf.concat((upper, lower), axis=left_rank_dim)
+        res_cores_list.append(res_core)
   # TODO: TT-ranks.
   if output_is_batch:
     res = TensorTrainBatch(res_cores_list, where.get_raw_shape(),
