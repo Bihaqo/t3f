@@ -147,7 +147,7 @@ class Completion(Task):
     return t3f.project_sum(self.sparsity_mask_list_tt, self.x, vector_nonzero)
 
 
-class BilinearXAX(Task):
+class LinearSystem(Task):
   
   def __init__(self, m, n, d, tt_rank_mat, tt_rank_vec):
     self.settings = {'n': n, 'm': m, 'd': d, 'tt_rank_mat': tt_rank_mat, 'tt_rank_vec': tt_rank_vec}
@@ -164,14 +164,16 @@ class BilinearXAX(Task):
     self.mat = t3f.get_variable('mat', initializer=mat)
     
   def loss(self, x):
-    return 0.5 * t3f.quadratic_form(self.mat, x, x)  # DO NOT SUBMIT
+    return 0.5 * t3f.quadratic_form(self.mat, x, x) - t3f.flat_inner(x, self.vector) # DO NOT SUBMIT
   
   def naive_grad(self):
-    grad = t3f.matmul(self.mat, self.x)  # DO NOT SUBMIT
+    grad = t3f.matmul(self.mat, self.x) - self.vector  # DO NOT SUBMIT
     return t3f.project(grad, self.x)
   
   def smart_grad(self):
-    return t3f.project_matmul(t3f.expand_batch_dim(self.x), self.x, self.mat)[0]  # DO NOT SUBMIT
+    res = t3f.project_matmul(t3f.expand_batch_dim(self.x), self.x, self.mat)[0]  # DO NOT SUBMIT
+    res -= t3f.project(self.vector, self.x)
+    return res
   
   def naive_hessian_by_vector(self):
     grad = t3f.matmul(self.mat, self.vector)

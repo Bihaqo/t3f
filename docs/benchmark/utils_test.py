@@ -41,11 +41,11 @@ class UtilsTest(tf.test.TestCase):
     self._TestCaseHess(test_case)
 
   def testXAXGrad(self):
-    test_case = utils.BilinearXAX(3, 3, 3, 4, 5)
+    test_case = utils.LinearSystem(3, 3, 3, 4, 5)
     self._TestCaseGrad(test_case)
 
   def testXAXHess(self):
-    test_case = utils.BilinearXAX(3, 3, 3, 4, 5)
+    test_case = utils.LinearSystem(3, 3, 3, 4, 5)
     self._TestCaseHess(test_case)
 
   def testXABXGrad(self):

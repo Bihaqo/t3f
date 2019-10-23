@@ -17,7 +17,7 @@ if args.case == 'completion':
   assert args.m is None and args.tt_rank_mat is None
   case = utils.Completion(args.n, args.d, args.tt_rank_vec)
 elif args.case == 'xAx':
-  case = utils.BilinearXAX(args.m, args.n, args.d, args.tt_rank_mat, args.tt_rank_vec)
+  case = utils.LinearSystem(args.m, args.n, args.d, args.tt_rank_mat, args.tt_rank_vec)
 elif args.case == 'xABx':
   case = utils.BilinearXABX(args.m, args.n, args.d, args.tt_rank_mat, args.tt_rank_vec)
 elif args.case == 'ExpMachines':
