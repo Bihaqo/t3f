@@ -7,9 +7,9 @@ python:
   - "3.6"
 env:
   matrix:
-    - TF_VERSION=1.12.2
     - TF_VERSION=1.13.2
-    - TF_VERSION=1.14
+    - TF_VERSION=1.15
+    - TF_VERSION=2.0
 # command to install dependencies
 install:
   - pip install tensorflow==$TF_VERSION
