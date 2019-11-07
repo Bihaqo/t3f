@@ -1,6 +1,6 @@
 """Tests from the README examples and the paper."""
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import t3f
 
 class ExamplesTest(tf.test.TestCase):

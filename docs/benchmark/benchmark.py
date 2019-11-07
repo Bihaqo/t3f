@@ -2,7 +2,7 @@ import timeit
 import numpy as np
 import pickle
 import argparse
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import tmp_benchmark_config
 
 from tensorflow.python.client import device_lib

@@ -17,7 +17,7 @@
 Copied with minor modifications from
 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/platform/benchmark.py
 """
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 
 def import_benchmark_config():

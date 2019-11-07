@@ -1,4 +1,4 @@
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from t3f import shapes
 from t3f import decompositions
@@ -91,20 +91,25 @@ def gradients(func, x, name='t3f_gradients', runtime_check=True):
       t3f.hessian_vector_product
   """
   with tf.name_scope(name, values=x.tt_cores):
-    left = decompositions.orthogonalize_tt_cores(x)
-    right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
-    deltas = [right.tt_cores[0]]
-    deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
-    x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
-    function_value = func(x_projection)
+    with tf.variable_scope("orthogonalization"):
+      left = decompositions.orthogonalize_tt_cores(x)
+      right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
+    with tf.variable_scope("proprocess_deltas"):
+      deltas = [right.tt_cores[0]]
+      deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
+      x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
+    with tf.variable_scope("func"):
+      function_value = func(x_projection)
     if runtime_check:
       assert_op = _is_invariant_to_input_transforms(function_value, func(x))
     else:
       assert_op = tf.no_op()
-    with tf.control_dependencies([assert_op]):
+    #with tf.control_dependencies([assert_op]):
+    with tf.variable_scope("grad"):
       cores_grad = tf.gradients(function_value, deltas)
-    deltas = _enforce_gauge_conditions(cores_grad, left)
-    return riemannian.deltas_to_tangent_space(deltas, x, left, right)
+    with tf.variable_scope("posprocessing"):
+      deltas = _enforce_gauge_conditions(cores_grad, left)
+      return riemannian.deltas_to_tangent_space(deltas, x, left, right)
 
 
 def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
@@ -131,7 +136,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
         # It's Riemannian Hessian by vector product is
         #     proj_vec = t3f.project(vector, x)
         #     t3f.project(t3f.matmul(A + t3f.transpose(A), proj_vec), x)
-        f = lambda x: t3f.bilinear_form(A, x, x)
+        f = lambda x: t3f.quadratic_form(A, x, x)
         res = t3f.hessian_vector_product(f, x, vector)
 
     Args:
