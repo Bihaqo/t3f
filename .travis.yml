@@ -12,6 +12,7 @@ env:
     - TF_VERSION=2.0
 # command to install dependencies
 install:
+  - pip install --upgrade pip
   - pip install tensorflow==$TF_VERSION
   - pip install coveralls
 # command to run tests
