@@ -3,7 +3,7 @@
 Installation
 ============
 
-T3f assumes you have Python 2.7, 3.4, 3.5, or 3.6 and a working TensorFlow installation (tested versions are from 1.12 to 1.14, see here_ for TF installation instructions).
+T3f assumes you have Python 2.7, 3.5 or 3.6 and a working TensorFlow installation (tested versions are from 1.13 to 2.0 (TF 2.0 is only supported in compat.v1 mode), see here_ for TF installation instructions).
 
 .. _here: https://www.tensorflow.org/install/
 
