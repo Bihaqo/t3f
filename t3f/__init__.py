@@ -1,3 +1,6 @@
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from t3f.tensor_train_base import TensorTrainBase
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
