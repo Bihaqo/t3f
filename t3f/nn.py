@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.layers import Activation
 import t3f
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 
 class KerasDense(Layer):

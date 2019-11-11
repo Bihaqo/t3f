@@ -1,6 +1,6 @@
 import itertools
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import decompositions
 from t3f import batch_ops
