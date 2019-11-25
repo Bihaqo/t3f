@@ -13,7 +13,7 @@ class KerasDense(Layer):
 
   def __init__(self, input_dims, output_dims, tt_rank=2,
                activation=None, use_bias=True, kernel_initializer='glorot',
-               bias_initializer=0.1, **kwargs):
+               bias_initializer=None, **kwargs):
     """Creates a TT-Matrix based Dense Keras layer.
 
     Args:
@@ -65,10 +65,20 @@ class KerasDense(Layer):
       self.b = None
       if self.use_bias:
         b_init = tf.constant_initializer(self.bias_initializer)
-        self.b = self.add_weight('bias', shape=self.output_dim,
+        self.b = self.add_weight('bias', shape=(self.output_dim,),
                                  initializer=b_init)
+    cores_ = []
     for i,  v in enumerate(self.matrix.tt_cores):
-      self.add_weight('%d' % i, initializer=v.initialized_value())
+      def _initializer(*args, **kwargs):
+        return v.initialized_value()
+        
+      cores_.append(self.add_weight('%d' % i, 
+                      shape=v.shape, 
+                      trainable=True,
+                      dtype=tf.float32,
+                      initializer=_initializer
+                      ))
+    self.matrix = t3f.TensorTrain(cores_)
 
   def call(self, x):
     res = t3f.matmul(x, self.matrix)
