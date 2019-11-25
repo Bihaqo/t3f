@@ -62,23 +62,23 @@ class KerasDense(Layer):
     name = 'tt_dense_{}'.format(self.counter)
     with tf.variable_scope(name):
       self.matrix = t3f.get_variable('matrix', initializer=initializer)
+      cores_ = []
+      for i,  v in enumerate(self.matrix.tt_cores):
+        def _initializer(*args, **kwargs):
+          return v.initialized_value()
+          
+        cores_.append(self.add_weight('%d' % i, 
+                        shape=v.shape, 
+                        trainable=True,
+                        dtype=tf.float32,
+                        initializer=_initializer
+                        ))
+      self.matrix = t3f.TensorTrain(cores_)
       self.b = None
       if self.use_bias:
         b_init = tf.constant_initializer(self.bias_initializer)
         self.b = self.add_weight('bias', shape=(self.output_dim,),
                                  initializer=b_init)
-    cores_ = []
-    for i,  v in enumerate(self.matrix.tt_cores):
-      def _initializer(*args, **kwargs):
-        return v.initialized_value()
-        
-      cores_.append(self.add_weight('%d' % i, 
-                      shape=v.shape, 
-                      trainable=True,
-                      dtype=tf.float32,
-                      initializer=_initializer
-                      ))
-    self.matrix = t3f.TensorTrain(cores_)
 
   def call(self, x):
     res = t3f.matmul(x, self.matrix)
