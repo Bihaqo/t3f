@@ -13,7 +13,7 @@ class KerasDense(Layer):
 
   def __init__(self, input_dims, output_dims, tt_rank=2,
                activation=None, use_bias=True, kernel_initializer='glorot',
-               bias_initializer=None, **kwargs):
+               bias_initializer=0.1, **kwargs):
     """Creates a TT-Matrix based Dense Keras layer.
 
     Args:
