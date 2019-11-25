@@ -65,11 +65,10 @@ class KerasDense(Layer):
       self.b = None
       if self.use_bias:
         b_init = tf.constant_initializer(self.bias_initializer)
-        self.b = tf.get_variable('bias', shape=self.output_dim,
+        self.b = self.add_weight('bias', shape=self.output_dim,
                                  initializer=b_init)
-    self._trainable_weights = list(self.matrix.tt_cores)
-    if self.b is not None:
-      self._trainable_weights.append(self.b)
+    for i,  v in enumerate(self.matrix.tt_cores):
+      self.add_weight('%d' % i, initializer=v.initialized_value())
 
   def call(self, x):
     res = t3f.matmul(x, self.matrix)
