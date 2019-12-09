@@ -19,6 +19,7 @@ t3f is implemented on top of TensorFlow which gives it a few nice properties:
     api
     comparison
     benchmark
+    troubleshooting
 
 .. toctree::
     :maxdepth: 1
