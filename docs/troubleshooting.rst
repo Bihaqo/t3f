@@ -5,10 +5,12 @@ Troubleshooting
 
 If something does not work, try
 
-* Installing the latest version of the library (see InstallationInstructions_)
+* Installing the latest version of the library (see :ref:`InstallationInstructions`)
 
 * Importing TensorFlow in the following way:
+
 .. code-block:: python
+
   import tensorflow.compat.v1 as tf
   tf.disable_v2_behavior()
   tf.enable_resource_variables()
