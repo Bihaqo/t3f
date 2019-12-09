@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+tf.enable_resource_variables()
 
 from t3f.tensor_train import TensorTrain
 from t3f import ops
