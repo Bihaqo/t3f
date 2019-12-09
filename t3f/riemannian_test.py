@@ -5,6 +5,7 @@ from t3f.tensor_train import TensorTrain
 from t3f import ops
 from t3f import initializers
 from t3f import riemannian
+from t3f import variables
 from t3f import shapes
 from t3f import batch_ops
 
@@ -115,6 +116,16 @@ class _RiemannianTest():
       res = sess.run((ops.full(direct_projs), ops.full(actual_proj)))
       desired_val, actual_val = res
       self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+
+  def testProjectWeightedSumDtypeBug(self):
+    # Test that project_sum(TensorTrain, TensorTrain variable, np.array) works.
+    what = initializers.random_tensor_batch((2, 3, 4), batch_size=3,
+                                            dtype=self.dtype)
+    where = variables.get_variable('a', initializer=what[0])
+    weights = tf.zeros((3,), dtype=self.dtype)
+    # Check that it doesn't throw an exception trying to convert weights to 
+    # Variable dtype (float32_ref).
+    riemannian.project_sum(what, where, weights)
 
   def testProjectMatrixOnItself(self):
     # Project a TT-matrix on itself.
