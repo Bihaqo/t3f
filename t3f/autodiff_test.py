@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
-import tensorflow_datasets as tfds
+from tensorflow.python.framework import test_util
+# tf.disable_v2_behavior()
 tf.enable_eager_execution()
 
 from t3f import ops
@@ -19,7 +20,7 @@ class _AutodiffTest():
     self.assertAllClose(desired_v, actual1_v, rtol=1e-4)
     self.assertAllClose(desired_v, actual2_v, rtol=1e-4)
 
-  @tfds.testing.run_in_graph_and_eager_modes
+  @test_util.run_in_graph_and_eager_modes
   def testGradients(self):
     w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
@@ -55,7 +56,7 @@ class _AutodiffTest():
     self.assertAllClose(desired_v, actual1_v, rtol=1e-4)
     self.assertAllClose(desired_v, actual2_v, rtol=1e-4)
 
-  @tfds.testing.run_in_graph_and_eager_modes
+  @test_util.run_in_graph_and_eager_modes
   def testHessianVectorProduct(self):
     w = initializers.random_matrix(([5] * 3, None), dtype=self.dtype)
     A = initializers.random_matrix(([5] * 3, [5] * 3), dtype=self.dtype)
