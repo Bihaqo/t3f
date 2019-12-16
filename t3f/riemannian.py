@@ -86,7 +86,7 @@ def project_sum(what, where, weights=None):
   if output_is_batch:
     right_rank_dim += 1
     left_rank_dim += 1
-    output_batch_size = weights.get_shape()[1].value
+    output_batch_size = weights.get_shape().as_list()[1]
 
   # Prepare rhs vectors.
   # rhs[core_idx] is of size
@@ -668,8 +668,8 @@ def add_n_projected(tt_objects, coef=None):
       # the TT-cores number of dimensions.
       some_core = tt_objects[0].tt_cores[0]
       dim_array = [1] * (some_core.get_shape().ndims + 1)
-      dim_array[0] = coef.get_shape()[0].value
-      dim_array[1] = coef.get_shape()[1].value
+      dim_array[0] = coef.get_shape().as_list()[0]
+      dim_array[1] = coef.get_shape().as_list()[1]
       coef = tf.reshape(coef, dim_array)
 
   ndims = tt_objects[0].ndims()

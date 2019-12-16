@@ -309,7 +309,8 @@ def _are_batch_tt_cores_valid(tt_cores, shape, tt_ranks, batch_size):
           return False
       if shape is not None:
         for i in range(len(shape)):
-          if curr_core_shape[i + 2] != shape[i][core_idx]:
+          dim_a, dim_b = curr_core_shape[i + 2], shape[i][core_idx]
+          if dim_a is not None and dim_b is not None and dim_a != dim_b:
             # The TT-cores are not aligned with the given shape.
             import ipdb; ipdb.set_trace()
             return False

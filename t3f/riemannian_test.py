@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+from tensorflow.python.framework import test_util
+tf.enable_eager_execution()
 
 from t3f.tensor_train import TensorTrain
 from t3f import ops
@@ -11,14 +13,15 @@ from t3f import batch_ops
 
 class _RiemannianTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testProjectOnItself(self):
     # Projection of X into the tangent space of itself is X: P_x(x) = x.
     tens = initializers.random_tensor((2, 3, 4), dtype=self.dtype)
     proj = riemannian.project_sum(tens, tens)
-    with self.test_session() as sess:
-      actual_val, desired_val = sess.run((ops.full(proj), ops.full(tens)))
-      self.assertAllClose(desired_val, actual_val)
+    actual_val, desired_val = self.evaluate((ops.full(proj), ops.full(tens)))
+    self.assertAllClose(desired_val, actual_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testProject(self):
     # Compare our projection with the results obtained (and precomputed) from
     # tt.riemannian.project which is well tested.
@@ -57,11 +60,11 @@ class _RiemannianTest():
        [ 0.34431125, -0.20935516, -1.15864246]]
     proj = riemannian.project_sum(tens, tangent_tens)
     proj_full = ops.full(proj)
-    with self.test_session() as sess:
-      proj_v = proj_full.eval()
-      self.assertAllClose(desired_projection, proj_v)
-      self.assertEqual(self.dtype.as_numpy_dtype, proj_v.dtype)
+    proj_v = self.evaluate(proj_full)
+    self.assertAllClose(desired_projection, proj_v)
+    self.assertEqual(self.dtype.as_numpy_dtype, proj_v.dtype)
 
+  @test_util.run_in_graph_and_eager_modes
   def testProjectSum(self):
     # Test projecting a batch of TT-tensors.
     tens = initializers.random_tensor_batch((2, 3, 4), batch_size=3,
@@ -71,11 +74,11 @@ class _RiemannianTest():
     weighted_sum = tens[0] + tens[1] + tens[2]
     direct_proj = riemannian.project_sum(weighted_sum, tangent_tens)
     actual_proj = riemannian.project_sum(tens, tangent_tens)
-    with self.test_session() as sess:
-      res = sess.run((ops.full(direct_proj), ops.full(actual_proj)))
-      desired_val, actual_val = res
-      self.assertAllClose(desired_val, actual_val)
+    res = self.evaluate((ops.full(direct_proj), ops.full(actual_proj)))
+    desired_val, actual_val = res
+    self.assertAllClose(desired_val, actual_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testProjectWeightedSum(self):
     # Test projecting a batch of TT-tensors with providing coefs.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
@@ -87,11 +90,11 @@ class _RiemannianTest():
     weighted_sum += coef[3] * tens[3]
     direct_proj = riemannian.project_sum(weighted_sum, tangent_tens)
     actual_proj = riemannian.project_sum(tens, tangent_tens, coef)
-    with self.test_session() as sess:
-      res = sess.run((ops.full(direct_proj), ops.full(actual_proj)))
-      desired_val, actual_val = res
-      self.assertAllClose(desired_val, actual_val)
+    res = self.evaluate((ops.full(direct_proj), ops.full(actual_proj)))
+    desired_val, actual_val = res
+    self.assertAllClose(desired_val, actual_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testProjectWeightedSumMultipleOutputs(self):
     # Test projecting a batch of TT-tensors with providing weights and outputing
     # several TT objects with different weights.
@@ -111,21 +114,21 @@ class _RiemannianTest():
     direct_proj_2 = shapes.expand_batch_dim(direct_proj_2)
     direct_projs = batch_ops.concat_along_batch_dim((direct_proj_1, direct_proj_2))
     actual_proj = riemannian.project_sum(tens, tangent_tens, weights)
-    with self.test_session() as sess:
-      res = sess.run((ops.full(direct_projs), ops.full(actual_proj)))
-      desired_val, actual_val = res
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+    res = self.evaluate((ops.full(direct_projs), ops.full(actual_proj)))
+    desired_val, actual_val = res
+    self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
+  @test_util.run_in_graph_and_eager_modes
   def testProjectMatrixOnItself(self):
     # Project a TT-matrix on itself.
     # Projection of X into the tangent space of itself is X: P_x(x) = x.
     tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)),
                                         dtype=self.dtype)
     proj = riemannian.project_sum(tt_mat, tt_mat)
-    with self.test_session() as sess:
-      actual_val, desired_val = sess.run((ops.full(proj), ops.full(tt_mat)))
-      self.assertAllClose(desired_val, actual_val)
+    actual_val, desired_val = self.evaluate((ops.full(proj), ops.full(tt_mat)))
+    self.assertAllClose(desired_val, actual_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testCompareProjectSumAndProject(self):
     # Compare results of project_sum and project.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
@@ -134,11 +137,11 @@ class _RiemannianTest():
                                               dtype=self.dtype)
     project_sum = riemannian.project_sum(tens, tangent_tens, np.eye(4))
     project = riemannian.project(tens, tangent_tens)
-    with self.test_session() as sess:
-      res = sess.run((ops.full(project_sum), ops.full(project)))
-      project_sum_val, project_val = res
-      self.assertAllClose(project_sum_val, project_val)
+    res = self.evaluate((ops.full(project_sum), ops.full(project)))
+    project_sum_val, project_val = res
+    self.assertAllClose(project_sum_val, project_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testProjectMatmul(self):
     # Project a TT-matrix times TT-vector on a TT-vector.
     tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)),
@@ -151,10 +154,10 @@ class _RiemannianTest():
     proj = riemannian.project_matmul(tt_vec_what, tt_vec_where, tt_mat)
     matvec = ops.matmul(tt_mat, tt_vec_what)
     proj_desired = riemannian.project(matvec, tt_vec_where)
-    with self.test_session() as sess:
-      actual_val, desired_val = sess.run((ops.full(proj), ops.full(proj_desired)))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+    actual_val, desired_val = self.evaluate((ops.full(proj), ops.full(proj_desired)))
+    self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
+  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerTensor(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
@@ -166,9 +169,8 @@ class _RiemannianTest():
     projected2 = riemannian.project(what2, where)
     desired = batch_ops.pairwise_flat_inner(projected1, projected2)
     actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+    desired_val, actual_val = self.evaluate((desired, actual))
+    self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -179,6 +181,7 @@ class _RiemannianTest():
       # The arguments are projections on different tangent spaces.
       riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
 
+  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerMatrix(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
     what1 = initializers.random_matrix_batch(((2, 3, 4), None), 4, batch_size=3,
@@ -191,9 +194,8 @@ class _RiemannianTest():
     projected2 = riemannian.project(what2, where)
     desired = batch_ops.pairwise_flat_inner(projected1, projected2)
     actual = riemannian.pairwise_flat_inner_projected(projected1, projected2)
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+    desired_val, actual_val = self.evaluate((desired, actual))
+    self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -205,6 +207,7 @@ class _RiemannianTest():
       # The arguments are projections on different tangent spaces.
       riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
 
+  @test_util.run_in_graph_and_eager_modes
   def testAddNProjected(self):
     # Add several TT-objects from the same tangent space.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
@@ -216,9 +219,8 @@ class _RiemannianTest():
     projected2 = riemannian.project(what2, where)
     desired = ops.full(projected1 + projected2)
     actual = ops.full(riemannian.add_n_projected((projected1, projected2)))
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+    desired_val, actual_val = self.evaluate((desired, actual))
+    self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -229,6 +231,7 @@ class _RiemannianTest():
       # The arguments are projections on different tangent spaces.
       riemannian.add_n_projected((projected1, another_projected2))
 
+  @test_util.run_in_graph_and_eager_modes
   def testWeightedAddNProjected(self):
     # Add several TT-objects from the same tangent space with coefs.
     what1 = initializers.random_tensor((2, 3, 4), 4, dtype=self.dtype)
@@ -239,9 +242,8 @@ class _RiemannianTest():
     desired = ops.full(1.2 * projected1 + -2.0 * projected2)
     actual = ops.full(riemannian.add_n_projected((projected1, projected2),
                                                  coef=[1.2, -2.0]))
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val)
+    desired_val, actual_val = self.evaluate((desired, actual))
+    self.assertAllClose(desired_val, actual_val)
 
     with self.assertRaises(ValueError):
       # Second argument is not a projection on the tangent space.
@@ -253,6 +255,7 @@ class _RiemannianTest():
       riemannian.add_n_projected((projected1, another_projected2),
                                  coef=[1.2, -2.0])
 
+  @test_util.run_in_graph_and_eager_modes
   def testWeightedAddNProjectedBatch(self):
     # Add several TT-batches from the same tangent space with coefs.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
@@ -270,10 +273,10 @@ class _RiemannianTest():
     actual = ops.full(riemannian.add_n_projected((projected1, projected2),
                                                  coef=[[1.2, 1.9, 0.0],
                                                        [-2.0, 2.0, 1.0]]))
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((desired, actual))
-      self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
+    desired_val, actual_val = self.evaluate((desired, actual))
+    self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
+  @test_util.run_in_graph_and_eager_modes
   def testToAndFromDeltas(self):
     # Test converting to and from deltas representation of the tangent space
     # element.
@@ -286,14 +289,14 @@ class _RiemannianTest():
     # Tangent space element norm can be computed from deltas norm.
     projected_normsq_desired = ops.frobenius_norm_squared(projected)
     projected_normsq_actual = tf.add_n([tf.reduce_sum(c * c) for c in deltas])
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((ops.full(projected),
-                                          ops.full(reconstructed_projected)))
-      self.assertAllClose(desired_val, actual_val)
-      desired_val, actual_val = sess.run((projected_normsq_desired,
-                                          projected_normsq_actual))
-      self.assertAllClose(desired_val, actual_val)
+    desired_val, actual_val = self.evaluate((ops.full(projected),
+                                        ops.full(reconstructed_projected)))
+    self.assertAllClose(desired_val, actual_val)
+    desired_val, actual_val = self.evaluate((projected_normsq_desired,
+                                        projected_normsq_actual))
+    self.assertAllClose(desired_val, actual_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testToAndFromDeltasBatch(self):
     # Test converting to and from deltas representation of the tangent space
     # element in the batch case.
@@ -310,13 +313,12 @@ class _RiemannianTest():
     d_normssq = [tf.reduce_sum(tf.reshape(c, (3, -1)) ** 2, 1) for c in deltas]
     projected_normsq_actual = tf.add_n(d_normssq)
 
-    with self.test_session() as sess:
-      desired_val, actual_val = sess.run((ops.full(projected),
-                                          ops.full(reconstructed_projected)))
-      self.assertAllClose(desired_val, actual_val)
-      desired_val, actual_val = sess.run((projected_normsq_desired,
-                                          projected_normsq_actual))
-      self.assertAllClose(desired_val, actual_val)
+    desired_val, actual_val = self.evaluate((ops.full(projected),
+                                        ops.full(reconstructed_projected)))
+    self.assertAllClose(desired_val, actual_val)
+    desired_val, actual_val = self.evaluate((projected_normsq_desired,
+                                        projected_normsq_actual))
+    self.assertAllClose(desired_val, actual_val)
 
 
 class RiemannianTestFloat32(tf.test.TestCase, _RiemannianTest):

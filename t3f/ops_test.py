@@ -430,39 +430,6 @@ class _TTMatrixTest():
     self.assertEqual(self.dtype, casted.dtype)
     self.assertTrue(self.dtype, casted_val.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
-  def testUnknownRanksTTMatmul(self):
-    # Tests tt_tt_matmul for matrices with unknown ranks
-    K_1 = tf.placeholder(self.dtype, (1, 2, 2, None))
-    K_2 = tf.placeholder(self.dtype, (None, 3, 3, 1))
-    tt_mat = TensorTrain([K_1, K_2])
-    res_actual = ops.full(ops.matmul(tt_mat, tt_mat))
-    res_desired = tf.matmul(ops.full(tt_mat), ops.full(tt_mat))
-    np.random.seed(1)
-    K_1_val = np.random.rand(1, 2, 2, 2)
-    K_2_val = np.random.rand(2, 3, 3, 1)
-    res_actual_val = self.evaluate(res_actual, {K_1: K_1_val, K_2: K_2_val})
-    res_desired_val = self.evaluate(res_desired, {K_1: K_1_val, K_2: K_2_val})
-    self.assertAllClose(res_desired_val, res_actual_val)
-
-  @test_util.run_in_graph_and_eager_modes
-  def testHalfKnownRanksTTMatmul(self):
-    # Tests tt_tt_matmul for the case  when one matrice has known ranks
-    # and the other one doesn't
-    np.random.seed(1)
-    K_1 = tf.placeholder(self.dtype, (1, 2, 2, None))
-    K_2 = tf.placeholder(self.dtype, (None, 3, 3, 1))
-    tt_mat_known_ranks = TensorTrain([K_1, K_2], tt_ranks=[1, 3, 1])
-    tt_mat = TensorTrain([K_1, K_2])
-    res_actual = ops.full(ops.matmul(tt_mat_known_ranks, tt_mat))
-    res_desired = tf.matmul(ops.full(tt_mat_known_ranks), ops.full(tt_mat))
-    np.random.seed(1)
-    K_1_val = np.random.rand(1, 2, 2, 3)
-    K_2_val = np.random.rand(3, 3, 3, 1)
-    res_actual_val = self.evaluate(res_actual, {K_1: K_1_val, K_2: K_2_val})
-    res_desired_val = self.evaluate(res_desired, {K_1: K_1_val, K_2: K_2_val})
-    self.assertAllClose(res_desired_val, res_actual_val)
-
 
 class _TTTensorBatchTest():
 
@@ -523,16 +490,16 @@ class _TTTensorBatchTest():
     res_actual_1 = ops.flat_inner(tt_1, tt_2)
     res_actual_2 = ops.flat_inner(tt_2, tt_1)
     res_desired = tf.einsum('ijk,oijk->o', ops.full(tt_1[0]), ops.full(tt_2))
-    with self.test_session() as sess:
-      res = self.evaluate([res_actual_1, res_actual_2, res_desired])
-      res_actual_1_val, res_actual_2_val, res_desired_val = res
-      self.assertAllClose(res_actual_1_val, res_desired_val)
-      self.assertAllClose(res_actual_2_val, res_desired_val)
+    res = self.evaluate([res_actual_1, res_actual_2, res_desired])
+    res_actual_1_val, res_actual_2_val, res_desired_val = res
+    self.assertAllClose(res_actual_1_val, res_desired_val)
+    self.assertAllClose(res_actual_2_val, res_desired_val)
 
     tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=2,
                                             dtype=self.dtype)
-    # The batch_sizes are different.
-    ops.flat_inner(tt_1, tt_2)
+    with self.assertRaises(ValueError):
+      # The batch_sizes are different.
+      ops.flat_inner(tt_1, tt_2)
 
   @test_util.run_in_graph_and_eager_modes
   def testAddSameBatchSize(self):
@@ -649,106 +616,25 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual2_val, res_desired_val)
 
   @test_util.run_in_graph_and_eager_modes
-  def testMultiplyUnknownBatchSizeBroadcasting(self):
-    c1 = tf.placeholder(self.dtype, [None, 1, 3, 2])
-    c2 = tf.placeholder(self.dtype, [None, 2, 3, 1])
-    tt_a = TensorTrainBatch([c1, c2])
-    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=3, batch_size=1,
-                                            dtype=self.dtype)
-    tt_c = initializers.random_tensor((3, 3), tt_rank=3,
-                                      dtype=self.dtype)
-    res_ab = ops.full(ops.multiply(tt_a, tt_b))
-    res_ba = ops.full(ops.multiply(tt_b, tt_a))
-    res_ac = ops.full(ops.multiply(tt_a, tt_c))
-    res_ca = ops.full(ops.multiply(tt_c, tt_a))
-    res_desired_ab = ops.full(tt_a) * ops.full(tt_b)
-    res_desired_ac = ops.full(tt_a) * ops.full(tt_c)
-    to_run = [res_ab, res_ba, res_ac, res_ca, res_desired_ab, res_desired_ac]
-    feed_dict = {c1:np.random.rand(7, 1, 3, 2),
-                 c2:np.random.rand(7, 2, 3, 1)}
-    ab, ba, ac, ca, des_ab, des_ac = self.evaluate(to_run, feed_dict=feed_dict)
-    self.assertAllClose(ab, des_ab)
-    self.assertAllClose(ba, des_ab)
-    self.assertAllClose(ac, des_ac)
-    self.assertAllClose(ca, des_ac)
-
-  @test_util.run_in_graph_and_eager_modes
-  def testMultiplyTwoBatchesUnknownSize(self):
-    c1 = tf.placeholder(self.dtype, [None, 1, 3, 2])
-    c2 = tf.placeholder(self.dtype, [None, 2, 3, 1])
-    c3 = tf.placeholder(self.dtype, [None, 1, 3, 2])
-    c4 = tf.placeholder(self.dtype, [None, 2, 3, 1])
-    tt_a = TensorTrainBatch([c1, c2])
-    tt_b = TensorTrainBatch([c3, c4])
-    res_ab = ops.full(ops.multiply(tt_a, tt_b))
-    res_ba = ops.full(ops.multiply(tt_b, tt_a))
-    res_desired = ops.full(tt_a) * ops.full(tt_b)
-    to_run = [res_ab, res_ba, res_desired]
-    feed_dict = {c1:np.random.rand(7, 1, 3, 2),
-                 c2:np.random.rand(7, 2, 3, 1),
-                 c3:np.random.rand(7, 1, 3, 2),
-                 c4:np.random.rand(7, 2, 3, 1)}
-
-    feed_dict_err = {c1:np.random.rand(7, 1, 3, 2),
-                     c2:np.random.rand(7, 2, 3, 1),
-                     c3:np.random.rand(1, 1, 3, 2),
-                     c4:np.random.rand(1, 2, 3, 1)}
-
-    ab_full, ba_full, des_full = self.evaluate(to_run, feed_dict=feed_dict)
-    self.assertAllClose(ab_full, des_full)
-    self.assertAllClose(ba_full, des_full)
-    with self.assertRaises(tf.errors.InvalidArgumentError):
-      self.evaluate(to_run, feed_dict=feed_dict_err)
-
-  @test_util.run_in_graph_and_eager_modes
-  def testMultiplyUnknownSizeBatchAndBatch(self):
-    c1 = tf.placeholder(self.dtype, [None, 1, 3, 2])
-    c2 = tf.placeholder(self.dtype, [None, 2, 3, 1])
-    tt_b = initializers.random_tensor_batch((3, 3), tt_rank=2, batch_size=8,
-                                            dtype=self.dtype)
-    tt_a = TensorTrainBatch([c1, c2])
-    res_ab = ops.full(ops.multiply(tt_a, tt_b))
-    res_ba = ops.full(ops.multiply(tt_b, tt_a))
-    res_desired = ops.full(tt_a) * ops.full(tt_b)
-    to_run = [res_ab, res_ba, res_desired]
-    feed_dict = {c1:np.random.rand(8, 1, 3, 2),
-                 c2:np.random.rand(8, 2, 3, 1)}
-
-    feed_dict_err = {c1:np.random.rand(1, 1, 3, 2),
-                     c2:np.random.rand(1, 2, 3, 1)}
-
-    ab_full, ba_full, des_full = self.evaluate(to_run, feed_dict=feed_dict)
-    self.assertAllClose(ab_full, des_full)
-    self.assertAllClose(ba_full, des_full)
-    with self.assertRaises(tf.errors.InvalidArgumentError):
-      self.evaluate(to_run, feed_dict=feed_dict_err)
-
-  @test_util.run_in_graph_and_eager_modes
   def testGatherND(self):
     idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
-    pl_idx = tf.placeholder(tf.int32, [None, 3])
     tt = initializers.random_tensor((3, 4, 5), tt_rank=2, dtype=self.dtype)
     res_np = ops.gather_nd(tt, idx)
-    res_pl = ops.gather_nd(tt, pl_idx)
     res_desired = tf.gather_nd(ops.full(tt), idx)
-    to_run = [res_np, res_pl, res_desired]
-    res_np_v, res_pl_v, des_v = self.evaluate(to_run, feed_dict={pl_idx: idx})
+    to_run = [res_np, res_desired]
+    res_np_v, des_v = self.evaluate(to_run)
     self.assertAllClose(res_np_v, des_v)
-    self.assertAllClose(res_pl_v, res_pl_v)
 
   @test_util.run_in_graph_and_eager_modes
   def testGatherNDBatch(self):
     idx = [[0, 0, 0, 0], [1, 0, 1, 2], [0, 0, 1, 0]]
-    pl_idx = tf.placeholder(tf.int32, [None, 4])
     tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=2,
                                           dtype=self.dtype)
     res_np = ops.gather_nd(tt, idx)
-    res_pl = ops.gather_nd(tt, pl_idx)
     res_desired = tf.gather_nd(ops.full(tt), idx)
-    to_run = [res_np, res_pl, res_desired]
-    res_np_v, res_pl_v, des_v = self.evaluate(to_run, feed_dict={pl_idx: idx})
+    to_run = [res_np, res_desired]
+    res_np_v, des_v = self.evaluate(to_run)
     self.assertAllClose(res_np_v, des_v)
-    self.assertAllClose(res_pl_v, res_pl_v)
 
   @test_util.run_in_graph_and_eager_modes
   def testCoreRenormBatch(self):
