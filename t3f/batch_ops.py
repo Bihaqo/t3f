@@ -1,5 +1,5 @@
 import itertools
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f.tensor_train_base import TensorTrainBase
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -38,7 +38,7 @@ def concat_along_batch_dim(tt_list, name='t3f_concat_along_batch_dim'):
 
   list_of_cores_lists = [tt.tt_cores for tt in tt_list]
   all_cores = tuple(itertools.chain.from_iterable(list_of_cores_lists))
-  with tf.name_scope(name, values=all_cores):
+  with tf.name_scope(name):
     res_cores = []
     for core_idx in range(ndims):
       curr_core = tf.concat([tt.tt_cores[core_idx] for tt in tt_list], axis=0)
@@ -67,7 +67,7 @@ def multiply_along_batch_dim(batch_tt, weights,
   Returns:
     TensorTrainBatch
   """
-  with tf.name_scope(name, values=batch_tt.tt_cores+(weights,)):
+  with tf.name_scope(name):
     weights = tf.convert_to_tensor(weights, dtype=batch_tt.dtype)
     tt_cores = list(batch_tt.tt_cores)
     if batch_tt.is_tt_matrix():
@@ -161,7 +161,7 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None,
   all_cores = tt_1.tt_cores + tt_2.tt_cores
   if matrix is not None:
     all_cores += matrix.tt_cores
-  with tf.name_scope(name, values=all_cores):
+  with tf.name_scope(name):
     ndims = tt_1.ndims()
     if matrix is None:
       curr_core_1 = tt_1.tt_cores[0]

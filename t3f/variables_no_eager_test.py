@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
 from tensorflow.python.framework import test_util
-tf.enable_eager_execution()
+tf.disable_eager_execution()
 
 from t3f import variables
 from t3f import ops
@@ -10,80 +10,45 @@ from t3f import initializers
 
 class _VariablesTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testGetExistingVariable(self):
     init = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.dtype)
     tt_1 = variables.get_variable('tt_1', initializer=init)
     with tf.variable_scope('test'):
       tt_2 = variables.get_variable('tt_2', initializer=init)
-    self.evaluate(tf.global_variables_initializer())
-    with self.assertRaises(ValueError):
-      # The variable already exists and scope.reuse is False by default.
-      variables.get_variable('tt_1')
-    with self.assertRaises(ValueError):
+    with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      with self.assertRaises(ValueError):
+        # The variable already exists and scope.reuse is False by default.
+        variables.get_variable('tt_1')
+      with self.assertRaises(ValueError):
+        with tf.variable_scope('', reuse=True):
+          # The variable doesn't exist.
+          variables.get_variable('tt_3')
+
       with tf.variable_scope('', reuse=True):
-        # The variable doesn't exist.
-        variables.get_variable('tt_3')
+        tt_1_copy = variables.get_variable('tt_1', dtype=self.dtype)
+        self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
 
-    with tf.variable_scope('', reuse=True):
-      tt_1_copy = variables.get_variable('tt_1', dtype=self.dtype)
-      self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
-
-    with tf.variable_scope('', reuse=True):
-      # Again try to retrieve an existing variable, but pass an initializer
-      # and check that it still works.
-      tt_1_copy = variables.get_variable('tt_1', initializer=0 * init,
-                                         dtype=self.dtype)
-      self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
-
-    with self.assertRaises(ValueError):
       with tf.variable_scope('', reuse=True):
-        # The variable is defined in a different scope
-        variables.get_variable('tt_2')
+        # Again try to retrieve an existing variable, but pass an initializer
+        # and check that it still works.
+        tt_1_copy = variables.get_variable('tt_1', initializer=0 * init,
+                                           dtype=self.dtype)
+        self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
 
-    with self.assertRaises(ValueError):
-      with tf.variable_scope('nottest', reuse=True):
-        # The variable is defined in a different scope
-        variables.get_variable('tt_2')
+      with self.assertRaises(ValueError):
+        with tf.variable_scope('', reuse=True):
+          # The variable is defined in a different scope
+          variables.get_variable('tt_2')
 
-    with tf.variable_scope('test', reuse=True):
-      tt_2_copy = variables.get_variable('tt_2', dtype=self.dtype)
-      self.assertAllClose(ops.full(tt_2).eval(), ops.full(tt_2_copy).eval())
+      with self.assertRaises(ValueError):
+        with tf.variable_scope('nottest', reuse=True):
+          # The variable is defined in a different scope
+          variables.get_variable('tt_2')
 
-  @test_util.run_in_graph_and_eager_modes
-  def testAttributes(self):
-    # Test that after converting an initializer into a variable all the
-    # attributes stays the same.
-    tens = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.dtype)
-    tens_v = variables.get_variable('tt_tens', initializer=tens)
-    mat = initializers.random_matrix([[3, 2, 2], [3, 3, 3]], tt_rank=3,
-                                     dtype=self.dtype)
-    mat_v = variables.get_variable('tt_mat', initializer=mat)
-    for (init, var) in [[tens, tens_v], [mat, mat_v]]:
-      self.assertEqual(init.get_shape(), var.get_shape())
-      self.assertEqual(init.get_raw_shape(), var.get_raw_shape())
-      self.assertEqual(init.ndims(), var.ndims())
-      self.assertEqual(init.get_tt_ranks(), var.get_tt_ranks())
-      self.assertEqual(init.is_tt_matrix(), var.is_tt_matrix())
-
-  @test_util.run_in_graph_and_eager_modes
-  def testAssign(self):
-    old_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
-                                          dtype=self.dtype)
-    tt = variables.get_variable('tt', initializer=old_init)
-    new_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
-                                          dtype=self.dtype)
-    assigner = variables.assign(tt, new_init)
-    self.evaluate(tf.global_variables_initializer())
-    init_value = ops.full(tt).eval()
-    assigner_value = ops.full(assigner).eval()
-    after_value = ops.full(tt)
-    after_value = after_value.eval()
-    self.assertAllClose(assigner_value, after_value)
-    # Assert that the value actually changed:
-    abs_diff = np.linalg.norm((init_value - after_value).flatten())
-    rel_diff = abs_diff / np.linalg.norm((init_value).flatten())
-    self.assertGreater(rel_diff, 0.2)
+      with tf.variable_scope('test', reuse=True):
+        tt_2_copy = variables.get_variable('tt_2', dtype=self.dtype)
+        self.assertAllClose(ops.full(tt_2).eval(), ops.full(tt_2_copy).eval())
 
 
 class VariablesTestFloat32(tf.test.TestCase, _VariablesTest):

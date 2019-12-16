@@ -1,6 +1,6 @@
 import numbers
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f import ops
 
@@ -30,7 +30,7 @@ def l2_regularizer(scale, scope=None):
 
   def l2(tt):
     """Applies l2 regularization to TensorTrain object."""
-    with tf.name_scope(scope, 'l2_regularizer', values=tt.tt_cores) as name:
+    with tf.name_scope(scope, 'l2_regularizer') as name:
       my_scale = tf.convert_to_tensor(scale, dtype=tt.dtype, name='scale')
       return tf.multiply(my_scale, ops.frobenius_norm_squared(tt), name=name)
 
@@ -65,7 +65,7 @@ def cores_regularizer(core_regularizer, scale, scope=None):
 
   def regularizer(tt):
     """Applies the regularization to TensorTrain object."""
-    with tf.name_scope(scope, 'l2_regularizer', values=tt.tt_cores) as name:
+    with tf.name_scope(scope, 'l2_regularizer') as name:
       my_scale = tf.convert_to_tensor(scale, dtype=tt.dtype, name='scale')
       penalty = 0.0
       for i in range(tt.ndims()):

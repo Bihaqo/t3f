@@ -1,4 +1,4 @@
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -780,7 +780,7 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
     if int(tt_ranks[i] / 2) != tt_ranks[i] / 2:
       raise ValueError('tt argument is supposed to be a projection, but its '
                        'ranks are not even.')
-  with tf.name_scope(name, values=tt.tt_cores):
+  with tf.name_scope(name):
     for i in range(1, num_dims - 1):
       r1, r2 = tt_ranks[i], tt_ranks[i + 1]
       curr_core = tt.tt_cores[i]
@@ -832,7 +832,7 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
     input_tensors += list(left.tt_cores)
   if right is not None:
     input_tensors += list(right.tt_cores)
-  with tf.name_scope(name, values=input_tensors):
+  with tf.name_scope(name):
     if left is None:
       left = decompositions.orthogonalize_tt_cores(tt)
     if right is None:

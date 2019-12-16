@@ -1,7 +1,7 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.python.framework import test_util
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -254,7 +254,7 @@ class _TTMatrixTest():
     np.random.seed(1)
     vec = np.random.rand(np.prod(inp_shape), 1).astype(self.dtype.as_numpy_dtype)
     tf_vec = tf.constant(vec)
-    tf.set_random_seed(1)
+    tf.compat.v1.set_random_seed(1)
     tt_mat = initializers.random_matrix((out_shape, inp_shape),
                                         dtype=self.dtype)
     res_actual = ops.matmul(tt_mat, tf_vec)
@@ -271,7 +271,7 @@ class _TTMatrixTest():
     mat = np.random.rand(np.prod(out_shape), np.prod(inp_shape))
     mat = mat.astype(self.dtype.as_numpy_dtype)
     tf_mat = tf.constant(mat)
-    tf.set_random_seed(1)
+    tf.compat.v1.set_random_seed(1)
     tt_vec = initializers.random_matrix((inp_shape, None),
                                         dtype=self.dtype)
     res_actual = ops.matmul(tf_mat, tt_vec)

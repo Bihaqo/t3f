@@ -1,4 +1,4 @@
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f.tensor_train_base import TensorTrainBase
 from t3f import shapes

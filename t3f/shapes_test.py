@@ -1,6 +1,6 @@
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.python.framework import test_util
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 from t3f import initializers
 from t3f import shapes

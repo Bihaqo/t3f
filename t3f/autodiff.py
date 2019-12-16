@@ -1,4 +1,4 @@
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f import shapes
 from t3f import decompositions
@@ -103,7 +103,7 @@ def gradients(func, x, name='t3f_gradients', runtime_check=True):
   See also:
       t3f.hessian_vector_product
   """
-  with tf.name_scope(name, values=x.tt_cores):
+  with tf.name_scope(name):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     deltas = [right.tt_cores[0]]
@@ -168,7 +168,7 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
         t3f.gradients
     """
   all_cores = list(x.tt_cores) + list(vector.tt_cores)
-  with tf.name_scope(name, values=all_cores):
+  with tf.name_scope(name):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     deltas = [right.tt_cores[0]]

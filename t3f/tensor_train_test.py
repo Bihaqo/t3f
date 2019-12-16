@@ -1,7 +1,7 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.python.framework import test_util
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 from t3f import tensor_train
 from t3f import initializers
@@ -30,8 +30,8 @@ class _TensorTrainTest():
                 ((1, 2, 1, 1), (1, 2, 1), False))
 
     for tt_ranks, claimed_tt_ranks, desired in schedule:
-      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
-      b = tf.random_normal((tt_ranks[2], 9, tt_ranks[3]), dtype=self.dtype)
+      a = tf.random.normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
+      b = tf.random.normal((tt_ranks[2], 9, tt_ranks[3]), dtype=self.dtype)
       actual = tensor_train._are_tt_cores_valid((a, b), (10, 9),
                                                 claimed_tt_ranks)
       self.assertEqual(desired, actual)
@@ -75,9 +75,9 @@ class _TensorTrainTest():
                 ((1, 2, 2, 3, 3, 1), None, True))
 
     for tt_ranks, claimed_tt_ranks, desired in schedule:
-      a = tf.random_normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
-      b = tf.random_normal((tt_ranks[2], 1, tt_ranks[3]), dtype=self.dtype)
-      c = tf.random_normal((tt_ranks[4], 2, tt_ranks[5]), dtype=self.dtype)
+      a = tf.random.normal((tt_ranks[0], 10, tt_ranks[1]), dtype=self.dtype)
+      b = tf.random.normal((tt_ranks[2], 1, tt_ranks[3]), dtype=self.dtype)
+      c = tf.random.normal((tt_ranks[4], 2, tt_ranks[5]), dtype=self.dtype)
       actual = tensor_train._are_tt_cores_valid((a, b, c), (10, 1, 2),
                                                 claimed_tt_ranks)
       self.assertEqual(desired, actual)

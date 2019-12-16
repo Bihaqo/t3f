@@ -1,6 +1,6 @@
 from functools import reduce
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 # TODO: check the methods of _TensorLike

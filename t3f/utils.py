@@ -39,6 +39,7 @@ def replace_tf_svd_with_np_svd():
     return s, u, v
 
   tf.svd = my_svd
+  tf.linalg.svd = my_svd
 
 
 def in_eager_mode():

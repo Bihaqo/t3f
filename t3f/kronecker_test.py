@@ -1,7 +1,7 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.python.framework import test_util
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -34,7 +34,7 @@ class _KroneckerTest():
     initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1,
                                              dtype=self.dtype)
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.evaluate(init_op)
     desired = np.linalg.det(self.evaluate(ops.full(kron_mat)))
     actual = self.evaluate(kr.determinant(kron_mat))
@@ -47,17 +47,17 @@ class _KroneckerTest():
     # TODO: use kron and -1 * kron matrices, when mul is implemented 
     # the current version is platform-dependent
     
-    tf.set_random_seed(5) # negative derminant
+    tf.compat.v1.set_random_seed(5) # negative derminant
     initializer = initializers.random_matrix(((2, 3), (2, 3)), tt_rank=1,
                                              dtype=self.dtype)
     kron_neg = variables.get_variable('kron_neg', initializer=initializer)
   
-    tf.set_random_seed(1) # positive determinant
+    tf.compat.v1.set_random_seed(1) # positive determinant
     initializer = initializers.random_matrix(((2, 3), (2, 3)), tt_rank=1,
                                              dtype=self.dtype)
     kron_pos = variables.get_variable('kron_pos', initializer=initializer)
 
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
      # negative derminant
     self.evaluate(init_op)
     desired_sign, desired_det = np.linalg.slogdet(self.evaluate(ops.full(kron_neg)))
@@ -77,7 +77,7 @@ class _KroneckerTest():
     initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1,
                                              dtype=self.dtype)
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.evaluate(init_op)
     desired = np.linalg.inv(self.evaluate(ops.full(kron_mat)))
     actual = self.evaluate(ops.full(kr.inv(kron_mat)))
@@ -100,7 +100,7 @@ class _KroneckerTest():
                                K_2[None, :, :, None]], 
                               tt_ranks=7*[1])
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.evaluate(init_op)
     desired = np.linalg.cholesky(K)
     actual = self.evaluate(ops.full(kr.cholesky(kron_mat)))
@@ -136,9 +136,9 @@ class _BatchKroneckerTest():
                                                    dtype=self.dtype)
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.evaluate(init_op)
-    desired = self.evaluate(tf.matrix_determinant(ops.full(kron_mat_batch)))
+    desired = self.evaluate(tf.linalg.det(ops.full(kron_mat_batch)))
     actual = self.evaluate(kr.determinant(kron_mat_batch))
     self.assertAllClose(desired, actual)
 
@@ -146,14 +146,14 @@ class _BatchKroneckerTest():
   def testSlogDet(self):
     # Tests the slog_determinant function
     
-    tf.set_random_seed(1) # negative and positive determinants
+    tf.compat.v1.set_random_seed(1) # negative and positive determinants
     initializer = initializers.random_matrix_batch(((2, 3), (2, 3)), tt_rank=1, 
                                                    batch_size=3,
                                                    dtype=self.dtype)
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
   
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
      # negative derminant
     self.evaluate(init_op)
     desired_sign, desired_det = np.linalg.slogdet(
@@ -170,7 +170,7 @@ class _BatchKroneckerTest():
                                                    dtype=self.dtype)
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.evaluate(init_op)
     desired = np.linalg.inv(self.evaluate(ops.full(kron_mat_batch)))
     actual = self.evaluate(ops.full(kr.inv(kron_mat_batch)))
@@ -192,7 +192,7 @@ class _BatchKroneckerTest():
                                     K_2[:, None, :, :, None]], tt_ranks=7*[1])
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     self.evaluate(init_op)
     desired = np.linalg.cholesky(self.evaluate(ops.full(kron_mat_batch)))
     actual = self.evaluate(ops.full(kr.cholesky(kron_mat_batch)))

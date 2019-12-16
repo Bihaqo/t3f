@@ -1,6 +1,6 @@
 """Tests from the README examples and the paper."""
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 import t3f
 
 class ExamplesTest(tf.test.TestCase):
@@ -21,7 +21,7 @@ class ExamplesTest(tf.test.TestCase):
       # an operation 'generate me a random tensor'.
       a_val, norm_val = sess.run([a_full, norm])
     a = t3f.random_tensor((3, 2, 2), tt_rank=3)
-    b_dense = tf.random_normal((3, 2, 2))
+    b_dense = tf.random.normal((3, 2, 2))
     # Use TT-SVD on b_dense.
     b_tt = t3f.to_tt_tensor(b_dense, max_tt_rank=4)
     sum_round = t3f.round(t3f.add(a, b_tt), max_tt_rank=2)
@@ -35,7 +35,7 @@ class ExamplesTest(tf.test.TestCase):
     matvec = t3f.matmul(A, b)
 
     # Matrix-by-dense matrix
-    b_dense = tf.random_normal((18, 1))
+    b_dense = tf.random.normal((18, 1))
     matvec2 = t3f.matmul(A, b_dense)
 
 

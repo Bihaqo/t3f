@@ -1,7 +1,7 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tensorflow.python.framework import test_util
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 from t3f import variables
 from t3f import ops
@@ -33,7 +33,7 @@ class _VariablesTest():
     tt = variables.get_variable('tt', initializer=old_init)
     new_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
                                           dtype=self.dtype)
-    self.evaluate(tf.global_variables_initializer())
+    self.evaluate(tf.compat.v1.global_variables_initializer())
     init_value =  self.evaluate(ops.full(tt))
     assigner = variables.assign(tt, new_init)
     assigner_value = self.evaluate(ops.full(assigner))
