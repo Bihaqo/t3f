@@ -79,14 +79,14 @@ def to_tt_matrix(mat, shape, max_tt_rank=10, epsilon=None,
     tens = tf.reshape(tens, new_shape)
     tt_tens = to_tt_tensor(tens, max_tt_rank, epsilon)
     tt_cores = []
-    static_tt_ranks = tt_tens.get_tt_ranks()
+    static_tt_ranks = tt_tens.get_tt_ranks().as_list()
     dynamic_tt_ranks = shapes.tt_ranks(tt_tens)
     for core_idx in range(d):
       curr_core = tt_tens.tt_cores[core_idx]
-      curr_rank = static_tt_ranks[core_idx].value
+      curr_rank = static_tt_ranks[core_idx]
       if curr_rank is None:
         curr_rank = dynamic_tt_ranks[core_idx]
-      next_rank = static_tt_ranks[core_idx + 1].value
+      next_rank = static_tt_ranks[core_idx + 1]
       if next_rank is None:
         next_rank = dynamic_tt_ranks[core_idx + 1]
       curr_core_new_shape = (curr_rank, shape[0, core_idx],
@@ -139,7 +139,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None,
   """
   with tf.name_scope(name, values=(tens,)):
     tens = tf.convert_to_tensor(tens)
-    static_shape = tens.get_shape()
+    static_shape = tens.shape.as_list()
     dynamic_shape = tf.shape(tens)
     # Raises ValueError if ndims is not defined.
     d = static_shape.__len__()
@@ -158,12 +158,12 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None,
     tt_cores = []
     are_tt_ranks_defined = True
     for core_idx in range(d - 1):
-      curr_mode = static_shape[core_idx].value
+      curr_mode = static_shape[core_idx]
       if curr_mode is None:
         curr_mode = dynamic_shape[core_idx]
       rows = ranks[core_idx] * curr_mode
       tens = tf.reshape(tens, [rows, -1])
-      columns = tens.get_shape()[1].value
+      columns = tens.get_shape()[1]
       if columns is None:
         columns = tf.shape(tens)[1]
       s, u, v = tf.svd(tens, full_matrices=False)
@@ -184,7 +184,7 @@ def to_tt_tensor(tens, max_tt_rank=10, epsilon=None,
       core_shape = (ranks[core_idx], curr_mode, ranks[core_idx + 1])
       tt_cores.append(tf.reshape(u, core_shape))
       tens = tf.matmul(tf.diag(s), tf.transpose(v))
-    last_mode = static_shape[-1].value
+    last_mode = static_shape[-1]
     if last_mode is None:
       last_mode = dynamic_shape[-1]
     core_shape = (ranks[d - 1], last_mode, ranks[d])
@@ -277,7 +277,7 @@ def _round_tt(tt, max_tt_rank, epsilon):
 
     columns = curr_mode * ranks[core_idx + 1]
     curr_core = tf.reshape(curr_core, [-1, columns])
-    rows = curr_core.get_shape()[0].value
+    rows = curr_core.shape.as_list()[0]
     if rows is None:
       rows = tf.shape(curr_core)[0]
     if max_tt_rank[core_idx] == 1:
@@ -353,7 +353,7 @@ def _round_batch_tt(tt, max_tt_rank, epsilon):
 
     columns = curr_mode * ranks[core_idx + 1]
     curr_core = tf.reshape(curr_core, (batch_size, -1, columns))
-    rows = curr_core.get_shape()[1].value
+    rows = curr_core.shape.as_list()[1]
     if rows is None:
       rows = tf.shape(curr_core)[1]
     if max_tt_rank[core_idx] == 1:

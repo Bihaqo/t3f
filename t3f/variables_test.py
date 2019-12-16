@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+# tf.disable_v2_behavior()
 
 from t3f import variables
 from t3f import ops
@@ -72,6 +73,7 @@ class _VariablesTest():
     assigner = variables.assign(tt, new_init)
     with self.test_session():
       tf.global_variables_initializer().run()
+      # import ipdb; ipdb.set_trace()
       init_value = ops.full(tt).eval()
       assigner_value = ops.full(assigner).eval()
       after_value = ops.full(tt)

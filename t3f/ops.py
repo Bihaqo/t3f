@@ -199,8 +199,8 @@ def tt_dense_matmul(tt_matrix_a, matrix_b):
     raise ValueError('The first argument should be a TT-matrix')
 
   ndims = tt_matrix_a.ndims()
-  a_columns = tt_matrix_a.get_shape()[1].value
-  b_rows = matrix_b.get_shape()[0].value
+  a_columns = tt_matrix_a.get_shape().as_list()[1]
+  b_rows = matrix_b.get_shape().as_list()[0]
   if a_columns is not None and b_rows is not None:
     if a_columns != b_rows:
       raise ValueError('Arguments shapes should align got %d and %d instead.' %

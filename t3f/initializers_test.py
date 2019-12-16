@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+from tensorflow.python.framework import test_util
+tf.enable_eager_execution()
 
 from t3f import initializers
 from t3f import ops
@@ -7,19 +9,19 @@ from t3f import ops
 
 class _InitializersTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testTensorOnesAndZeros(self):
     tt_ones = initializers.tensor_ones([2, 3, 4], dtype=self.dtype)
     tt_zeros = initializers.tensor_zeros([2, 3, 4], dtype=self.dtype)
 
     ones_desired = np.ones((2, 3, 4), dtype=self.dtype.as_numpy_dtype)
     zeros_desired = np.zeros((2, 3, 4), dtype=self.dtype.as_numpy_dtype)
-    with self.test_session() as sess:
-      tt_ones_full = sess.run(ops.full(tt_ones))
-      tt_zeros_full = sess.run(ops.full(tt_zeros))
-      self.assertAllClose(tt_ones_full, ones_desired)
-      self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
-      self.assertAllClose(tt_zeros_full, zeros_desired)
-      self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
+    tt_ones_full = self.evaluate(ops.full(tt_ones))
+    tt_zeros_full = self.evaluate(ops.full(tt_zeros))
+    self.assertAllClose(tt_ones_full, ones_desired)
+    self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
+    self.assertAllClose(tt_zeros_full, zeros_desired)
+    self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
     bad_shapes = [[[2, 3]], [-1, 3], [0.1, 4]]
     for shape in bad_shapes:
       with self.assertRaises(ValueError):
@@ -27,6 +29,7 @@ class _InitializersTest():
       with self.assertRaises(ValueError):
         initializers.tensor_zeros(shape)
 
+  @test_util.run_in_graph_and_eager_modes
   def testMatrixOnesAndZeros(self):
     tt_ones = initializers.matrix_ones([[2, 3, 4], [1, 2, 5]],
                                        dtype=self.dtype)
@@ -38,46 +41,46 @@ class _InitializersTest():
 
     bad_shapes = [[[-1, 2, 3], [3, 4, 6]], [[1.5, 2, 4], [2, 5, 6]],
                   [[1], [2, 3]], [2, 3, 4]]
-    with self.test_session() as sess:
-      tt_ones_full = sess.run(ops.full(tt_ones))
-      tt_zeros_full = sess.run(ops.full(tt_zeros))
-      self.assertAllClose(tt_ones_full, ones_desired)
-      self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
-      self.assertAllClose(tt_zeros_full, zeros_desired)
-      self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
+    tt_ones_full = self.evaluate(ops.full(tt_ones))
+    tt_zeros_full = self.evaluate(ops.full(tt_zeros))
+    self.assertAllClose(tt_ones_full, ones_desired)
+    self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
+    self.assertAllClose(tt_zeros_full, zeros_desired)
+    self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
     for shape in bad_shapes:
       with self.assertRaises(ValueError):
         initializers.matrix_ones(shape)
       with self.assertRaises(ValueError):
         initializers.matrix_zeros(shape)
 
+  @test_util.run_in_graph_and_eager_modes
   def testEye(self):
       tt_eye = initializers.eye([4, 5, 6], dtype=self.dtype)
       eye_desired = np.eye(120)
-      with self.test_session() as sess:
-        eye_full = sess.run(ops.full(tt_eye))
-        self.assertAllClose(eye_full, eye_desired)
+      eye_full = self.evaluate(ops.full(tt_eye))
+      self.assertAllClose(eye_full, eye_desired)
       bad_shapes = [[[2, 3]], [-1, 3], [0.1, 4]]
       for shape in bad_shapes:
         with self.assertRaises(ValueError):
           initializers.eye(shape)
 
+  @test_util.run_in_graph_and_eager_modes
   def testOnesLikeAndZerosLike(self):
     a = initializers.random_tensor([2, 3, 4], dtype=self.dtype)
     b = initializers.ones_like(a)
     c = initializers.zeros_like(a)
     var_list = [ops.full(b), ops.full(c)]
-    with self.test_session() as sess:
-      bf, cf = sess.run(var_list)
-      self.assertAllClose(bf, np.ones((2, 3, 4)))
-      self.assertEqual(self.dtype.as_numpy_dtype, bf.dtype)
-      self.assertAllClose(cf, np.zeros((2, 3, 4)))
-      self.assertEqual(self.dtype.as_numpy_dtype, cf.dtype)
+    bf, cf = self.evaluate(var_list)
+    self.assertAllClose(bf, np.ones((2, 3, 4)))
+    self.assertEqual(self.dtype.as_numpy_dtype, bf.dtype)
+    self.assertAllClose(cf, np.zeros((2, 3, 4)))
+    self.assertEqual(self.dtype.as_numpy_dtype, cf.dtype)
     with self.assertRaises(ValueError):
       initializers.ones_like(1)
     with self.assertRaises(ValueError):
       initializers.zeros_like(1)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksTensor(self):
     shapes = [[3, 4], [3, 4], [3, 4], [3, 4], [1, -2], [1.1, 2], [[3, 4]]]
     tt_ranks = [-2, 1.5, [2, 3, 4, 5], [1.5], 2, 2, 2]
@@ -92,6 +95,7 @@ class _InitializersTest():
         initializers.tensor_with_random_cores(case[0], tt_rank=case[1],
                                               dtype=self.dtype)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksMatrix(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -108,6 +112,7 @@ class _InitializersTest():
         initializers.matrix_with_random_cores(case[0], tt_rank=case[1],
                                               dtype=self.dtype)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksTensorBatch(self):
     shapes = [[3, 4], [3, 4], [3, 4], [3, 4], [1, -2], [1.1, 2], [[3, 4]],
               [1, 2], [3, 4]]
@@ -125,6 +130,7 @@ class _InitializersTest():
                                                     batch_size=case[2],
                                                     dtype=self.dtype)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksMatrixBatch(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -145,6 +151,7 @@ class _InitializersTest():
                                                     batch_size=case[2],
                                                     dtype=self.dtype)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksGlorot(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -156,6 +163,7 @@ class _InitializersTest():
       with self.assertRaises(ValueError):
         initializers.glorot_initializer(case[0], tt_rank=case[1])
 
+  @test_util.run_in_graph_and_eager_modes
   def testHe(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -168,6 +176,7 @@ class _InitializersTest():
         initializers.he_initializer(case[0], tt_rank=case[1],
                                     dtype=self.dtype)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksLecun(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],

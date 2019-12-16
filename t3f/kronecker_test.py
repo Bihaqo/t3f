@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+from tensorflow.python.framework import test_util
+tf.enable_eager_execution()
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -10,13 +12,15 @@ from t3f import kronecker as kr
 
 class _KroneckerTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testIsKronNonKron(self):
     # Tests _is_kron on a non-Kronecker matrix
     initializer = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2,
                                              dtype=self.dtype)
     tt_mat = variables.get_variable('tt_mat', initializer=initializer)
     self.assertFalse(kr._is_kron(tt_mat))
-           
+
+  @test_util.run_in_graph_and_eager_modes
   def testIsKronKron(self):
     # Tests _is_kron on a Kronecker matrix
     initializer = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=1,
@@ -24,18 +28,19 @@ class _KroneckerTest():
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     self.assertTrue(kr._is_kron(kron_mat))
 
+  @test_util.run_in_graph_and_eager_modes
   def testDet(self):
     # Tests the determinant function
     initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1,
                                              dtype=self.dtype)
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-      sess.run(init_op)
-      desired = np.linalg.det(ops.full(kron_mat).eval())
-      actual = kr.determinant(kron_mat).eval()
-      self.assertAllClose(desired, actual)
+    self.evaluate(init_op)
+    desired = np.linalg.det(self.evaluate(ops.full(kron_mat)))
+    actual = self.evaluate(kr.determinant(kron_mat))
+    self.assertAllClose(desired, actual)
 
+  @test_util.run_in_graph_and_eager_modes
   def testSlogDet(self):
     # Tests the slog_determinant function
     
@@ -53,32 +58,32 @@ class _KroneckerTest():
     kron_pos = variables.get_variable('kron_pos', initializer=initializer)
 
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-       # negative derminant
-      sess.run(init_op)
-      desired_sign, desired_det = np.linalg.slogdet(ops.full(kron_neg).eval())
-      actual_sign, actual_det = sess.run(kr.slog_determinant(kron_neg))
-      self.assertEqual(desired_sign, actual_sign)
-      self.assertAllClose(desired_det, actual_det)
- 
-      # positive determinant 
-      desired_sign, desired_det = np.linalg.slogdet(ops.full(kron_pos).eval())
-      actual_sign, actual_det = sess.run(kr.slog_determinant(kron_pos))
-      self.assertEqual(desired_sign, actual_sign)
-      self.assertAllClose(desired_det, actual_det)
+     # negative derminant
+    self.evaluate(init_op)
+    desired_sign, desired_det = np.linalg.slogdet(self.evaluate(ops.full(kron_neg)))
+    actual_sign, actual_det = self.evaluate(kr.slog_determinant(kron_neg))
+    self.assertEqual(desired_sign, actual_sign)
+    self.assertAllClose(desired_det, actual_det)
 
+    # positive determinant 
+    desired_sign, desired_det = np.linalg.slogdet(self.evaluate(ops.full(kron_pos)))
+    actual_sign, actual_det = self.evaluate(kr.slog_determinant(kron_pos))
+    self.assertEqual(desired_sign, actual_sign)
+    self.assertAllClose(desired_det, actual_det)
+
+  @test_util.run_in_graph_and_eager_modes
   def testInv(self):
     # Tests the inv function
     initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1,
                                              dtype=self.dtype)
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-      sess.run(init_op)
-      desired = np.linalg.inv(ops.full(kron_mat).eval())
-      actual = ops.full(kr.inv(kron_mat)).eval()
-      self.assertAllClose(desired, actual)
-    
+    self.evaluate(init_op)
+    desired = np.linalg.inv(self.evaluate(ops.full(kron_mat)))
+    actual = self.evaluate(ops.full(kr.inv(kron_mat)))
+    self.assertAllClose(desired, actual)
+
+  @test_util.run_in_graph_and_eager_modes
   def testCholesky(self):
     # Tests the cholesky function
     np.random.seed(8)
@@ -96,14 +101,14 @@ class _KroneckerTest():
                               tt_ranks=7*[1])
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-      sess.run(init_op)
-      desired = np.linalg.cholesky(K)
-      actual = ops.full(kr.cholesky(kron_mat)).eval()
-      self.assertAllClose(desired, actual, atol=1e-5, rtol=1e-5)
+    self.evaluate(init_op)
+    desired = np.linalg.cholesky(K)
+    actual = self.evaluate(ops.full(kr.cholesky(kron_mat)))
+    self.assertAllClose(desired, actual, atol=1e-5, rtol=1e-5)
 
 class _BatchKroneckerTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testIsKronNonKron(self):
     # Tests _is_kron on a non-Kronecker matrix batch
     initializer = initializers.random_matrix_batch(((2, 3), (3, 2)), tt_rank=2, 
@@ -112,7 +117,8 @@ class _BatchKroneckerTest():
     tt_mat_batch = variables.get_variable('tt_mat_batch', 
                                           initializer=initializer)
     self.assertFalse(kr._is_kron(tt_mat_batch))
-           
+
+  @test_util.run_in_graph_and_eager_modes 
   def testIsKronKron(self):
     # Tests _is_kron on a Kronecker matrix batch
     initializer = initializers.random_matrix_batch(((2, 3), (3, 2)), tt_rank=1, 
@@ -122,6 +128,7 @@ class _BatchKroneckerTest():
                                             initializer=initializer)
     self.assertTrue(kr._is_kron(kron_mat_batch))
 
+  @test_util.run_in_graph_and_eager_modes
   def testDet(self):
     # Tests the determinant function
     initializer = initializers.random_matrix_batch(((2, 3, 2), (2, 3, 2)), 
@@ -130,12 +137,12 @@ class _BatchKroneckerTest():
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-      sess.run(init_op)
-      desired = tf.matrix_determinant(ops.full(kron_mat_batch)).eval()
-      actual = kr.determinant(kron_mat_batch).eval()
-      self.assertAllClose(desired, actual)
+    self.evaluate(init_op)
+    desired = self.evaluate(tf.matrix_determinant(ops.full(kron_mat_batch)))
+    actual = self.evaluate(kr.determinant(kron_mat_batch))
+    self.assertAllClose(desired, actual)
 
+  @test_util.run_in_graph_and_eager_modes
   def testSlogDet(self):
     # Tests the slog_determinant function
     
@@ -147,15 +154,15 @@ class _BatchKroneckerTest():
                                             initializer=initializer)
   
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-       # negative derminant
-      sess.run(init_op)
-      desired_sign, desired_det = np.linalg.slogdet(
-                                                ops.full(kron_mat_batch).eval())
-      actual_sign, actual_det = sess.run(kr.slog_determinant(kron_mat_batch))
-      self.assertAllEqual(desired_sign, actual_sign)
-      self.assertAllClose(desired_det, actual_det)
+     # negative derminant
+    self.evaluate(init_op)
+    desired_sign, desired_det = np.linalg.slogdet(
+        self.evaluate(ops.full(kron_mat_batch)))
+    actual_sign, actual_det = self.evaluate(kr.slog_determinant(kron_mat_batch))
+    self.assertAllEqual(desired_sign, actual_sign)
+    self.assertAllClose(desired_det, actual_det)
 
+  @test_util.run_in_graph_and_eager_modes
   def testInv(self):
     # Tests the inv function
     initializer = initializers.random_matrix_batch(((2, 3, 2), (2, 3, 2)), 
@@ -164,12 +171,12 @@ class _BatchKroneckerTest():
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-      sess.run(init_op)
-      desired = np.linalg.inv(ops.full(kron_mat_batch).eval())
-      actual = ops.full(kr.inv(kron_mat_batch)).eval()
-      self.assertAllClose(desired, actual, atol=1e-4)
-    
+    self.evaluate(init_op)
+    desired = np.linalg.inv(self.evaluate(ops.full(kron_mat_batch)))
+    actual = self.evaluate(ops.full(kr.inv(kron_mat_batch)))
+    self.assertAllClose(desired, actual, atol=1e-4)
+
+  @test_util.run_in_graph_and_eager_modes
   def testCholesky(self):
     # Tests the cholesky function
     np.random.seed(8)
@@ -186,11 +193,10 @@ class _BatchKroneckerTest():
     kron_mat_batch = variables.get_variable('kron_mat_batch', 
                                             initializer=initializer)
     init_op = tf.global_variables_initializer()
-    with self.test_session() as sess:
-      sess.run(init_op)
-      desired = np.linalg.cholesky(ops.full(kron_mat_batch).eval())
-      actual = ops.full(kr.cholesky(kron_mat_batch)).eval()
-      self.assertAllClose(desired, actual)
+    self.evaluate(init_op)
+    desired = np.linalg.cholesky(self.evaluate(ops.full(kron_mat_batch)))
+    actual = self.evaluate(ops.full(kr.cholesky(kron_mat_batch)))
+    self.assertAllClose(desired, actual)
 
 
 class KroneckerTestFloat32(tf.test.TestCase, _KroneckerTest):

@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+from tensorflow.python.framework import test_util
+tf.enable_eager_execution()
 
 from t3f import ops
 from t3f import shapes
@@ -9,26 +11,27 @@ from t3f import initializers
 
 class _DecompositionsTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testTTTensor(self):
     shape = (2, 1, 4, 3)
     np.random.seed(1)
     tens = np.random.rand(*shape).astype(self.dtype.as_numpy_dtype)
     tf_tens = tf.constant(tens)
     tt_tens = decompositions.to_tt_tensor(tf_tens, max_tt_rank=3)
-    with self.test_session():
-      self.assertAllClose(tens, ops.full(tt_tens).eval())
-      dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval()
-      static_tt_ranks = tt_tens.get_tt_ranks().as_list()
-      self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+    self.assertAllClose(tens, self.evaluate(ops.full(tt_tens)))
+    dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(tt_tens))
+    static_tt_ranks = tt_tens.get_tt_ranks().as_list()
+    self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
-      # Try to decompose the same tensor with unknown shape.
-      tf_tens_pl = tf.placeholder(self.dtype, (None, None, 4, None))
-      tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=3)
-      tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
-      self.assertAllClose(tens, tt_val)
-      dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
-      self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+    # # Try to decompose the same tensor with unknown shape.
+    # tf_tens_pl = tf.placeholder(self.dtype, (None, None, 4, None))
+    # tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=3)
+    # tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
+    # self.assertAllClose(tens, tt_val)
+    # dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
+    # self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
+  @test_util.run_in_graph_and_eager_modes
   def testTTTensorSimple(self):
     # Test that a tensor of ones and of zeros can be converted into TT with
     # TT-rank 1.
@@ -38,20 +41,20 @@ class _DecompositionsTest():
     for tens in tens_arr:
       tf_tens = tf.constant(tens)
       tt_tens = decompositions.to_tt_tensor(tf_tens, max_tt_rank=1)
-      with self.test_session():
-        self.assertAllClose(tens, ops.full(tt_tens).eval())
-        dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval()
-        static_tt_ranks = tt_tens.get_tt_ranks().as_list()
-        self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+      self.assertAllClose(tens, self.evaluate(ops.full(tt_tens)))
+      dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(tt_tens))
+      static_tt_ranks = tt_tens.get_tt_ranks().as_list()
+      self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
-        # Try to decompose the same tensor with unknown shape.
-        tf_tens_pl = tf.placeholder(self.dtype, (None, None, None, None))
-        tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=1)
-        tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
-        self.assertAllClose(tens, tt_val)
-        dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
-        self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
+      # # Try to decompose the same tensor with unknown shape.
+      # tf_tens_pl = tf.placeholder(self.dtype, (None, None, None, None))
+      # tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=1)
+      # tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
+      # self.assertAllClose(tens, tt_val)
+      # dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
+      # self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
+  @test_util.run_in_graph_and_eager_modes
   def testTTVector(self):
     vec_shape = (2, 1, 4, 3)
     np.random.seed(1)
@@ -59,9 +62,9 @@ class _DecompositionsTest():
     vec = np.random.rand(rows, 1).astype(self.dtype.as_numpy_dtype)
     tf_vec = tf.constant(vec)
     tt_vec = decompositions.to_tt_matrix(tf_vec, (vec_shape, None))
-    with self.test_session():
-      self.assertAllClose(vec, ops.full(tt_vec).eval())
+    self.assertAllClose(vec, self.evaluate(ops.full(tt_vec)))
 
+  @test_util.run_in_graph_and_eager_modes
   def testTTCompositeRankTensor(self):
     # Test if a composite rank (list of ranks) can be used for decomposition
     # for tensor.
@@ -71,9 +74,9 @@ class _DecompositionsTest():
 
     tt_ranks = [1, 2, 3, 3, 1]
     tt_tensor = decompositions.to_tt_tensor(tf_tensor, max_tt_rank=tt_ranks)
-    with self.test_session():
-      self.assertAllClose(np_tensor, ops.full(tt_tensor).eval())
+    self.assertAllClose(np_tensor, self.evaluate(ops.full(tt_tensor)))
 
+  @test_util.run_in_graph_and_eager_modes
   def testTTCompositeRankMatrix(self):
     # Test if a composite rank (list of ranks) can be used for decomposition
     # for a matrix.
@@ -86,9 +89,9 @@ class _DecompositionsTest():
     tt_ranks = [10, 20, 30, 40, 30]
     tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
                                          max_tt_rank=tt_ranks)
-    with self.test_session():
-      self.assertAllClose(mat, ops.full(tt_mat).eval(), atol=1e-5, rtol=1e-5)
-      
+    self.assertAllClose(mat, self.evaluate(ops.full(tt_mat)), atol=1e-5, rtol=1e-5)
+
+  @test_util.run_in_graph_and_eager_modes
   def testTTMatrix(self):
     # Convert a np.prod(out_shape) x np.prod(in_shape) matrix into TT-matrix
     # and back.
@@ -100,24 +103,24 @@ class _DecompositionsTest():
     tf_mat = tf.constant(mat)
     tt_mat = decompositions.to_tt_matrix(tf_mat, (out_shape, inp_shape),
                                          max_tt_rank=90)
-    with self.test_session():
-      # TODO: why so bad accuracy?
-      self.assertAllClose(mat, ops.full(tt_mat).eval(), atol=1e-5, rtol=1e-5)
+    # TODO: why so bad accuracy?
+    self.assertAllClose(mat, self.evaluate(ops.full(tt_mat)), atol=1e-5, rtol=1e-5)
 
+  @test_util.run_in_graph_and_eager_modes
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     np.random.seed(1)
     tens = initializers.random_tensor(shape, tt_rank=15,
                                       dtype=self.dtype)
     rounded_tens = decompositions.round(tens, max_tt_rank=9)
-    with self.test_session() as sess:
-      vars = [ops.full(tens), ops.full(rounded_tens)]
-      tens_value, rounded_tens_value = sess.run(vars)
-      # TODO: why so bad accuracy?
-      self.assertAllClose(tens_value, rounded_tens_value, atol=1e-4, rtol=1e-4)
-      dynamic_tt_ranks = shapes.tt_ranks(rounded_tens).eval()
-      self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
+    vars = [ops.full(tens), ops.full(rounded_tens)]
+    tens_value, rounded_tens_value = self.evaluate(vars)
+    # TODO: why so bad accuracy?
+    self.assertAllClose(tens_value, rounded_tens_value, atol=1e-4, rtol=1e-4)
+    dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(rounded_tens))
+    self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
 
+  @test_util.run_in_graph_and_eager_modes
   def testOrthogonalizeLeftToRight(self):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
@@ -125,21 +128,21 @@ class _DecompositionsTest():
     tens = initializers.random_tensor(shape, tt_rank=tt_ranks,
                                       dtype=self.dtype)
     orthogonal = decompositions.orthogonalize_tt_cores(tens)
-    with self.test_session() as sess:
-      tens_val, orthogonal_val = sess.run([ops.full(tens), ops.full(orthogonal)])
-      self.assertAllClose(tens_val, orthogonal_val, atol=1e-5, rtol=1e-5)
-      dynamic_tt_ranks = shapes.tt_ranks(orthogonal).eval()
-      self.assertAllEqual(updated_tt_ranks, dynamic_tt_ranks)
-      # Check that the TT-cores are orthogonal.
-      for core_idx in range(4 - 1):
-        core = orthogonal.tt_cores[core_idx]
-        core = tf.reshape(core, (updated_tt_ranks[core_idx] * shape[core_idx],
-                                 updated_tt_ranks[core_idx + 1]))
-        should_be_eye = tf.matmul(tf.transpose(core), core)
-        should_be_eye_val = sess.run(should_be_eye)
-        self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
-                            should_be_eye_val)
+    tens_val, orthogonal_val = self.evaluate([ops.full(tens), ops.full(orthogonal)])
+    self.assertAllClose(tens_val, orthogonal_val, atol=1e-5, rtol=1e-5)
+    dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(orthogonal))
+    self.assertAllEqual(updated_tt_ranks, dynamic_tt_ranks)
+    # Check that the TT-cores are orthogonal.
+    for core_idx in range(4 - 1):
+      core = orthogonal.tt_cores[core_idx]
+      core = tf.reshape(core, (updated_tt_ranks[core_idx] * shape[core_idx],
+                               updated_tt_ranks[core_idx + 1]))
+      should_be_eye = tf.matmul(tf.transpose(core), core)
+      should_be_eye_val = self.evaluate(should_be_eye)
+      self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
+                          should_be_eye_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testOrthogonalizeRightToLeft(self):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
@@ -147,24 +150,24 @@ class _DecompositionsTest():
     tens = initializers.random_tensor(shape, tt_rank=tt_ranks,
                                       dtype=self.dtype)
     orthogonal = decompositions.orthogonalize_tt_cores(tens, left_to_right=False)
-    with self.test_session() as sess:
-      tens_val, orthogonal_val = sess.run([ops.full(tens), ops.full(orthogonal)])
-      self.assertAllClose(tens_val, orthogonal_val, atol=1e-5, rtol=1e-5)
-      dynamic_tt_ranks = shapes.tt_ranks(orthogonal).eval()
-      self.assertAllEqual(updated_tt_ranks, dynamic_tt_ranks)
-      # Check that the TT-cores are orthogonal.
-      for core_idx in range(1, 4):
-        core = orthogonal.tt_cores[core_idx]
-        core = tf.reshape(core, (updated_tt_ranks[core_idx], shape[core_idx] *
-                                 updated_tt_ranks[core_idx + 1]))
-        should_be_eye = tf.matmul(core, tf.transpose(core))
-        should_be_eye_val = sess.run(should_be_eye)
-        self.assertAllClose(np.eye(updated_tt_ranks[core_idx]),
-                            should_be_eye_val)
+    tens_val, orthogonal_val = self.evaluate([ops.full(tens), ops.full(orthogonal)])
+    self.assertAllClose(tens_val, orthogonal_val, atol=1e-5, rtol=1e-5)
+    dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(orthogonal))
+    self.assertAllEqual(updated_tt_ranks, dynamic_tt_ranks)
+    # Check that the TT-cores are orthogonal.
+    for core_idx in range(1, 4):
+      core = orthogonal.tt_cores[core_idx]
+      core = tf.reshape(core, (updated_tt_ranks[core_idx], shape[core_idx] *
+                               updated_tt_ranks[core_idx + 1]))
+      should_be_eye = tf.matmul(core, tf.transpose(core))
+      should_be_eye_val = self.evaluate(should_be_eye)
+      self.assertAllClose(np.eye(updated_tt_ranks[core_idx]),
+                          should_be_eye_val)
 
 
 class _DecompositionsBatchTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testOrthogonalizeLeftToRight(self):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
@@ -172,35 +175,34 @@ class _DecompositionsBatchTest():
     tens = initializers.random_tensor_batch(shape, tt_rank=tt_ranks,
                                             batch_size=2, dtype=self.dtype)
     orthogonal = decompositions.orthogonalize_tt_cores(tens)
-    with self.test_session() as sess:
-      tens_val, orthogonal_val = sess.run([ops.full(tens), ops.full(orthogonal)])
-      self.assertAllClose(tens_val, orthogonal_val, atol=1e-5, rtol=1e-5)
-      dynamic_tt_ranks = shapes.tt_ranks(orthogonal).eval()
-      self.assertAllEqual(updated_tt_ranks, dynamic_tt_ranks)
-      # Check that the TT-cores are orthogonal.
-      for core_idx in range(4 - 1):
-        core_shape = (updated_tt_ranks[core_idx] * shape[core_idx],
-                      updated_tt_ranks[core_idx + 1])
-        for i in range(2):
-          core = tf.reshape(orthogonal.tt_cores[core_idx][i], core_shape)
-          should_be_eye = tf.matmul(tf.transpose(core), core)
-          should_be_eye_val = sess.run(should_be_eye)
-          self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
-                              should_be_eye_val)
+    tens_val, orthogonal_val = self.evaluate([ops.full(tens), ops.full(orthogonal)])
+    self.assertAllClose(tens_val, orthogonal_val, atol=1e-5, rtol=1e-5)
+    dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(orthogonal))
+    self.assertAllEqual(updated_tt_ranks, dynamic_tt_ranks)
+    # Check that the TT-cores are orthogonal.
+    for core_idx in range(4 - 1):
+      core_shape = (updated_tt_ranks[core_idx] * shape[core_idx],
+                    updated_tt_ranks[core_idx + 1])
+      for i in range(2):
+        core = tf.reshape(orthogonal.tt_cores[core_idx][i], core_shape)
+        should_be_eye = tf.matmul(tf.transpose(core), core)
+        should_be_eye_val = self.evaluate(should_be_eye)
+        self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
+                            should_be_eye_val)
 
+  @test_util.run_in_graph_and_eager_modes
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     tens = initializers.random_tensor_batch(shape, tt_rank=15, batch_size=3,
                                             dtype=self.dtype)
     rounded_tens = decompositions.round(tens, max_tt_rank=9)
-    with self.test_session() as sess:
-      vars = [ops.full(tens), ops.full(rounded_tens)]
-      tens_value, rounded_tens_value = sess.run(vars)
-      # TODO: why so bad accuracy?
-      self.assertAllClose(tens_value, rounded_tens_value, atol=1e-4,
-                          rtol=1e-4)
-      dynamic_tt_ranks = shapes.tt_ranks(rounded_tens).eval()
-      self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
+    vars = [ops.full(tens), ops.full(rounded_tens)]
+    tens_value, rounded_tens_value = self.evaluate(vars)
+    # TODO: why so bad accuracy?
+    self.assertAllClose(tens_value, rounded_tens_value, atol=1e-4,
+                        rtol=1e-4)
+    dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(rounded_tens))
+    self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
 
 
 class DecompositionsTestFloat32(tf.test.TestCase, _DecompositionsTest):

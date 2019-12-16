@@ -30,11 +30,11 @@ def determinant(kron_a, name='t3f_kronecker_determinant'):
 
   shapes_defined = kron_a.get_shape().is_fully_defined()
   if shapes_defined:
-    i_shapes = kron_a.get_raw_shape()[0]
-    j_shapes = kron_a.get_raw_shape()[1]
+    i_shapes = kron_a.get_raw_shape()[0].as_list()
+    j_shapes = kron_a.get_raw_shape()[1].as_list()
   else:
-    i_shapes = ops.raw_shape(kron_a)[0]
-    j_shapes = ops.raw_shape(kron_a)[1]
+    i_shapes = ops.raw_shape(kron_a)[0].as_list()
+    j_shapes = ops.raw_shape(kron_a)[1].as_list()
 
   if shapes_defined:
     if i_shapes != j_shapes:
@@ -52,7 +52,7 @@ def determinant(kron_a, name='t3f_kronecker_determinant'):
         core_det = tf.matrix_determinant(core[:, 0, :, :, 0])
       else:
         core_det = tf.matrix_determinant(core[0, :, :, 0])
-      core_pow = pows / i_shapes[core_idx].value
+      core_pow = pows / i_shapes[core_idx]
 
       det *= tf.pow(core_det, core_pow)
     return det
@@ -83,11 +83,11 @@ def slog_determinant(kron_a, name='t3f_kronecker_slog_determinant'):
  
   shapes_defined = kron_a.get_shape().is_fully_defined()
   if shapes_defined:
-    i_shapes = kron_a.get_raw_shape()[0]
-    j_shapes = kron_a.get_raw_shape()[1]
+    i_shapes = kron_a.get_raw_shape()[0].as_list()
+    j_shapes = kron_a.get_raw_shape()[1].as_list()
   else:
-    i_shapes = ops.raw_shape(kron_a)[0]
-    j_shapes = ops.raw_shape(kron_a)[1]
+    i_shapes = ops.raw_shape(kron_a)[0].as_list()
+    j_shapes = ops.raw_shape(kron_a)[1].as_list()
 
   if shapes_defined:
     if i_shapes != j_shapes:
@@ -108,7 +108,7 @@ def slog_determinant(kron_a, name='t3f_kronecker_slog_determinant'):
         core_det = tf.matrix_determinant(core[0, :, :, 0])
       core_abs_det = tf.abs(core_det)
       core_det_sign = tf.sign(core_det)
-      core_pow = pows / i_shapes[core_idx].value
+      core_pow = pows / i_shapes[core_idx]
       logdet += tf.log(core_abs_det) * core_pow
       det_sign *= core_det_sign**(core_pow)
     return det_sign, logdet

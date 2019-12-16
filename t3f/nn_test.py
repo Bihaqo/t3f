@@ -1,11 +1,14 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
+from tensorflow.python.framework import test_util
+tf.enable_eager_execution()
 
 from t3f import nn
 
 
 class _NeuralTest():
 
+  @test_util.run_in_graph_and_eager_modes
   def testKerasDense(self):
     # Try to create the layer twice to check that it won't crush saying the
     # variable already exist.
