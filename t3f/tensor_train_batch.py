@@ -48,7 +48,6 @@ class TensorTrainBatch(TensorTrainBase):
           tt_cores[i] = tf.convert_to_tensor(tt_cores[i], name=name)
 
     if not _are_batch_tt_cores_valid(tt_cores, shape, tt_ranks, batch_size):
-      import ipdb; ipdb.set_trace()
       raise ValueError('The tt_cores provided to TensorTrainBatch constructor '
                        'are not valid, have different dtypes, or are '
                        'inconsistent with the provided batch_size, shape, or '
@@ -293,45 +292,37 @@ def _are_batch_tt_cores_valid(tt_cores, shape, tt_ranks, batch_size):
 
   for core_idx in range(1, num_dims):
     if tt_cores[core_idx].dtype != tt_cores[0].dtype:
-      import ipdb; ipdb.set_trace()
       return False
   try:
     for core_idx in range(num_dims):
       curr_core_shape = tt_cores[core_idx].shape.as_list()
       if len(curr_core_shape) != len(tt_cores[0].get_shape()):
         # Shapes are inconsistent.
-        import ipdb; ipdb.set_trace()
         return False
       if batch_size is not None and curr_core_shape[0] is not None:
         if curr_core_shape[0] != batch_size:
           # The TT-cores are not aligned with the given batch_size.
-          import ipdb; ipdb.set_trace()
           return False
       if shape is not None:
         for i in range(len(shape)):
           dim_a, dim_b = curr_core_shape[i + 2], shape[i][core_idx]
           if dim_a is not None and dim_b is not None and dim_a != dim_b:
             # The TT-cores are not aligned with the given shape.
-            import ipdb; ipdb.set_trace()
             return False
       if core_idx >= 1:
         prev_core_shape = tt_cores[core_idx - 1].get_shape()
         if curr_core_shape[1] != prev_core_shape[-1]:
           # TT-ranks are inconsistent.
-          import ipdb; ipdb.set_trace()
           return False
       if tt_ranks is not None:
         if curr_core_shape[1] != tt_ranks[core_idx]:
           # The TT-ranks are not aligned with the TT-cores shape.
-          import ipdb; ipdb.set_trace()
           return False
         if curr_core_shape[-1] != tt_ranks[core_idx + 1]:
           # The TT-ranks are not aligned with the TT-cores shape.
-          import ipdb; ipdb.set_trace()
           return False
     if tt_cores[0].get_shape()[1] != 1 or tt_cores[-1].get_shape()[-1] != 1:
       # The first or the last rank is not 1.
-      import ipdb; ipdb.set_trace()
       return False
   except ValueError:
     # The shape of the TT-cores is undetermined, can not validate it.

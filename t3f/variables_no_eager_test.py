@@ -75,7 +75,6 @@ class _VariablesTest():
                                           dtype=self.dtype)
     assigner = variables.assign(tt, new_init)
     self.evaluate(tf.global_variables_initializer())
-    # import ipdb; ipdb.set_trace()
     init_value = ops.full(tt).eval()
     assigner_value = ops.full(assigner).eval()
     after_value = ops.full(tt)
