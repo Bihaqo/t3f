@@ -23,14 +23,6 @@ class _DecompositionsTest():
     static_tt_ranks = tt_tens.get_tt_ranks().as_list()
     self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
-    # # Try to decompose the same tensor with unknown shape.
-    # tf_tens_pl = tf.placeholder(self.dtype, (None, None, 4, None))
-    # tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=3)
-    # tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
-    # self.assertAllClose(tens, tt_val)
-    # dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
-    # self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
-
   @test_util.run_in_graph_and_eager_modes
   def testTTTensorSimple(self):
     # Test that a tensor of ones and of zeros can be converted into TT with
@@ -45,14 +37,6 @@ class _DecompositionsTest():
       dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(tt_tens))
       static_tt_ranks = tt_tens.get_tt_ranks().as_list()
       self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
-
-      # # Try to decompose the same tensor with unknown shape.
-      # tf_tens_pl = tf.placeholder(self.dtype, (None, None, None, None))
-      # tt_tens = decompositions.to_tt_tensor(tf_tens_pl, max_tt_rank=1)
-      # tt_val = ops.full(tt_tens).eval({tf_tens_pl: tens})
-      # self.assertAllClose(tens, tt_val)
-      # dynamic_tt_ranks = shapes.tt_ranks(tt_tens).eval({tf_tens_pl: tens})
-      # self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
   @test_util.run_in_graph_and_eager_modes
   def testTTVector(self):
