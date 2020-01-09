@@ -14,8 +14,9 @@ install:
   - pip install --upgrade pip
   - pip install tensorflow==$TF_VERSION
   - pip install coveralls
-# command to run tests
 script:
-  nosetests  --logging-level=WARNING --with-coverage --cover-package=t3f
+  # Run eager and no-eager tests separately.
+  nosetests t3f/*_no_eager_test.py --logging-level=WARNING --with-coverage --cover-package=t3f
+  nosetests -e='*no_eager*' --logging-level=WARNING --with-coverage --cover-package=t3f
 after_success:
   coveralls
