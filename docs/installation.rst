@@ -22,6 +22,3 @@ To install the latest version, run
    git clone https://github.com/Bihaqo/t3f.git
    cd t3f
    pip install .
-
-Note that using the neural module (`t3f.nn`) may require additional dependencies
-such as Keras.
