@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import utils
@@ -8,7 +7,6 @@ from t3f import utils
 
 class UtilsTest(tf.test.TestCase):
 
-  @test_util.run_in_graph_and_eager_modes
   def testUnravelIndex(self):
     # 2D.
     shape = (7, 6)
@@ -23,7 +21,6 @@ class UtilsTest(tf.test.TestCase):
     actual = utils.unravel_index(linear_idx, shape)
     self.assertAllEqual(desired, self.evaluate(actual))
 
-  @test_util.run_in_graph_and_eager_modes
   def testReplaceTfSvdWithNpSvd(self):
     mat = tf.constant([[3., 4], [5, 6]])
     desired = self.evaluate(tf.linalg.svd(mat))

@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f.tensor_train import TensorTrain
@@ -12,7 +11,6 @@ from t3f import kronecker as kr
 
 class _KroneckerTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testIsKronNonKron(self):
     # Tests _is_kron on a non-Kronecker matrix
     initializer = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=2,
@@ -20,7 +18,6 @@ class _KroneckerTest():
     tt_mat = variables.get_variable('tt_mat', initializer=initializer)
     self.assertFalse(kr._is_kron(tt_mat))
 
-  @test_util.run_in_graph_and_eager_modes
   def testIsKronKron(self):
     # Tests _is_kron on a Kronecker matrix
     initializer = initializers.random_matrix(((2, 3), (3, 2)), tt_rank=1,
@@ -28,7 +25,6 @@ class _KroneckerTest():
     kron_mat = variables.get_variable('kron_mat', initializer=initializer)
     self.assertTrue(kr._is_kron(kron_mat))
 
-  @test_util.run_in_graph_and_eager_modes
   def testDet(self):
     # Tests the determinant function
     initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1,
@@ -40,7 +36,6 @@ class _KroneckerTest():
     actual = self.evaluate(kr.determinant(kron_mat))
     self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testSlogDet(self):
     # Tests the slog_determinant function
     
@@ -71,7 +66,6 @@ class _KroneckerTest():
     self.assertEqual(desired_sign, actual_sign)
     self.assertAllClose(desired_det, actual_det)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInv(self):
     # Tests the inv function
     initializer = initializers.random_matrix(((2, 3, 2), (2, 3, 2)), tt_rank=1,
@@ -83,7 +77,6 @@ class _KroneckerTest():
     actual = self.evaluate(ops.full(kr.inv(kron_mat)))
     self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCholesky(self):
     # Tests the cholesky function
     np.random.seed(8)
@@ -108,7 +101,6 @@ class _KroneckerTest():
 
 class _BatchKroneckerTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testIsKronNonKron(self):
     # Tests _is_kron on a non-Kronecker matrix batch
     initializer = initializers.random_matrix_batch(((2, 3), (3, 2)), tt_rank=2, 
@@ -117,8 +109,7 @@ class _BatchKroneckerTest():
     tt_mat_batch = variables.get_variable('tt_mat_batch', 
                                           initializer=initializer)
     self.assertFalse(kr._is_kron(tt_mat_batch))
-
-  @test_util.run_in_graph_and_eager_modes 
+ 
   def testIsKronKron(self):
     # Tests _is_kron on a Kronecker matrix batch
     initializer = initializers.random_matrix_batch(((2, 3), (3, 2)), tt_rank=1, 
@@ -128,7 +119,6 @@ class _BatchKroneckerTest():
                                             initializer=initializer)
     self.assertTrue(kr._is_kron(kron_mat_batch))
 
-  @test_util.run_in_graph_and_eager_modes
   def testDet(self):
     # Tests the determinant function
     initializer = initializers.random_matrix_batch(((2, 3, 2), (2, 3, 2)), 
@@ -142,7 +132,6 @@ class _BatchKroneckerTest():
     actual = self.evaluate(kr.determinant(kron_mat_batch))
     self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testSlogDet(self):
     # Tests the slog_determinant function
     
@@ -162,7 +151,6 @@ class _BatchKroneckerTest():
     self.assertAllEqual(desired_sign, actual_sign)
     self.assertAllClose(desired_det, actual_det)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInv(self):
     # Tests the inv function
     initializer = initializers.random_matrix_batch(((2, 3, 2), (2, 3, 2)), 
@@ -176,7 +164,6 @@ class _BatchKroneckerTest():
     actual = self.evaluate(ops.full(kr.inv(kron_mat_batch)))
     self.assertAllClose(desired, actual, atol=1e-4)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCholesky(self):
     # Tests the cholesky function
     np.random.seed(8)

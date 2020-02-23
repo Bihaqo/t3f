@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import tensor_train
@@ -10,7 +9,6 @@ from t3f import ops
 
 class _TensorTrainTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testValidateTTCores2d(self):
     schedule = (((1, 1, 1, 1), (1, 1, 1), True),
                 ((1, 1, 1, 1), None, True),
@@ -51,7 +49,6 @@ class _TensorTrainTest():
       with self.assertRaises(ValueError):
         tensor_train.TensorTrain((a, b_new), (10, 9), claimed_tt_ranks)
 
-  @test_util.run_in_graph_and_eager_modes
   def testValidateTTCores3d(self):
     schedule = (((1, 1, 1, 1, 1, 1), (1, 1, 1, 1), True),
                 ((1, 1, 1, 1, 1, 1), None, True),
@@ -97,7 +94,6 @@ class _TensorTrainTest():
       with self.assertRaises(ValueError):
         tensor_train.TensorTrain((a, b_new, c), (10, 1, 2), claimed_tt_ranks)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTensorIndexing(self):
     tens = initializers.random_tensor((3, 3, 4), dtype=self.dtype)
     desired = ops.full(tens)[:, :, :]
@@ -127,7 +123,6 @@ class _TensorTrainTest():
     with self.assertRaises(ValueError):
       tens[1, 1]
 
-  @test_util.run_in_graph_and_eager_modes
   def testShapeOverflow(self):
     large_shape = [10] * 20
     matrix = initializers.matrix_zeros([large_shape, large_shape],

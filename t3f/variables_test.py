@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import variables
@@ -10,7 +9,6 @@ from t3f import initializers
 
 class _VariablesTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testAttributes(self):
     # Test that after converting an initializer into a variable all the
     # attributes stays the same.
@@ -26,7 +24,6 @@ class _VariablesTest():
       self.assertEqual(init.get_tt_ranks(), var.get_tt_ranks())
       self.assertEqual(init.is_tt_matrix(), var.is_tt_matrix())
 
-  @test_util.run_in_graph_and_eager_modes
   def testAssign(self):
     old_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
                                           dtype=self.dtype)

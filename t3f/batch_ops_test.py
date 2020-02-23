@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import ops
@@ -10,7 +9,6 @@ from t3f import initializers
 
 class _BatchOpsTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testConcatMatrix(self):
     # Test concating TTMatrix batches along batch dimension.
     first = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=1,
@@ -47,7 +45,6 @@ class _BatchOpsTest():
     self.assertAllClose(first_second_res_val, first_second_desired_val)
     self.assertAllClose(first_second_third_res_val, first_second_third_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testBatchMultiply(self):
     # Test multiplying batch of TTMatrices by individual numbers.
     tt = initializers.random_matrix_batch(((2, 3), (3, 3)), batch_size=3,
@@ -59,7 +56,6 @@ class _BatchOpsTest():
     desired_val, acutual_val = self.evaluate((ops.full(desired), ops.full(actual)))
     self.assertAllClose(desired_val, acutual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testGramMatrix(self):
     # Test Gram Matrix of a batch of TT vectors.
     tt_vectors = initializers.random_matrix_batch(((2, 3), None), batch_size=5,
@@ -71,7 +67,6 @@ class _BatchOpsTest():
     res_actual_val, res_desired_val = self.evaluate((res_actual, res_desired))
     self.assertAllClose(res_desired_val, res_actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testGramMatrixWithMatrix(self):
     # Test Gram Matrix of a batch of TT vectors with providing a matrix, so we
     # should compute
@@ -91,7 +86,6 @@ class _BatchOpsTest():
         res_desired_val[i, j] = curr_val
     self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerTensor(self):
     # Test pairwise_flat_inner of a batch of TT tensors.
     tt_tensors_1 = initializers.random_tensor_batch((2, 3, 2), batch_size=5,
@@ -106,7 +100,6 @@ class _BatchOpsTest():
     res_actual_val, res_desired_val = self.evaluate((res_actual, res_desired))
     self.assertAllClose(res_desired_val, res_actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerMatrix(self):
     # Test pairwise_flat_inner of a batch of TT matrices.
     tt_vectors_1 = initializers.random_matrix_batch(((2, 3), (2, 3)),
@@ -123,7 +116,6 @@ class _BatchOpsTest():
     res_actual_val, res_desired_val = self.evaluate((res_actual, res_desired))
     self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerVectorsWithMatrix(self):
     # Test pairwise_flat_inner of a batch of TT vectors with providing a matrix,
     # so we should compute

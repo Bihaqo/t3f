@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
-from tensorflow.python.framework import test_util
 tf.disable_v2_behavior()
 
 from t3f.tensor_train import TensorTrain

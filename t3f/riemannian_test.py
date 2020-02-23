@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 tf.compat.v1.enable_resource_variables()
 
@@ -15,7 +14,6 @@ from t3f import batch_ops
 
 class _RiemannianTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testProjectOnItself(self):
     # Projection of X into the tangent space of itself is X: P_x(x) = x.
     tens = initializers.random_tensor((2, 3, 4), dtype=self.dtype)
@@ -23,7 +21,6 @@ class _RiemannianTest():
     actual_val, desired_val = self.evaluate((ops.full(proj), ops.full(tens)))
     self.assertAllClose(desired_val, actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testProject(self):
     # Compare our projection with the results obtained (and precomputed) from
     # tt.riemannian.project which is well tested.
@@ -66,7 +63,6 @@ class _RiemannianTest():
     self.assertAllClose(desired_projection, proj_v)
     self.assertEqual(self.dtype.as_numpy_dtype, proj_v.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testProjectSum(self):
     # Test projecting a batch of TT-tensors.
     tens = initializers.random_tensor_batch((2, 3, 4), batch_size=3,
@@ -80,7 +76,6 @@ class _RiemannianTest():
     desired_val, actual_val = res
     self.assertAllClose(desired_val, actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testProjectWeightedSum(self):
     # Test projecting a batch of TT-tensors with providing coefs.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
@@ -96,7 +91,6 @@ class _RiemannianTest():
     desired_val, actual_val = res
     self.assertAllClose(desired_val, actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testProjectWeightedSumMultipleOutputs(self):
     # Test projecting a batch of TT-tensors with providing weights and outputing
     # several TT objects with different weights.
@@ -120,7 +114,6 @@ class _RiemannianTest():
     desired_val, actual_val = res
     self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testProjectWeightedSumDtypeBug(self):
     # Test that project_sum(TensorTrain, TensorTrain variable, np.array) works.
     what = initializers.random_tensor_batch((2, 3, 4), batch_size=3,
@@ -140,7 +133,6 @@ class _RiemannianTest():
     actual_val, desired_val = self.evaluate((ops.full(proj), ops.full(tt_mat)))
     self.assertAllClose(desired_val, actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCompareProjectSumAndProject(self):
     # Compare results of project_sum and project.
     tens = initializers.random_tensor_batch((2, 3, 4), 3, batch_size=4,
@@ -153,7 +145,6 @@ class _RiemannianTest():
     project_sum_val, project_val = res
     self.assertAllClose(project_sum_val, project_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testProjectMatmul(self):
     # Project a TT-matrix times TT-vector on a TT-vector.
     tt_mat = initializers.random_matrix(((2, 3, 4), (2, 3, 4)),
@@ -169,7 +160,6 @@ class _RiemannianTest():
     actual_val, desired_val = self.evaluate((ops.full(proj), ops.full(proj_desired)))
     self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerTensor(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
@@ -193,7 +183,6 @@ class _RiemannianTest():
       # The arguments are projections on different tangent spaces.
       riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
 
-  @test_util.run_in_graph_and_eager_modes
   def testPairwiseFlatInnerMatrix(self):
     # Compare pairwise_flat_inner_projected against naive implementation.
     what1 = initializers.random_matrix_batch(((2, 3, 4), None), 4, batch_size=3,
@@ -219,7 +208,6 @@ class _RiemannianTest():
       # The arguments are projections on different tangent spaces.
       riemannian.pairwise_flat_inner_projected(projected1, another_projected2)
 
-  @test_util.run_in_graph_and_eager_modes
   def testAddNProjected(self):
     # Add several TT-objects from the same tangent space.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
@@ -243,7 +231,6 @@ class _RiemannianTest():
       # The arguments are projections on different tangent spaces.
       riemannian.add_n_projected((projected1, another_projected2))
 
-  @test_util.run_in_graph_and_eager_modes
   def testWeightedAddNProjected(self):
     # Add several TT-objects from the same tangent space with coefs.
     what1 = initializers.random_tensor((2, 3, 4), 4, dtype=self.dtype)
@@ -267,7 +254,6 @@ class _RiemannianTest():
       riemannian.add_n_projected((projected1, another_projected2),
                                  coef=[1.2, -2.0])
 
-  @test_util.run_in_graph_and_eager_modes
   def testWeightedAddNProjectedBatch(self):
     # Add several TT-batches from the same tangent space with coefs.
     what1 = initializers.random_tensor_batch((2, 3, 4), 4, batch_size=3,
@@ -288,7 +274,6 @@ class _RiemannianTest():
     desired_val, actual_val = self.evaluate((desired, actual))
     self.assertAllClose(desired_val, actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testToAndFromDeltas(self):
     # Test converting to and from deltas representation of the tangent space
     # element.
@@ -308,7 +293,6 @@ class _RiemannianTest():
                                         projected_normsq_actual))
     self.assertAllClose(desired_val, actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testToAndFromDeltasBatch(self):
     # Test converting to and from deltas representation of the tangent space
     # element in the batch case.

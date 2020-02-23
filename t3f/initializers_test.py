@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import initializers
@@ -9,7 +8,6 @@ from t3f import ops
 
 class _InitializersTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testTensorOnesAndZeros(self):
     tt_ones = initializers.tensor_ones([2, 3, 4], dtype=self.dtype)
     tt_zeros = initializers.tensor_zeros([2, 3, 4], dtype=self.dtype)
@@ -29,7 +27,6 @@ class _InitializersTest():
       with self.assertRaises(ValueError):
         initializers.tensor_zeros(shape)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMatrixOnesAndZeros(self):
     tt_ones = initializers.matrix_ones([[2, 3, 4], [1, 2, 5]],
                                        dtype=self.dtype)
@@ -53,7 +50,6 @@ class _InitializersTest():
       with self.assertRaises(ValueError):
         initializers.matrix_zeros(shape)
 
-  @test_util.run_in_graph_and_eager_modes
   def testEye(self):
       tt_eye = initializers.eye([4, 5, 6], dtype=self.dtype)
       eye_desired = np.eye(120)
@@ -64,7 +60,6 @@ class _InitializersTest():
         with self.assertRaises(ValueError):
           initializers.eye(shape)
 
-  @test_util.run_in_graph_and_eager_modes
   def testOnesLikeAndZerosLike(self):
     a = initializers.random_tensor([2, 3, 4], dtype=self.dtype)
     b = initializers.ones_like(a)
@@ -80,7 +75,6 @@ class _InitializersTest():
     with self.assertRaises(ValueError):
       initializers.zeros_like(1)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksTensor(self):
     shapes = [[3, 4], [3, 4], [3, 4], [3, 4], [1, -2], [1.1, 2], [[3, 4]]]
     tt_ranks = [-2, 1.5, [2, 3, 4, 5], [1.5], 2, 2, 2]
@@ -95,7 +89,6 @@ class _InitializersTest():
         initializers.tensor_with_random_cores(case[0], tt_rank=case[1],
                                               dtype=self.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksMatrix(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -112,7 +105,6 @@ class _InitializersTest():
         initializers.matrix_with_random_cores(case[0], tt_rank=case[1],
                                               dtype=self.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksTensorBatch(self):
     shapes = [[3, 4], [3, 4], [3, 4], [3, 4], [1, -2], [1.1, 2], [[3, 4]],
               [1, 2], [3, 4]]
@@ -130,7 +122,6 @@ class _InitializersTest():
                                                     batch_size=case[2],
                                                     dtype=self.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksMatrixBatch(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -151,7 +142,6 @@ class _InitializersTest():
                                                     batch_size=case[2],
                                                     dtype=self.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksGlorot(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -163,7 +153,6 @@ class _InitializersTest():
       with self.assertRaises(ValueError):
         initializers.glorot_initializer(case[0], tt_rank=case[1])
 
-  @test_util.run_in_graph_and_eager_modes
   def testHe(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],
@@ -176,7 +165,6 @@ class _InitializersTest():
         initializers.he_initializer(case[0], tt_rank=case[1],
                                     dtype=self.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testInvalidShapeOrRanksLecun(self):
     shapes = [[1, 2, 3], [[1, 2], [1, 2, 3]], [[-1, 2, 3], [1, 2, 3]],
               [[0.5, 2, 3], [1, 2, 3]], [[1, 2, 3], [1, 2, 3]],

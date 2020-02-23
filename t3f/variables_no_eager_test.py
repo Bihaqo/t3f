@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow.compat.v1 as tf
-from tensorflow.python.framework import test_util
 tf.disable_eager_execution()
 
 from t3f import variables

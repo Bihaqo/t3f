@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import ops
@@ -11,7 +10,6 @@ from t3f import initializers
 
 class _DecompositionsTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTTensor(self):
     shape = (2, 1, 4, 3)
     np.random.seed(1)
@@ -23,7 +21,6 @@ class _DecompositionsTest():
     static_tt_ranks = tt_tens.get_tt_ranks().as_list()
     self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTTensorSimple(self):
     # Test that a tensor of ones and of zeros can be converted into TT with
     # TT-rank 1.
@@ -38,7 +35,6 @@ class _DecompositionsTest():
       static_tt_ranks = tt_tens.get_tt_ranks().as_list()
       self.assertAllEqual(dynamic_tt_ranks, static_tt_ranks)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTVector(self):
     vec_shape = (2, 1, 4, 3)
     np.random.seed(1)
@@ -48,7 +44,6 @@ class _DecompositionsTest():
     tt_vec = decompositions.to_tt_matrix(tf_vec, (vec_shape, None))
     self.assertAllClose(vec, self.evaluate(ops.full(tt_vec)))
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTCompositeRankTensor(self):
     # Test if a composite rank (list of ranks) can be used for decomposition
     # for tensor.
@@ -60,7 +55,6 @@ class _DecompositionsTest():
     tt_tensor = decompositions.to_tt_tensor(tf_tensor, max_tt_rank=tt_ranks)
     self.assertAllClose(np_tensor, self.evaluate(ops.full(tt_tensor)))
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTCompositeRankMatrix(self):
     # Test if a composite rank (list of ranks) can be used for decomposition
     # for a matrix.
@@ -75,7 +69,6 @@ class _DecompositionsTest():
                                          max_tt_rank=tt_ranks)
     self.assertAllClose(mat, self.evaluate(ops.full(tt_mat)), atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTMatrix(self):
     # Convert a np.prod(out_shape) x np.prod(in_shape) matrix into TT-matrix
     # and back.
@@ -90,7 +83,6 @@ class _DecompositionsTest():
     # TODO: why so bad accuracy?
     self.assertAllClose(mat, self.evaluate(ops.full(tt_mat)), atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     np.random.seed(1)
@@ -104,7 +96,6 @@ class _DecompositionsTest():
     dynamic_tt_ranks = self.evaluate(shapes.tt_ranks(rounded_tens))
     self.assertAllEqual([1, 2, 2, 8, 3, 1], dynamic_tt_ranks)
 
-  @test_util.run_in_graph_and_eager_modes
   def testOrthogonalizeLeftToRight(self):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
@@ -126,7 +117,6 @@ class _DecompositionsTest():
       self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
                           should_be_eye_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testOrthogonalizeRightToLeft(self):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
@@ -151,7 +141,6 @@ class _DecompositionsTest():
 
 class _DecompositionsBatchTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testOrthogonalizeLeftToRight(self):
     shape = (2, 4, 3, 3)
     tt_ranks = (1, 5, 2, 17, 1)
@@ -174,7 +163,6 @@ class _DecompositionsBatchTest():
         self.assertAllClose(np.eye(updated_tt_ranks[core_idx + 1]),
                             should_be_eye_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testRoundTensor(self):
     shape = (2, 1, 4, 3, 3)
     tens = initializers.random_tensor_batch(shape, tt_rank=15, batch_size=3,

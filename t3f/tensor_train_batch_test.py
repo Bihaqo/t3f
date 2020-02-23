@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import initializers
@@ -9,7 +8,6 @@ from t3f import ops
 
 class _TensorTrainBatchTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testTensorIndexing(self):
     tens = initializers.random_tensor_batch((3, 3, 4), batch_size=3,
                                             dtype=self.dtype)
@@ -50,7 +48,6 @@ class _TensorTrainBatchTest():
     with self.assertRaises(ValueError):
       tens[1, 1]
 
-  @test_util.run_in_graph_and_eager_modes
   def testShapeOverflow(self):
     large_shape = [10] * 20
     tensor = initializers.random_matrix_batch([large_shape, large_shape],

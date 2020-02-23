@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f import ops
@@ -38,7 +37,6 @@ class _ApproximateTest():
     res_desired_val, res_actual_val = self.evaluate([res_desired, res_actual])
     self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testReduceSumBatch(self):
     # Sum a batch of TT-tensors.
 
@@ -57,7 +55,6 @@ class _ApproximateTest():
       res_desired_val, res_actual_val = self.evaluate([res_desired, res_actual])
       self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testReduceSumBatchWeighted(self):
     # Weighted sum of a batch of TT-tensors.
 
@@ -76,7 +73,6 @@ class _ApproximateTest():
     res_desired_val, res_actual_val = self.evaluate([res_desired, res_actual])
     self.assertAllClose(res_desired_val, res_actual_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testReduceSumBatchMultipleWeighted(self):
     # Multiple weighted sums of a batch of TT-tensors.
 
