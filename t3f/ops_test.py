@@ -142,7 +142,7 @@ class _TTTensorTest():
         tt = initializers.random_tensor(shape, tt_rank=rank,
                                         dtype=self.dtype)
         norm_sq_actual = ops.frobenius_norm_squared(tt)
-        norm_actual = ops.frobenius_norm(tt)
+        norm_actual = ops.frobenius_norm(tt, epsilon=0.0)
         vars = [norm_sq_actual, norm_actual, ops.full(tt)]
         norm_sq_actual_val, norm_actual_val, tt_val = self.evaluate(vars)
         tt_val = tt_val.flatten()
@@ -581,10 +581,11 @@ class _TTTensorBatchTest():
   @test_util.run_in_graph_and_eager_modes
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
-    tt = initializers.tensor_batch_with_random_cores((2, 1, 3), batch_size=3,
+    tt = initializers.tensor_batch_with_random_cores((2, 2, 3), batch_size=3,
+                                                     tt_rank=2,
                                                      dtype=self.dtype)
     norm_sq_actual = ops.frobenius_norm_squared(tt)
-    norm_actual = ops.frobenius_norm(tt)
+    norm_actual = ops.frobenius_norm(tt, epsilon=0.0)
     vars = [norm_sq_actual, norm_actual, ops.full(tt)]
     norm_sq_actual_val, norm_actual_val, tt_val = self.evaluate(vars)
     tt_val = tt_val.reshape((3, -1))
