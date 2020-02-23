@@ -47,30 +47,6 @@ class _BatchOpsTest():
     self.assertAllClose(first_second_res_val, first_second_desired_val)
     self.assertAllClose(first_second_third_res_val, first_second_third_desired_val)
 
-  # @test_util.run_in_graph_and_eager_modes
-  # def testConcatTensorPlaceholders(self):
-  #   # Test concating TTTensors of unknown batch sizes along batch dimension.
-  #   number_of_objects = tf.placeholder(tf.int32)
-  #   all = initializers.random_tensor_batch((2, 3), batch_size=5,
-  #                                          dtype=self.dtype)
-  #   actual = batch_ops.concat_along_batch_dim((all[:number_of_objects],
-  #                                             all[number_of_objects:]))
-  #   desired_val, actual_val = self.evaluate((ops.full(all), ops.full(actual)),
-  #                                      feed_dict={number_of_objects: 2})
-  #   self.assertAllClose(desired_val, actual_val)
-
-  # @test_util.run_in_graph_and_eager_modes
-  # def testConcatMatrixPlaceholders(self):
-  #   # Test concating TTMatrices of unknown batch sizes along batch dimension.
-  #   number_of_objects = tf.placeholder(tf.int32)
-  #   all = initializers.random_matrix_batch(((2, 3), (2, 3)), batch_size=5,
-  #                                          dtype=self.dtype)
-  #   actual = batch_ops.concat_along_batch_dim((all[:number_of_objects],
-  #                                             all[number_of_objects:]))
-  #   desired_val, actual_val = self.evaluate((ops.full(all), ops.full(actual)),
-  #                                      feed_dict={number_of_objects: 2})
-  #   self.assertAllClose(desired_val, actual_val)
-
   @test_util.run_in_graph_and_eager_modes
   def testBatchMultiply(self):
     # Test multiplying batch of TTMatrices by individual numbers.
