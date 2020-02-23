@@ -1118,7 +1118,6 @@ def bilinear_form(A, b, c, name='t3f_bilinear_form'):
     return tf.squeeze(res)
 
 
-
 def bilinear_form_two_mat(x, A, B, y, name='t3f_bilinear_xaby'):
   """Bilinear form x^t A B y; A are B are TT-matrices, x and y can be batches.
 
@@ -1186,6 +1185,7 @@ def bilinear_form_two_mat(x, A, B, y, name='t3f_bilinear_xaby'):
     #   batch_size x 1 x 1
     # in the batch case.
     return tf.squeeze(res)
+
 
 def cast(tt, dtype, name='t3f_cast'):
   """Casts a tt-tensor to a new type.
