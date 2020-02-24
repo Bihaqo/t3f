@@ -1,6 +1,6 @@
 import itertools
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import decompositions
 from t3f import batch_ops
@@ -28,7 +28,7 @@ def add_n(tt_objects, max_tt_rank, name='t3f_approximate_add_n'):
   """
   list_of_cores_lists = [tt.tt_cores for tt in tt_objects]
   all_cores = tuple(itertools.chain.from_iterable(list_of_cores_lists))
-  with tf.name_scope(name, values=all_cores):
+  with tf.name_scope(name):
     prev_level = tt_objects
     while len(prev_level) > 1:
       next_level = []
@@ -80,7 +80,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None,
   all_tensors = tt_batch.tt_cores
   if coef is not None:
     all_tensors += (coef, )
-  with tf.name_scope(name, values=all_tensors):
+  with tf.name_scope(name):
     is_batch_output = False
     if coef is not None:
       coef = tf.convert_to_tensor(coef, dtype=tt_batch.dtype)
@@ -101,7 +101,7 @@ def reduce_sum_batch(tt_batch, max_tt_rank, coef=None,
           curr_core = tt_batch.tt_cores[core_idx]
           curr_shape = curr_core.get_shape().as_list()
           new_shape = np.insert(curr_shape, 1, 1)
-          tiling = np.ones(len(new_shape))
+          tiling = np.ones(len(new_shape), dtype=int)
           tiling[1] = output_size
           curr_core = tf.tile(tf.reshape(curr_core, new_shape), tiling)
           if core_idx == 0:

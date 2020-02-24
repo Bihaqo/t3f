@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f.tensor_train_base import TensorTrainBase
 from t3f.tensor_train import TensorTrain
@@ -55,7 +55,7 @@ class TensorTrainBatch(TensorTrainBase):
 
     self._tt_cores = tuple(tt_cores)
     if batch_size is None:
-      self._batch_size = tt_cores[0].get_shape()[0].value
+      self._batch_size = tt_cores[0].shape.as_list()[0]
     else:
       self._batch_size = batch_size
     self._raw_shape = shapes.clean_raw_shape(shape)
@@ -171,7 +171,7 @@ class TensorTrainBatch(TensorTrainBase):
       return TensorTrain(new_tt_cores, self.get_raw_shape(),
                          self.get_tt_ranks())
     else:
-      batch_size = new_tt_cores[0].get_shape()[0].value
+      batch_size = new_tt_cores[0].shape.as_list()[0]
       return TensorTrainBatch(new_tt_cores, self.get_raw_shape(),
                               self.get_tt_ranks(), batch_size)
 
@@ -295,17 +295,18 @@ def _are_batch_tt_cores_valid(tt_cores, shape, tt_ranks, batch_size):
       return False
   try:
     for core_idx in range(num_dims):
-      curr_core_shape = tt_cores[core_idx].get_shape()
+      curr_core_shape = tt_cores[core_idx].shape.as_list()
       if len(curr_core_shape) != len(tt_cores[0].get_shape()):
         # Shapes are inconsistent.
         return False
-      if batch_size is not None and curr_core_shape[0].value is not None:
-        if curr_core_shape[0].value != batch_size:
+      if batch_size is not None and curr_core_shape[0] is not None:
+        if curr_core_shape[0] != batch_size:
           # The TT-cores are not aligned with the given batch_size.
           return False
       if shape is not None:
         for i in range(len(shape)):
-          if curr_core_shape[i + 2] != shape[i][core_idx]:
+          dim_a, dim_b = curr_core_shape[i + 2], shape[i][core_idx]
+          if dim_a is not None and dim_b is not None and dim_a != dim_b:
             # The TT-cores are not aligned with the given shape.
             return False
       if core_idx >= 1:

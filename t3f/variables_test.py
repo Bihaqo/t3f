@@ -1,5 +1,6 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
+tf.compat.v1.enable_eager_execution()
 
 from t3f import variables
 from t3f import ops
@@ -7,46 +8,6 @@ from t3f import initializers
 
 
 class _VariablesTest():
-
-  def testGetExistingVariable(self):
-    init = initializers.random_tensor([2, 3, 2], tt_rank=2, dtype=self.dtype)
-    tt_1 = variables.get_variable('tt_1', initializer=init)
-    with tf.variable_scope('test'):
-      tt_2 = variables.get_variable('tt_2', initializer=init)
-    with self.test_session():
-      tf.global_variables_initializer().run()
-      with self.assertRaises(ValueError):
-        # The variable already exists and scope.reuse is False by default.
-        variables.get_variable('tt_1')
-      with self.assertRaises(ValueError):
-        with tf.variable_scope('', reuse=True):
-          # The variable doesn't exist.
-          variables.get_variable('tt_3')
-
-      with tf.variable_scope('', reuse=True):
-        tt_1_copy = variables.get_variable('tt_1', dtype=self.dtype)
-        self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
-
-      with tf.variable_scope('', reuse=True):
-        # Again try to retrieve an existing variable, but pass an initializer
-        # and check that it still works.
-        tt_1_copy = variables.get_variable('tt_1', initializer=0 * init,
-                                           dtype=self.dtype)
-        self.assertAllClose(ops.full(tt_1).eval(), ops.full(tt_1_copy).eval())
-
-      with self.assertRaises(ValueError):
-        with tf.variable_scope('', reuse=True):
-          # The variable is defined in a different scope
-          variables.get_variable('tt_2')
-
-      with self.assertRaises(ValueError):
-        with tf.variable_scope('nottest', reuse=True):
-          # The variable is defined in a different scope
-          variables.get_variable('tt_2')
-
-      with tf.variable_scope('test', reuse=True):
-        tt_2_copy = variables.get_variable('tt_2', dtype=self.dtype)
-        self.assertAllClose(ops.full(tt_2).eval(), ops.full(tt_2_copy).eval())
 
   def testAttributes(self):
     # Test that after converting an initializer into a variable all the
@@ -69,18 +30,17 @@ class _VariablesTest():
     tt = variables.get_variable('tt', initializer=old_init)
     new_init = initializers.random_tensor([2, 3, 2], tt_rank=2,
                                           dtype=self.dtype)
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    init_value =  self.evaluate(ops.full(tt))
     assigner = variables.assign(tt, new_init)
-    with self.test_session():
-      tf.global_variables_initializer().run()
-      init_value = ops.full(tt).eval()
-      assigner_value = ops.full(assigner).eval()
-      after_value = ops.full(tt)
-      after_value = after_value.eval()
-      self.assertAllClose(assigner_value, after_value)
-      # Assert that the value actually changed:
-      abs_diff = np.linalg.norm((init_value - after_value).flatten())
-      rel_diff = abs_diff / np.linalg.norm((init_value).flatten())
-      self.assertGreater(rel_diff, 0.2)
+    assigner_value = self.evaluate(ops.full(assigner))
+    after_value = ops.full(tt)
+    after_value = self.evaluate(after_value)
+    self.assertAllClose(assigner_value, after_value)
+    # Assert that the value actually changed:
+    abs_diff = np.linalg.norm((init_value - after_value).flatten())
+    rel_diff = abs_diff / np.linalg.norm((init_value).flatten())
+    self.assertGreater(rel_diff, 0.2)
 
 
 class VariablesTestFloat32(tf.test.TestCase, _VariablesTest):

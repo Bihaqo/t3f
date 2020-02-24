@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
@@ -270,7 +270,7 @@ def tensor_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.,
   with tf.name_scope(name):
     for i in range(num_dims):
       curr_core_shape = (tt_rank[i], shape[i], tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrain(tt_cores, shape, tt_rank)
@@ -312,7 +312,7 @@ def tensor_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
   with tf.name_scope(name):
     for i in range(num_dims):
       curr_core_shape = (batch_size, tt_rank[i], shape[i], tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)
@@ -368,7 +368,7 @@ def matrix_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.,
     for i in range(num_dims):
       curr_core_shape = (tt_rank[i], shape[0][i], shape[1][i],
                          tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrain(tt_cores, shape, tt_rank)
@@ -426,7 +426,7 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
     for i in range(num_dims):
       curr_core_shape = (batch_size, tt_rank[i], shape[0][i], shape[1][i],
                          tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)
