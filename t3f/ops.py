@@ -1153,7 +1153,7 @@ def bilinear_form_two_mat(x, A, B, y, name='t3f_bilinear_xaby'):
   y_bs_str = 'p' if y_is_batch else ''
   out_bs_str = 'p' if x_is_batch or y_is_batch else ''
   all_cores = x.tt_cores + A.tt_cores + B.tt_cores + y.tt_cores
-  with tf.name_scope(name, values=all_cores):
+  with tf.name_scope(name):
     ndims = A.ndims()
     curr_core_1 = x.tt_cores[0]
     curr_core_2 = y.tt_cores[0]
