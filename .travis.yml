@@ -1,13 +1,11 @@
 dist: trusty
 language: python
 python:
-  - "2.7"
   - "3.5"
   - "3.6"
 env:
   matrix:
-    - TF_VERSION=1.13.2
-    - TF_VERSION=1.15
+    - TF_VERSION=1.15.2
     - TF_VERSION=2.0
 # command to install dependencies
 install:
