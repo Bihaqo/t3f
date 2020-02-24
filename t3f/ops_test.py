@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import test_util
 tf.compat.v1.enable_eager_execution()
 
 from t3f.tensor_train import TensorTrain
@@ -12,7 +11,6 @@ from t3f import initializers
 
 class _TTTensorTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -24,7 +22,6 @@ class _TTTensorTest():
       actual = self.evaluate(ops.full(tf_tens))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullTensor3d(self):
     np.random.seed(1)
     for rank_1 in [1, 2]:
@@ -40,7 +37,6 @@ class _TTTensorTest():
       actual = self.evaluate(ops.full(tf_tens))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFlatInnerTTTensbyTTTens(self):
     # Inner product between two TT-tensors.
     shape_list = ((2, 2),
@@ -61,7 +57,6 @@ class _TTTensorTest():
         self.assertAllClose(res_actual_val, np.squeeze(res_desired_val),
                             rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFlatInnerTTTensbySparseTens(self):
     # Inner product between a TT-tensor and a sparse tensor.
     shape_list = ((2, 2),
@@ -87,7 +82,6 @@ class _TTTensorTest():
           res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
           self.assertAllClose(res_actual_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testAdd(self):
     # Sum two TT-tensors.
     tt_a = initializers.random_tensor((2, 1, 3, 4), tt_rank=2,
@@ -102,7 +96,6 @@ class _TTTensorTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMultiply(self):
     # Multiply two TT-tensors.
     tt_a = initializers.random_tensor((1, 2, 3, 4), tt_rank=2,
@@ -117,7 +110,6 @@ class _TTTensorTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMultiplyByNumber(self):
     # Multiply a tensor by a number.
     tt = initializers.random_tensor((1, 2, 3), tt_rank=(1, 2, 3, 1),
@@ -130,7 +122,6 @@ class _TTTensorTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFrobeniusNormTens(self):
     # Frobenius norm of a TT-tensor.
     shape_list = ((2, 2),
@@ -152,7 +143,6 @@ class _TTTensorTest():
         self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                             rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCastFloat(self):
     # Test cast function for float tt-tensors.
     tt_x = initializers.random_tensor((2, 3, 2), tt_rank=2)
@@ -162,7 +152,6 @@ class _TTTensorTest():
     self.assertEqual(self.dtype, casted.dtype)
     self.assertTrue(self.dtype, casted_val.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCastIntFloat(self):
     # Tests cast function from int to float for tensors.
     np.random.seed(1)
@@ -176,7 +165,6 @@ class _TTTensorTest():
     self.assertEqual(self.dtype, casted.dtype)
     self.assertTrue(self.dtype, casted_val.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCoreRenorm(self):
       a = initializers.random_tensor(3 * (10,), tt_rank=7,
                                      dtype=self.dtype)
@@ -194,7 +182,6 @@ class _TTTensorTest():
 
 class _TTMatrixTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullMatrix2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -210,7 +197,6 @@ class _TTMatrixTest():
       actual = self.evaluate(ops.full(tf_mat))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullMatrix3d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -229,7 +215,6 @@ class _TTMatrixTest():
       actual = self.evaluate(ops.full(tf_mat))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTMatTimesTTMat(self):
     # Multiply a TT-matrix by another TT-matrix.
     left_shape = (2, 3, 4)
@@ -246,7 +231,6 @@ class _TTMatrixTest():
     # TODO: why so bad accuracy?
     self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTMatTimesDenseVec(self):
     # Multiply a TT-matrix by a dense vector.
     inp_shape = (2, 3, 4)
@@ -262,7 +246,6 @@ class _TTMatrixTest():
     res_actual_val, res_desired_val = self.evaluate([res_actual, res_desired])
     self.assertAllClose(res_actual_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testDenseMatTimesTTVec(self):
     # Multiply a TT-matrix by a dense vector.
     inp_shape = (3, 3, 3, 3)
@@ -279,7 +262,6 @@ class _TTMatrixTest():
     res_actual_val, res_desired_val = self.evaluate([res_actual, res_desired])
     self.assertAllClose(res_actual_val, res_desired_val, atol=1e-4, rtol=1e-4)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFlatInnerTTMatbyTTMat(self):
     # Inner product between two TT-Matrices.
     shape_list = (((2, 2), (3, 4)),
@@ -299,7 +281,6 @@ class _TTMatrixTest():
         self.assertAllClose(res_actual_val, np.squeeze(res_desired_val),
                             rtol=1e-5, atol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFlatInnerTTMatbySparseMat(self):
     # Inner product between a TT-matrix and a sparse matrix.
     shape_list = (((2, 2), (3, 4)),
@@ -324,7 +305,6 @@ class _TTMatrixTest():
           res_desired_val = tt_1_val.flatten()[sparse_flat_indices].dot(values)
           self.assertAllClose(res_actual_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFrobeniusNormMatrix(self):
     # Frobenius norm of a TT-matrix.
     shape_list = (((2, 2), (3, 4)),
@@ -345,7 +325,6 @@ class _TTMatrixTest():
         self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                             rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTranspose(self):
     # Transpose a TT-matrix.
     shape_list = (((2, 2), (3, 4)),
@@ -359,7 +338,6 @@ class _TTMatrixTest():
         res_actual_val, tt_val = self.evaluate([res_actual, ops.full(tt)])
         self.assertAllClose(tt_val.transpose(), res_actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testBilinearForm(self):
     # Test bilinear form.
     shape_list = (((2, 2), (3, 4)),
@@ -380,7 +358,6 @@ class _TTMatrixTest():
         self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                             atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testBilinearFormBatch(self):
     # Test bilinear form for batch of tensors.
     shape_list = (((2, 2), (3, 4)),
@@ -403,7 +380,6 @@ class _TTMatrixTest():
         self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                             atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testBilinearFormTwoMat(self):
     # Test bilinear_form_two_mat.
     shape_list = (((2, 2), (3, 4)),
@@ -427,7 +403,6 @@ class _TTMatrixTest():
         self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                             atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
 
@@ -440,7 +415,6 @@ class _TTMatrixTest():
       self.assertEqual(self.dtype, casted.dtype)
       self.assertTrue(self.dtype, casted_val.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCastIntFloat(self):
     # Tests cast function from int to float for matrices.
     np.random.seed(1)
@@ -457,7 +431,6 @@ class _TTMatrixTest():
 
 class _TTTensorBatchTest():
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullTensor2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -469,7 +442,6 @@ class _TTTensorBatchTest():
       actual = self.evaluate(ops.full(tf_tens))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullTensor3d(self):
     np.random.seed(1)
     for rank_1 in [1, 2]:
@@ -483,7 +455,6 @@ class _TTTensorBatchTest():
       actual = self.evaluate(ops.full(tf_tens))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFlatInnerTTTensbyTTTensSameBatchSize(self):
     # Inner product between two batch TT-tensors of the same batch_size.
     shape_list = ((2, 2),
@@ -504,7 +475,6 @@ class _TTTensorBatchTest():
         res_actual_val, res_desired_val = self.evaluate([res_actual, res_desired])
         self.assertAllClose(res_actual_val, np.squeeze(res_desired_val))
 
-  @test_util.run_in_graph_and_eager_modes
   def testFlatInnerTTTensbyTTTensBroadcasting(self):
     # Inner product between two batch TT-tensors with broadcasting.
     tt_1 = initializers.random_tensor_batch((2, 3, 4), batch_size=1,
@@ -525,7 +495,6 @@ class _TTTensorBatchTest():
       # The batch_sizes are different.
       ops.flat_inner(tt_1, tt_2)
 
-  @test_util.run_in_graph_and_eager_modes
   def testAddSameBatchSize(self):
     # Sum two TT-tensors with the same batch size.
     tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=3,
@@ -540,7 +509,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testAddBroadcasting(self):
     # Sum two TT-tensors with broadcasting.
     tt_a = initializers.random_tensor_batch((2, 1, 4), tt_rank=2, batch_size=1,
@@ -555,7 +523,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMultiplyByNumber(self):
     # Multiply batch of tensors by a number.
     tt = initializers.random_tensor_batch((1, 2, 3), tt_rank=(1, 2, 3, 1),
@@ -568,7 +535,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFrobeniusNormDifferentiableBatch(self):
     tt = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
                                           dtype=self.dtype)
@@ -578,7 +544,6 @@ class _TTTensorBatchTest():
     desired_norm = np.linalg.norm(tt_full.reshape((5, -1)), axis=1)**2
     self.assertAllClose(norm_sq_diff_val, desired_norm, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFrobeniusNormTens(self):
     # Frobenius norm of a batch of TT-tensors.
     tt = initializers.tensor_batch_with_random_cores((2, 2, 3), batch_size=3,
@@ -595,7 +560,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(norm_actual_val, norm_desired_val, atol=1e-5,
                         rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMultiplyBatchByTensor(self):
     tt_a = initializers.random_tensor((3, 3, 3), tt_rank=2, dtype=self.dtype)
     tt_b = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
@@ -608,7 +572,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMultiplyBatchByBatch(self):
     tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=5,
                                             dtype=self.dtype)
@@ -626,7 +589,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testMultiplyBroadcasting(self):
     tt_a = initializers.random_tensor_batch((3, 3, 3), tt_rank=2, batch_size=1,
                                             dtype=self.dtype)
@@ -640,7 +602,6 @@ class _TTTensorBatchTest():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testGatherND(self):
     idx = [[0, 0, 0], [0, 1, 2], [0, 1, 0]]
     tt = initializers.random_tensor((3, 4, 5), tt_rank=2, dtype=self.dtype)
@@ -650,7 +611,6 @@ class _TTTensorBatchTest():
     res_np_v, des_v = self.evaluate(to_run)
     self.assertAllClose(res_np_v, des_v)
 
-  @test_util.run_in_graph_and_eager_modes
   def testGatherNDBatch(self):
     idx = [[0, 0, 0, 0], [1, 0, 1, 2], [0, 0, 1, 0]]
     tt = initializers.random_tensor_batch((3, 4, 5), tt_rank=2, batch_size=2,
@@ -661,7 +621,6 @@ class _TTTensorBatchTest():
     res_np_v, des_v = self.evaluate(to_run)
     self.assertAllClose(res_np_v, des_v)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCoreRenormBatch(self):
       a = initializers.random_tensor_batch(3 * (10,), tt_rank=7, batch_size=5,
                                            dtype=self.dtype)
@@ -679,7 +638,6 @@ class _TTTensorBatchTest():
 
 class _TTMatrixTestBatch():
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullMatrix2d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -695,7 +653,6 @@ class _TTMatrixTestBatch():
       actual = self.evaluate(ops.full(tf_mat))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testFullMatrix3d(self):
     np.random.seed(1)
     for rank in [1, 2]:
@@ -713,7 +670,6 @@ class _TTMatrixTestBatch():
       actual = self.evaluate(ops.full(tf_mat))
       self.assertAllClose(desired, actual)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTMatTimesTTMatSameBatchSize(self):
     # Multiply a batch of TT-matrices by another batch of TT-matrices with the
     # same batch sizes.
@@ -733,7 +689,6 @@ class _TTMatrixTestBatch():
     # TODO: why so bad accuracy?
     self.assertAllClose(res_actual_val, res_desired_val, atol=1e-5, rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTTMatTimesTTMatBroadcasting(self):
     # Multiply a batch of TT-matrices by another batch of TT-matrices with
     # broadcasting.
@@ -759,7 +714,6 @@ class _TTMatrixTestBatch():
     self.assertAllClose(res_actual2_val, res_desired_val, atol=1e-5,
                         rtol=1e-5)
 
-  @test_util.run_in_graph_and_eager_modes
   def testTranspose(self):
     # Transpose a batch of TT-matrices.
     tt = initializers.random_matrix_batch(((2, 3, 4), (2, 2, 2)),
@@ -768,7 +722,6 @@ class _TTMatrixTestBatch():
     res_actual_val, tt_val = self.evaluate([res_actual, ops.full(tt)])
     self.assertAllClose(tt_val.transpose((0, 2, 1)), res_actual_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testAddSameBatchSize(self):
     # Sum two TT-matrices with the same batch size.
     tt_a = initializers.random_matrix_batch(((2, 1, 4), None), tt_rank=2,
@@ -784,7 +737,6 @@ class _TTMatrixTestBatch():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testAddBroadcasting(self):
     # Sum two TT-matrices with broadcasting.
     tt_a = initializers.random_matrix_batch(((2, 1, 4), (2, 2, 2)), tt_rank=2,
@@ -800,7 +752,6 @@ class _TTMatrixTestBatch():
     self.assertAllClose(res_actual_val, res_desired_val)
     self.assertAllClose(res_actual2_val, res_desired_val)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCastFloat(self):
     # Test cast function for float tt-matrices and vectors.
     tt_mat = initializers.random_matrix_batch(((2, 3), (3, 2)), tt_rank=2,
@@ -811,7 +762,6 @@ class _TTMatrixTestBatch():
     self.assertEqual(self.dtype, casted.dtype)
     self.assertTrue(self.dtype, casted_val.dtype)
 
-  @test_util.run_in_graph_and_eager_modes
   def testCastIntFloat(self):
     # Tests cast function from int to float for matrices.
     np.random.seed(1)
