@@ -9,13 +9,6 @@ from t3f import shapes
 from t3f import initializers
 
 
-from opt_einsum import contract
-
-
-def my_contract(*args, **kargs):
-  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
-
-
 class _TTTensorTest():
 
   def testFullTensor2d(self):

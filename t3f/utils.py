@@ -1,5 +1,10 @@
 import numpy as np
 import tensorflow as tf
+from opt_einsum import contract
+
+
+def einsum(*args, **kargs):
+  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
 
 
 # TODO: substitute with native implementation when it's ready.

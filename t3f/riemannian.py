@@ -4,12 +4,7 @@ from t3f.tensor_train import TensorTrain
 from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import shapes
 from t3f import decompositions
-
-from opt_einsum import contract
-
-
-def my_contract(*args, **kargs):
-  return contract(*args, **kargs, backend='tensorflow', optimize='optimal')
+from t3f import utils
 
 
 def project_sum(what, where, weights=None):
@@ -103,7 +98,7 @@ def project_sum(what, where, weights=None):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
     einsum_str = 'sa{0}b,sbd,c{0}d->sac'.format(mode_str)
-    rhs[core_idx] = my_contract(einsum_str, tens_core, rhs[core_idx + 1],
+    rhs[core_idx] = utils.einsum(einsum_str, tens_core, rhs[core_idx + 1],
                               right_tang_core)
 
   # Prepare lhs vectors.
@@ -115,7 +110,7 @@ def project_sum(what, where, weights=None):
     tens_core = what.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
     einsum_str = 'sab,a{0}c,sb{0}d->scd'.format(mode_str)
-    lhs[core_idx + 1] = my_contract(einsum_str, lhs[core_idx], left_tang_core,
+    lhs[core_idx + 1] = utils.einsum(einsum_str, lhs[core_idx], left_tang_core,
                                   tens_core)
 
   # Left to right sweep.
@@ -127,27 +122,27 @@ def project_sum(what, where, weights=None):
 
     if core_idx < ndims - 1:
       einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
-      proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
+      proj_core = utils.einsum(einsum_str, lhs[core_idx], tens_core)
       einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
-      proj_core -= my_contract(einsum_str, left_tang_core, lhs[core_idx + 1])
+      proj_core -= utils.einsum(einsum_str, left_tang_core, lhs[core_idx + 1])
       if weights is None:
         einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
-        proj_core = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
+        proj_core = utils.einsum(einsum_str, proj_core, rhs[core_idx + 1])
       else:
         einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str, output_batch_str)
-        proj_core_s = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
+        proj_core_s = utils.einsum(einsum_str, proj_core, rhs[core_idx + 1])
         einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = my_contract(einsum_str, weights, proj_core_s)
+        proj_core = utils.einsum(einsum_str, weights, proj_core_s)
 
     if core_idx == ndims - 1:
       if weights is None:
         einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
-        proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
+        proj_core = utils.einsum(einsum_str, lhs[core_idx], tens_core)
       else:
         einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str, output_batch_str)
-        proj_core_s = my_contract(einsum_str, lhs[core_idx], tens_core)
+        proj_core_s = utils.einsum(einsum_str, lhs[core_idx], tens_core)
         einsum_str = 's{1},sa{0}c->{1}a{0}c'.format(mode_str, output_batch_str)
-        proj_core = my_contract(einsum_str, weights, proj_core_s)
+        proj_core = utils.einsum(einsum_str, weights, proj_core_s)
 
     if output_is_batch:
       # Add batch dimension of size output_batch_size to left_tang_core and
@@ -281,7 +276,7 @@ def project(what, where):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
     einsum_str = 'sa{0}b,sbd,c{0}d->sac'.format(mode_str)
-    rhs[core_idx] = my_contract(einsum_str, tens_core, rhs[core_idx + 1],
+    rhs[core_idx] = utils.einsum(einsum_str, tens_core, rhs[core_idx + 1],
                               right_tang_core)
 
   # Prepare lhs vectors.
@@ -293,7 +288,7 @@ def project(what, where):
     tens_core = what.tt_cores[core_idx]
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
     einsum_str = 'sab,a{0}c,sb{0}d->scd'.format(mode_str)
-    lhs[core_idx + 1] = my_contract(einsum_str, lhs[core_idx], left_tang_core,
+    lhs[core_idx + 1] = utils.einsum(einsum_str, lhs[core_idx], left_tang_core,
                                   tens_core)
 
   # Left to right sweep.
@@ -305,21 +300,21 @@ def project(what, where):
 
     if core_idx < ndims - 1:
       einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
-      proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
+      proj_core = utils.einsum(einsum_str, lhs[core_idx], tens_core)
       einsum_str = 'a{0}b,sbc->sa{0}c'.format(mode_str)
-      proj_core -= my_contract(einsum_str, left_tang_core, lhs[core_idx + 1])
+      proj_core -= utils.einsum(einsum_str, left_tang_core, lhs[core_idx + 1])
       if output_is_batch:
         einsum_str = 'sa{0}b,sbc->sa{0}c'.format(mode_str)
       else:
         einsum_str = 'sa{0}b,sbc->a{0}c'.format(mode_str)
-      proj_core = my_contract(einsum_str, proj_core, rhs[core_idx + 1])
+      proj_core = utils.einsum(einsum_str, proj_core, rhs[core_idx + 1])
 
     if core_idx == ndims - 1:
       if output_is_batch:
         einsum_str = 'sab,sb{0}c->sa{0}c'.format(mode_str)
       else:
         einsum_str = 'sab,sb{0}c->a{0}c'.format(mode_str)
-      proj_core = my_contract(einsum_str, lhs[core_idx], tens_core)
+      proj_core = utils.einsum(einsum_str, lhs[core_idx], tens_core)
 
     if output_is_batch:
       # Add batch dimension of size output_batch_size to left_tang_core and
@@ -452,7 +447,7 @@ def project_matmul(what, where, matrix):
     tens_core = what.tt_cores[core_idx]
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
     matrix_core = matrix.tt_cores[core_idx]
-    rhs[core_idx] = my_contract('bije,cikf,sdef,sajkd->sabc', matrix_core,
+    rhs[core_idx] = utils.einsum('bije,cikf,sdef,sajkd->sabc', matrix_core,
                               right_tang_core, rhs[core_idx + 1], tens_core)
   # Prepare lhs vectors.
   # lhs[core_idx] is of size
@@ -464,7 +459,7 @@ def project_matmul(what, where, matrix):
     left_tang_core = left_tangent_space_tens.tt_cores[core_idx]
     matrix_core = matrix.tt_cores[core_idx]
     # TODO: brutforce order of indices in lhs??
-    lhs[core_idx + 1] = my_contract('bije,aikd,sabc,scjkf->sdef', matrix_core,
+    lhs[core_idx + 1] = utils.einsum('bije,aikd,sabc,scjkf->sdef', matrix_core,
                                   left_tang_core, lhs[core_idx], tens_core)
 
   # Left to right sweep.
@@ -476,17 +471,17 @@ def project_matmul(what, where, matrix):
     right_tang_core = right_tangent_space_tens.tt_cores[core_idx]
 
     if core_idx < ndims - 1:
-      proj_core = my_contract('scjke,sabc,bijd->saikde', tens_core,
+      proj_core = utils.einsum('scjke,sabc,bijd->saikde', tens_core,
                             lhs[core_idx], matrix_core)
-      proj_core -= my_contract('aikb,sbcd->saikcd', left_tang_core,
+      proj_core -= utils.einsum('aikb,sbcd->saikcd', left_tang_core,
                              lhs[core_idx + 1])
-      proj_core = my_contract('saikcb,sbcd->saikd', proj_core, rhs[core_idx + 1])
+      proj_core = utils.einsum('saikcb,sbcd->saikd', proj_core, rhs[core_idx + 1])
 
     if core_idx == ndims - 1:
       # d and e dimensions take 1 value, since its the last rank.
       # To make the result shape (?, ?, ?, 1), we are summing d and leaving e,
       # but we could have done the opposite -- sum e and leave d.
-      proj_core = my_contract('sabc,bijd,scjke->saike', lhs[core_idx], matrix_core,
+      proj_core = utils.einsum('sabc,bijd,scjke->saike', lhs[core_idx], matrix_core,
                             tens_core)
 
     if output_is_batch:
@@ -592,7 +587,7 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     curr_core_2 = projected_tt_vectors_2.tt_cores[0]
     curr_du_1 = curr_core_1[:, :, :, :, :right_size]
     curr_du_2 = curr_core_2[:, :, :, :, :right_size]
-    res = my_contract('paijb,qaijb->pq', curr_du_1, curr_du_2)
+    res = utils.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
     for core_idx in range(1, ndims):
       left_size = tt_ranks[core_idx] // 2
       right_size = tt_ranks[core_idx + 1] // 2
@@ -600,14 +595,14 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
       curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
       curr_du_1 = curr_core_1[:, left_size:, :, :, :right_size]
       curr_du_2 = curr_core_2[:, left_size:, :, :, :right_size]
-      res += my_contract('paijb,qaijb->pq', curr_du_1, curr_du_2)
+      res += utils.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
 
     left_size = tt_ranks[-2] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
     curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
     curr_du_1 = curr_core_1[:, left_size:, :, :, :]
     curr_du_2 = curr_core_2[:, left_size:, :, :, :]
-    res += my_contract('paijb,qaijb->pq', curr_du_1, curr_du_2)
+    res += utils.einsum('paijb,qaijb->pq', curr_du_1, curr_du_2)
   else:
     # Working with TT-tensor, not TT-matrix.
     right_size = tt_ranks[1] // 2
@@ -615,7 +610,7 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
     curr_core_2 = projected_tt_vectors_2.tt_cores[0]
     curr_du_1 = curr_core_1[:, :, :, :right_size]
     curr_du_2 = curr_core_2[:, :, :, :right_size]
-    res = my_contract('paib,qaib->pq', curr_du_1, curr_du_2)
+    res = utils.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
     for core_idx in range(1, ndims):
       left_size = tt_ranks[core_idx] // 2
       right_size = tt_ranks[core_idx + 1] // 2
@@ -623,14 +618,14 @@ def pairwise_flat_inner_projected(projected_tt_vectors_1,
       curr_core_2 = projected_tt_vectors_2.tt_cores[core_idx]
       curr_du_1 = curr_core_1[:, left_size:, :, :right_size]
       curr_du_2 = curr_core_2[:, left_size:, :, :right_size]
-      res += my_contract('paib,qaib->pq', curr_du_1, curr_du_2)
+      res += utils.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
 
     left_size = tt_ranks[-2] // 2
     curr_core_1 = projected_tt_vectors_1.tt_cores[-1]
     curr_core_2 = projected_tt_vectors_2.tt_cores[-1]
     curr_du_1 = curr_core_1[:, left_size:, :, :]
     curr_du_2 = curr_core_2[:, left_size:, :, :]
-    res += my_contract('paib,qaib->pq', curr_du_1, curr_du_2)
+    res += utils.einsum('paib,qaib->pq', curr_du_1, curr_du_2)
   return res
 
 
