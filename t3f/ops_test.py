@@ -358,8 +358,8 @@ class _TTMatrixTest():
         self.assertAllClose(res_actual_val, np.squeeze(res_desired),
                             atol=1e-5, rtol=1e-5)
 
-  def testQuadraticFormBatch(self):
-    # Test quadratic form for batch of tensors.
+  def testBilinearFormBatch(self):
+    # Test bilinear form for batch of tensors.
     shape_list = (((2, 2), (3, 4)),
                   ((2, 3, 4), (2, 2, 2)))
     rank_list = (1, 2)
