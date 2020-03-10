@@ -34,13 +34,17 @@ Citation
 
 If you use T3F in your research work, we kindly ask you to cite the paper_ describing this library
 
-.. _paper: https://arxiv.org/abs/1801.01928
+.. _paper: http://jmlr.org/papers/v21/18-008.html
 
 .. code-block:: console
 
-    @article{novikov2018tensor,
-	  title={Tensor Train decomposition on TensorFlow (T3F)},
-	  author={Novikov, Alexander and Izmailov, Pavel and Khrulkov, Valentin and Figurnov, Michael and Oseledets, Ivan},
-	  journal={arXiv preprint arXiv:1801.01928},
-	  year={2018}
-	}
+    @article{JMLR:v21:18-008,
+      author  = {Alexander Novikov and Pavel Izmailov and Valentin Khrulkov and Michael Figurnov and Ivan Oseledets},
+      title   = {Tensor Train Decomposition on TensorFlow (T3F)},
+      journal = {Journal of Machine Learning Research},
+      year    = {2020},
+      volume  = {21},
+      number  = {30},
+      pages   = {1-7},
+      url     = {http://jmlr.org/papers/v21/18-008.html}
+    }
