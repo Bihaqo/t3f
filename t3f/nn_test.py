@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-tf.compat.v1.enable_v2_behavour()
+tf.compat.v1.enable_v2_behavior()
 
 from t3f import nn
 
