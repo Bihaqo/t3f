@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-tf.compat.v1.enable_eager_execution()
+tf.compat.v1.enable_v2_behavour()
 
 from t3f import nn
 
