@@ -1,20 +1,16 @@
 dist: trusty
 language: python
 python:
-  - "3.5"
   - "3.6"
 env:
   matrix:
-    - TF_VERSION=1.15.2
-    - TF_VERSION=2.0
+    - TF_VERSION=2.4.0
 # command to install dependencies
 install:
   - pip install --upgrade pip
   - pip install tensorflow==$TF_VERSION
   - pip install coveralls
 script:
-  # Run eager and no-eager tests separately.
-  - nosetests t3f/*_no_eager_test.py --logging-level=WARNING --with-coverage --cover-package=t3f
-  - nosetests -e='*no_eager*' --logging-level=WARNING --with-coverage --cover-package=t3f
+  - nosetests --logging-level=WARNING --with-coverage --cover-package=t3f
 after_success:
   coveralls
