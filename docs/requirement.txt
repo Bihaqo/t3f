@@ -2,6 +2,6 @@
 # tf is necessary for building the docs with readthedocs.org: they fetch a fresh
 # version of the library on each build and it doesn't import properly without
 # tensorflow being installed.
-tensorflow>=1.12,<=1.14
+tensorflow>=2.4,<=2.4
 ipykernel
 nbsphinx

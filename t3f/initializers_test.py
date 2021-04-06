@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+tf.compat.v1.enable_eager_execution()
 
 from t3f import initializers
 from t3f import ops
@@ -13,13 +14,12 @@ class _InitializersTest():
 
     ones_desired = np.ones((2, 3, 4), dtype=self.dtype.as_numpy_dtype)
     zeros_desired = np.zeros((2, 3, 4), dtype=self.dtype.as_numpy_dtype)
-    with self.test_session() as sess:
-      tt_ones_full = sess.run(ops.full(tt_ones))
-      tt_zeros_full = sess.run(ops.full(tt_zeros))
-      self.assertAllClose(tt_ones_full, ones_desired)
-      self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
-      self.assertAllClose(tt_zeros_full, zeros_desired)
-      self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
+    tt_ones_full = self.evaluate(ops.full(tt_ones))
+    tt_zeros_full = self.evaluate(ops.full(tt_zeros))
+    self.assertAllClose(tt_ones_full, ones_desired)
+    self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
+    self.assertAllClose(tt_zeros_full, zeros_desired)
+    self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
     bad_shapes = [[[2, 3]], [-1, 3], [0.1, 4]]
     for shape in bad_shapes:
       with self.assertRaises(ValueError):
@@ -38,13 +38,12 @@ class _InitializersTest():
 
     bad_shapes = [[[-1, 2, 3], [3, 4, 6]], [[1.5, 2, 4], [2, 5, 6]],
                   [[1], [2, 3]], [2, 3, 4]]
-    with self.test_session() as sess:
-      tt_ones_full = sess.run(ops.full(tt_ones))
-      tt_zeros_full = sess.run(ops.full(tt_zeros))
-      self.assertAllClose(tt_ones_full, ones_desired)
-      self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
-      self.assertAllClose(tt_zeros_full, zeros_desired)
-      self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
+    tt_ones_full = self.evaluate(ops.full(tt_ones))
+    tt_zeros_full = self.evaluate(ops.full(tt_zeros))
+    self.assertAllClose(tt_ones_full, ones_desired)
+    self.assertEqual(tt_ones_full.dtype, ones_desired.dtype)
+    self.assertAllClose(tt_zeros_full, zeros_desired)
+    self.assertEqual(tt_zeros_full.dtype, zeros_desired.dtype)
     for shape in bad_shapes:
       with self.assertRaises(ValueError):
         initializers.matrix_ones(shape)
@@ -54,9 +53,8 @@ class _InitializersTest():
   def testEye(self):
       tt_eye = initializers.eye([4, 5, 6], dtype=self.dtype)
       eye_desired = np.eye(120)
-      with self.test_session() as sess:
-        eye_full = sess.run(ops.full(tt_eye))
-        self.assertAllClose(eye_full, eye_desired)
+      eye_full = self.evaluate(ops.full(tt_eye))
+      self.assertAllClose(eye_full, eye_desired)
       bad_shapes = [[[2, 3]], [-1, 3], [0.1, 4]]
       for shape in bad_shapes:
         with self.assertRaises(ValueError):
@@ -67,12 +65,11 @@ class _InitializersTest():
     b = initializers.ones_like(a)
     c = initializers.zeros_like(a)
     var_list = [ops.full(b), ops.full(c)]
-    with self.test_session() as sess:
-      bf, cf = sess.run(var_list)
-      self.assertAllClose(bf, np.ones((2, 3, 4)))
-      self.assertEqual(self.dtype.as_numpy_dtype, bf.dtype)
-      self.assertAllClose(cf, np.zeros((2, 3, 4)))
-      self.assertEqual(self.dtype.as_numpy_dtype, cf.dtype)
+    bf, cf = self.evaluate(var_list)
+    self.assertAllClose(bf, np.ones((2, 3, 4)))
+    self.assertEqual(self.dtype.as_numpy_dtype, bf.dtype)
+    self.assertAllClose(cf, np.zeros((2, 3, 4)))
+    self.assertEqual(self.dtype.as_numpy_dtype, cf.dtype)
     with self.assertRaises(ValueError):
       initializers.ones_like(1)
     with self.assertRaises(ValueError):

@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2020-04-06
+### Added
+- Full TF 2 support, including e.g. the Keras module.
+- Added bilinear_ab function
+- Fix some dtype bugs
+- 
+
+### Changed
+- Switch to TF 2.4
+
 ## [1.1.0] - 2019-10-22
 ### Added
 - Proper documentation with tutorials.

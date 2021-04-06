@@ -3,6 +3,19 @@ import tensorflow as tf
 from t3f import shapes
 from t3f import decompositions
 from t3f import riemannian
+from t3f import utils
+
+
+def value_and_grad(f, x):
+  """Gradient of the given function w.r.t. x. Works in eager and graph mode."""
+  if utils.in_eager_mode():
+    with tf.GradientTape() as tape:
+      tape.watch(x)
+      v = f(x)
+    return v, tape.gradient(v, x)
+  else:
+    v = f(x)
+    return v, tf.gradients(v, x)
 
 
 def _enforce_gauge_conditions(deltas, left):
@@ -90,20 +103,23 @@ def gradients(func, x, name='t3f_gradients', runtime_check=True):
   See also:
       t3f.hessian_vector_product
   """
-  with tf.name_scope(name, values=x.tt_cores):
+  with tf.name_scope(name):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     deltas = [right.tt_cores[0]]
     deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
-    x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
-    function_value = func(x_projection)
+
+    def augmented_func(d):
+      x_projection = riemannian.deltas_to_tangent_space(d, x, left, right)
+      return func(x_projection)
+
+    function_value, cores_grad = value_and_grad(augmented_func, deltas)
     if runtime_check:
       assert_op = _is_invariant_to_input_transforms(function_value, func(x))
     else:
       assert_op = tf.no_op()
     with tf.control_dependencies([assert_op]):
-      cores_grad = tf.gradients(function_value, deltas)
-    deltas = _enforce_gauge_conditions(cores_grad, left)
+      deltas = _enforce_gauge_conditions(cores_grad, left)
     return riemannian.deltas_to_tangent_space(deltas, x, left, right)
 
 
@@ -152,23 +168,30 @@ def hessian_vector_product(func, x, vector, name='t3f_hessian_vector_product',
         t3f.gradients
     """
   all_cores = list(x.tt_cores) + list(vector.tt_cores)
-  with tf.name_scope(name, values=all_cores):
+  with tf.name_scope(name):
     left = decompositions.orthogonalize_tt_cores(x)
     right = decompositions.orthogonalize_tt_cores(left, left_to_right=False)
     deltas = [right.tt_cores[0]]
     deltas += [tf.zeros_like(cc) for cc in right.tt_cores[1:]]
-    x_projection = riemannian.deltas_to_tangent_space(deltas, x, left, right)
-    function_value = func(x_projection)
-    if runtime_check:
-      assert_op = _is_invariant_to_input_transforms(function_value, func(x))
-    else:
-      assert_op = tf.no_op()
-    with tf.control_dependencies([assert_op]):
-      vector_projected = riemannian.project(vector, x)
-    cores_grad = tf.gradients(function_value, deltas)
-    vec_deltas = riemannian.tangent_space_to_deltas(vector_projected)
-    products = [tf.reduce_sum(a * b) for a, b in zip(cores_grad, vec_deltas)]
-    grad_times_vec = tf.add_n(products)
-    second_cores_grad = tf.gradients(grad_times_vec, deltas)
+
+    def augmented_outer_func(deltas_outer):
+
+      def augmented_inner_func(deltas_inner):
+        x_projection = riemannian.deltas_to_tangent_space(deltas_inner, x, left,
+                                                          right)
+        return func(x_projection)
+
+      function_value, cores_grad = value_and_grad(augmented_inner_func, deltas_outer)
+      if runtime_check:
+        assert_op = _is_invariant_to_input_transforms(function_value, func(x))
+      else:
+        assert_op = tf.no_op()
+      with tf.control_dependencies([assert_op]):
+        vector_projected = riemannian.project(vector, x)
+      vec_deltas = riemannian.tangent_space_to_deltas(vector_projected)
+      products = [tf.reduce_sum(a * b) for a, b in zip(cores_grad, vec_deltas)]
+      return tf.add_n(products)
+
+    _, second_cores_grad = value_and_grad(augmented_outer_func, deltas)
     final_deltas = _enforce_gauge_conditions(second_cores_grad, left)
     return riemannian.deltas_to_tangent_space(final_deltas, x, left, right)

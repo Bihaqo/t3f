@@ -86,7 +86,7 @@ def project_sum(what, where, weights=None):
   if output_is_batch:
     right_rank_dim += 1
     left_rank_dim += 1
-    output_batch_size = weights.get_shape()[1].value
+    output_batch_size = weights.get_shape().as_list()[1]
 
   # Prepare rhs vectors.
   # rhs[core_idx] is of size
@@ -668,8 +668,8 @@ def add_n_projected(tt_objects, coef=None):
       # the TT-cores number of dimensions.
       some_core = tt_objects[0].tt_cores[0]
       dim_array = [1] * (some_core.get_shape().ndims + 1)
-      dim_array[0] = coef.get_shape()[0].value
-      dim_array[1] = coef.get_shape()[1].value
+      dim_array[0] = coef.get_shape().as_list()[0]
+      dim_array[1] = coef.get_shape().as_list()[1]
       coef = tf.reshape(coef, dim_array)
 
   ndims = tt_objects[0].ndims()
@@ -780,7 +780,7 @@ def tangent_space_to_deltas(tt, name='t3f_tangent_space_to_deltas'):
     if int(tt_ranks[i] / 2) != tt_ranks[i] / 2:
       raise ValueError('tt argument is supposed to be a projection, but its '
                        'ranks are not even.')
-  with tf.name_scope(name, values=tt.tt_cores):
+  with tf.name_scope(name):
     for i in range(1, num_dims - 1):
       r1, r2 = tt_ranks[i], tt_ranks[i + 1]
       curr_core = tt.tt_cores[i]
@@ -832,7 +832,7 @@ def deltas_to_tangent_space(deltas, tt, left=None, right=None,
     input_tensors += list(left.tt_cores)
   if right is not None:
     input_tensors += list(right.tt_cores)
-  with tf.name_scope(name, values=input_tensors):
+  with tf.name_scope(name):
     if left is None:
       left = decompositions.orthogonalize_tt_cores(tt)
     if right is None:

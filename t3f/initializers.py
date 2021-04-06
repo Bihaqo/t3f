@@ -84,7 +84,7 @@ def tensor_ones(shape, dtype=tf.float32, name='t3f_tensor_ones'):
   shape = np.array(shape)
   _validate_input_parameters(is_tensor=True, shape=shape)
   num_dims = shape.size
-  tt_rank = np.ones(num_dims + 1)
+  tt_rank = np.ones(num_dims + 1, dtype=np.int)
 
   with tf.name_scope(name):
     tt_cores = num_dims * [None]
@@ -110,7 +110,7 @@ def tensor_zeros(shape, dtype=tf.float32, name='t3f_tensor_zeros'):
   shape = np.array(shape)
   _validate_input_parameters(is_tensor=True, shape=shape)
   num_dims = shape.size
-  tt_rank = np.ones(num_dims + 1)
+  tt_rank = np.ones(num_dims + 1, dtype=np.int)
   tt_cores = num_dims * [None]
   with tf.name_scope(name):
     for i in range(num_dims):
@@ -138,7 +138,7 @@ def eye(shape, dtype=tf.float32, name='t3f_eye'):
   _validate_input_parameters(is_tensor=True, shape=shape)
 
   num_dims = shape.size
-  tt_ranks = np.ones(num_dims + 1)
+  tt_ranks = np.ones(num_dims + 1, dtype=np.int)
 
   with tf.name_scope(name):
     tt_cores = num_dims * [None]
@@ -182,7 +182,7 @@ def matrix_ones(shape, dtype=tf.float32, name='t3f_matrix_ones'):
   _validate_input_parameters(is_tensor=False, shape=shape)
 
   num_dims = shape[0].size
-  tt_rank = np.ones(shape[0].size + 1)
+  tt_rank = np.ones(shape[0].size + 1, dtype=np.int)
 
   with tf.name_scope(name):
     tt_cores = [None] * num_dims
@@ -224,7 +224,7 @@ def matrix_zeros(shape, dtype=tf.float32, name='t3f_matrix_zeros'):
 
   _validate_input_parameters(is_tensor=False, shape=shape)
   num_dims = shape[0].size
-  tt_rank = np.ones(shape[0].size + 1)
+  tt_rank = np.ones(shape[0].size + 1, dtype=np.int)
 
   with tf.name_scope(name):
     tt_cores = [None] * num_dims
@@ -261,7 +261,7 @@ def tensor_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.,
   _validate_input_parameters(is_tensor=True, shape=shape, tt_rank=tt_rank)
   num_dims = shape.size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.insert(tt_rank, 0, 1)
     tt_rank = np.append(tt_rank, 1)
 
@@ -270,7 +270,7 @@ def tensor_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.,
   with tf.name_scope(name):
     for i in range(num_dims):
       curr_core_shape = (tt_rank[i], shape[i], tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrain(tt_cores, shape, tt_rank)
@@ -304,7 +304,7 @@ def tensor_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
                              batch_size=batch_size)
   num_dims = shape.size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.insert(tt_rank, 0, 1)
     tt_rank = np.append(tt_rank, 1)
   tt_rank = tt_rank.astype(int)
@@ -312,7 +312,7 @@ def tensor_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
   with tf.name_scope(name):
     for i in range(num_dims):
       curr_core_shape = (batch_size, tt_rank[i], shape[i], tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)
@@ -359,7 +359,7 @@ def matrix_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.,
 
   num_dims = shape[0].size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
 
   tt_rank = tt_rank.astype(int)
@@ -368,7 +368,7 @@ def matrix_with_random_cores(shape, tt_rank=2, mean=0., stddev=1.,
     for i in range(num_dims):
       curr_core_shape = (tt_rank[i], shape[0][i], shape[1][i],
                          tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrain(tt_cores, shape, tt_rank)
@@ -417,7 +417,7 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
                              batch_size=batch_size)
   num_dims = shape[0].size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
   shape = shape.astype(int)
   tt_rank = tt_rank.astype(int)
@@ -426,7 +426,7 @@ def matrix_batch_with_random_cores(shape, tt_rank=2, batch_size=1,
     for i in range(num_dims):
       curr_core_shape = (batch_size, tt_rank[i], shape[0][i], shape[1][i],
                          tt_rank[i + 1])
-      tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev,
+      tt_cores[i] = tf.random.normal(curr_core_shape, mean=mean, stddev=stddev,
                                      dtype=dtype)
 
     return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)
@@ -522,7 +522,7 @@ def random_tensor(shape, tt_rank=2, mean=0., stddev=1., dtype=tf.float32,
 
   num_dims = shape.size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.insert(tt_rank, 0, 1)
     tt_rank = np.append(tt_rank, 1)
 
@@ -580,7 +580,7 @@ def random_tensor_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.,
                              batch_size=batch_size)
   num_dims = shape.size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.insert(tt_rank, 0, 1)
     tt_rank = np.append(tt_rank, 1)
   tt_rank = tt_rank.astype(int)
@@ -647,7 +647,7 @@ def random_matrix(shape, tt_rank=2, mean=0., stddev=1.,
 
   num_dims = shape[0].size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
 
   tt_rank = tt_rank.astype(int)
@@ -718,7 +718,7 @@ def random_matrix_batch(shape, tt_rank=2, batch_size=1, mean=0., stddev=1.,
                              batch_size=batch_size)
   num_dims = shape[0].size
   if tt_rank.size == 1:
-    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = tt_rank * np.ones(num_dims - 1, dtype=np.int)
     tt_rank = np.concatenate([[1], tt_rank, [1]])
 
   shape = shape.astype(int)

@@ -3,7 +3,7 @@
 Installation
 ============
 
-T3f assumes you have Python 2.7, 3.4, 3.5, or 3.6 and a working TensorFlow installation (tested versions are from 1.12 to 1.14, see here_ for TF installation instructions).
+T3f assumes you have Python 3.6 and a working TensorFlow installation (tested with TF 2.4, see here_ for TF installation instructions).
 
 .. _here: https://www.tensorflow.org/install/
 
@@ -22,6 +22,3 @@ To install the latest version, run
    git clone https://github.com/Bihaqo/t3f.git
    cd t3f
    pip install .
-
-Note that using the neural module (`t3f.nn`) may require additional dependencies
-such as Keras.

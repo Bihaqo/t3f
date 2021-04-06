@@ -1,4 +1,5 @@
 import tensorflow as tf
+tf.compat.v1.enable_eager_execution()
 
 from t3f import initializers
 from t3f import shapes

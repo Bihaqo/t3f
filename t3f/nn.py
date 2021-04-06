@@ -43,9 +43,8 @@ class KerasDense(Layer):
     self.use_bias = use_bias
     self.kernel_initializer = kernel_initializer
     self.bias_initializer = bias_initializer
-    super(KerasDense, self).__init__(**kwargs)
+    name = 'tt_dense_{}'.format(self.counter)
 
-  def build(self, input_shape):
     if self.kernel_initializer == 'glorot':
       initializer = t3f.glorot_initializer(self.tt_shape,
                                            tt_rank=self.tt_rank)
@@ -59,17 +58,12 @@ class KerasDense(Layer):
       raise ValueError('Unknown kernel_initializer "%s", only "glorot",'
                        '"he", and "lecun"  are supported'
                        % self.kernel_initializer)
-    name = 'tt_dense_{}'.format(self.counter)
-    with tf.variable_scope(name):
-      self.matrix = t3f.get_variable('matrix', initializer=initializer)
-      self.b = None
-      if self.use_bias:
-        b_init = tf.constant_initializer(self.bias_initializer)
-        self.b = tf.get_variable('bias', shape=self.output_dim,
-                                 initializer=b_init)
-    self._trainable_weights = list(self.matrix.tt_cores)
-    if self.b is not None:
-      self._trainable_weights.append(self.b)
+    self.matrix = t3f.get_variable('matrix', initializer=initializer)
+    self._tt_cores = self.matrix.tt_cores
+    self.b = None
+    if self.use_bias:
+      self.b = tf.Variable(self.bias_initializer * tf.ones((self.output_dim,)))
+    super(KerasDense, self).__init__(name=name, **kwargs)
 
   def call(self, x):
     res = t3f.matmul(x, self.matrix)
