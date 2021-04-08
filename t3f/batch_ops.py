@@ -4,6 +4,7 @@ import tensorflow as tf
 from t3f.tensor_train_base import TensorTrainBase
 from t3f.tensor_train_batch import TensorTrainBatch
 from t3f import ops
+from t3f import utils
 
 
 def concat_along_batch_dim(tt_list, name='t3f_concat_along_batch_dim'):
@@ -168,12 +169,12 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None,
       curr_core_2 = tt_2.tt_cores[0]
       mode_string = 'ij' if tt_1.is_tt_matrix() else 'i'
       einsum_str = 'pa{0}b,qc{0}d->pqbd'.format(mode_string)
-      res = tf.einsum(einsum_str, curr_core_1, curr_core_2)
+      res = utils.einsum(einsum_str, curr_core_1, curr_core_2)
       for core_idx in range(1, ndims):
         curr_core_1 = tt_1.tt_cores[core_idx]
         curr_core_2 = tt_2.tt_cores[core_idx]
         einsum_str = 'pqac,pa{0}b,qc{0}d->pqbd'.format(mode_string)
-        res = tf.einsum(einsum_str, res, curr_core_1, curr_core_2)
+        res = utils.einsum(einsum_str, res, curr_core_1, curr_core_2)
     else:
       # res[i, j] = tt_1[i] ^ T * matrix * tt_2[j]
       are_all_matrices = tt_1.is_tt_matrix() and tt_2.is_tt_matrix()
@@ -221,13 +222,13 @@ def pairwise_flat_inner(tt_1, tt_2, matrix=None,
       curr_core_2 = tt_2.tt_cores[0]
       curr_matrix_core = matrix.tt_cores[0]
       # We enumerate the dummy dimension (that takes 1 value) with `k`.
-      res = tf.einsum('pakib,cijd,qekjf->pqbdf', curr_core_1, curr_matrix_core,
+      res = utils.einsum('pakib,cijd,qekjf->pqbdf', curr_core_1, curr_matrix_core,
                       curr_core_2)
       for core_idx in range(1, ndims):
         curr_core_1 = tt_1.tt_cores[core_idx]
         curr_core_2 = tt_2.tt_cores[core_idx]
         curr_matrix_core = matrix.tt_cores[core_idx]
-        res = tf.einsum('pqace,pakib,cijd,qekjf->pqbdf', res, curr_core_1,
+        res = utils.einsum('pqace,pakib,cijd,qekjf->pqbdf', res, curr_core_1,
                         curr_matrix_core, curr_core_2)
 
     # Squeeze to make the result of size batch_size x batch_size instead of
